@@ -1,0 +1,23 @@
+{
+  "name": "pi-context",
+  "version": "0.1.0",
+  "description": "Tool result processing, distillation, and context management for pi-coding-agent",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "github:earendil-works/pi-coding-agent",
+    "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils"
+  },
+  "bundledDependencies": [
+    "@pi-atelier/shared-utils"
+  ],
+  "devDependencies": {
+    "vitest": "^3.1.0"
+  },
+  "piExtension": true,
+  "keywords": ["pi", "context", "distill", "tool-result", "formatter"]
+}
