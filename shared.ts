@@ -2,7 +2,7 @@
 import { join, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
-import { getSettingsSection, patchSettingsSection, getEffectiveConfig as getEffective } from "@pi-atelier/shared-utils";
+import { getSettingsSection, patchSettingsSection, getSettingsValue, setSettingsValue, getEffectiveConfig as getEffective } from "@pi-atelier/shared-utils";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(process.env.HOME || "/root", ".pi/agent/distill");
@@ -52,8 +52,6 @@ export interface DistillEntry {
 }
 
 export const distilledMap = new Map<string, DistillEntry>();
-
-import { getSettingsSection, patchSettingsSection, getSettingsValue, setSettingsValue } from "@pi-atelier/shared-utils";
 
 // ── 配置（持久化到 settings.json → context） ──
 export interface ContextConfig {
