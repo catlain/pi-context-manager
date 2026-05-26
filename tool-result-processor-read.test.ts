@@ -3,7 +3,7 @@
  *
  * 验证 read 不再被 SKIP，走通用透传+写文件路径
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 function createMockPi() {
@@ -19,7 +19,7 @@ function createMockPi() {
 	};
 
 	function triggerToolResult(event: any): any {
-		const trHandler = handlers.find(h => h.event === "tool_result");
+		const trHandler = handlers.find((h) => h.event === "tool_result");
 		if (!trHandler) throw new Error("tool_result handler not registered");
 		return trHandler.handler(event, {});
 	}

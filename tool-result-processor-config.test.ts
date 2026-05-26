@@ -8,7 +8,7 @@
  * 写入失败通过 writeFallback 标志模拟（handler 内部捕获 writeFileSync 异常时返回原始内容）。
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 function createMockPi() {
@@ -25,7 +25,7 @@ function createMockPi() {
 	};
 
 	function triggerToolResult(event: any): any {
-		const trHandler = handlers.find(h => h.event === "tool_result");
+		const trHandler = handlers.find((h) => h.event === "tool_result");
 		if (!trHandler) throw new Error("tool_result handler not registered");
 		return trHandler.handler(event, {});
 	}
@@ -40,7 +40,11 @@ describe("阈值配置读取", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { distillThreshold: 100 });
 
-		const rawText = JSON.stringify({ title: "短小但超阈值", url: "https://x.com", content: "X".repeat(500) });
+		const rawText = JSON.stringify({
+			title: "短小但超阈值",
+			url: "https://x.com",
+			content: "X".repeat(500),
+		});
 
 		const result = triggerToolResult({
 			toolName: "web_read",
@@ -59,7 +63,11 @@ describe("阈值配置读取", () => {
 		registerToolResultProcessor(pi as any, { distillThreshold: 100000 });
 
 		const bigText = "B".repeat(20000);
-		const rawText = JSON.stringify({ title: "高阈值保留全文", url: "https://x.com", content: bigText });
+		const rawText = JSON.stringify({
+			title: "高阈值保留全文",
+			url: "https://x.com",
+			content: bigText,
+		});
 
 		const result = triggerToolResult({
 			toolName: "web_read",
@@ -80,7 +88,10 @@ describe("阈值配置读取", () => {
 
 		// 生成足够大的 JSON 数据（需要 >= 50 tokens = 200 chars）
 		const items = Array.from({ length: 20 }, (_, i) => ({
-			name: `func_${i}`, kind: "function", startLine: i * 10, endLine: i * 10 + 9,
+			name: `func_${i}`,
+			kind: "function",
+			startLine: i * 10,
+			endLine: i * 10 + 9,
 		}));
 		const rawText = JSON.stringify(items);
 
@@ -100,7 +111,11 @@ describe("阈值配置读取", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 
-		const smallRaw = JSON.stringify({ title: "默认", url: "https://x.com", content: "ABC" });
+		const smallRaw = JSON.stringify({
+			title: "默认",
+			url: "https://x.com",
+			content: "ABC",
+		});
 		const smallResult = triggerToolResult({
 			toolName: "web_read",
 			content: [{ type: "text", text: smallRaw }],
@@ -110,7 +125,11 @@ describe("阈值配置读取", () => {
 		expect(smallResult.content[0].text).not.toContain("[processed]");
 
 		const bigText = "A".repeat(20000);
-		const bigRaw = JSON.stringify({ title: "大结果", url: "https://x.com", content: bigText });
+		const bigRaw = JSON.stringify({
+			title: "大结果",
+			url: "https://x.com",
+			content: bigText,
+		});
 		const bigResult = triggerToolResult({
 			toolName: "web_read",
 			content: [{ type: "text", text: bigRaw }],
@@ -154,7 +173,9 @@ describe("临时文件写入失败降级", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { writeFallback: true });
 
-		const rawText = JSON.stringify([{ name: "bigFunc", kind: "function", startLine: 1, endLine: 500 }]);
+		const rawText = JSON.stringify([
+			{ name: "bigFunc", kind: "function", startLine: 1, endLine: 500 },
+		]);
 
 		const result = triggerToolResult({
 			toolName: "search_symbols",
@@ -175,7 +196,11 @@ describe("临时文件写入失败降级", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { writeFallback: true });
 
-		const rawText = JSON.stringify({ title: "错误日志", url: "https://x.com", content: "X".repeat(20000) });
+		const rawText = JSON.stringify({
+			title: "错误日志",
+			url: "https://x.com",
+			content: "X".repeat(20000),
+		});
 
 		triggerToolResult({
 			toolName: "web_read",

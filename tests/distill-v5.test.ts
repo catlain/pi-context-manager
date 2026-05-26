@@ -8,7 +8,7 @@
  * - 不同 tcId 独立处理，每个 tcId 首次都给全文 + hint（同参数新 read 也有改正机会）
  * - seenArgs（存 tcId）永不 delete
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { processContextMessages } from "./shared-process.js";
 
 /** 生成 toolCall + toolResult 消息对 */
@@ -21,7 +21,9 @@ function makeToolPair(
 	return [
 		{
 			role: "assistant",
-			content: [{ type: "toolCall", id: tcid, name: toolName, arguments: args }],
+			content: [
+				{ type: "toolCall", id: tcid, name: toolName, arguments: args },
+			],
 		},
 		{
 			role: "toolResult",
@@ -84,7 +86,9 @@ describe("distill v5", () => {
 		const result = processContextMessages(messages2, seen, 500);
 
 		// toolResult 被删除
-		expect(result.messages.find((m: any) => m.role === "toolResult")).toBeUndefined();
+		expect(
+			result.messages.find((m: any) => m.role === "toolResult"),
+		).toBeUndefined();
 		// toolCall block 被清理
 		const assistant = result.messages.find((m: any) => m.role === "assistant");
 		expect(assistant).toBeUndefined(); // 空 assistant 也被清理
@@ -100,16 +104,25 @@ describe("distill v5", () => {
 		const args = { path: "foo.ts" };
 
 		// 第1轮：首次
-		const m1 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", args, text)];
+		const m1 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", args, text),
+		];
 		processContextMessages(m1, seen, 500);
 
 		// 第2轮：已见
-		const m2 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", args, text)];
+		const m2 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", args, text),
+		];
 		const r2 = processContextMessages(m2, seen, 500);
 		expect(r2.removedSigs).toHaveLength(1);
 
 		// 第3轮：仍然已见（不循环回首次）
-		const m3 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", args, text)];
+		const m3 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", args, text),
+		];
 		const r3 = processContextMessages(m3, seen, 500);
 		expect(r3.removedSigs).toHaveLength(1);
 		expect(r3.hints).toHaveLength(0);
@@ -120,19 +133,28 @@ describe("distill v5", () => {
 		const text = bigText(1000);
 
 		// 阈值 1500：不触发蒸馏
-		const m1 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", { path: "foo.ts" }, text)];
+		const m1 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", { path: "foo.ts" }, text),
+		];
 		const r1 = processContextMessages(m1, seen, 1500);
 		expect(r1.hints).toHaveLength(0);
 		expect(seen.size).toBe(0);
 
 		// 阈值降到 500：现在触发（首次）
-		const m2 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", { path: "foo.ts" }, text)];
+		const m2 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", { path: "foo.ts" }, text),
+		];
 		const r2 = processContextMessages(m2, seen, 500);
 		expect(r2.hints).toHaveLength(1);
 		expect(seen.size).toBe(1);
 
 		// 第3轮：已见 → 删除
-		const m3 = [{ role: "user", content: "hi" }, ...makeToolPair("tc1", "read", { path: "foo.ts" }, text)];
+		const m3 = [
+			{ role: "user", content: "hi" },
+			...makeToolPair("tc1", "read", { path: "foo.ts" }, text),
+		];
 		const r3 = processContextMessages(m3, seen, 500);
 		expect(r3.removedSigs).toHaveLength(1);
 	});

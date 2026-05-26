@@ -4,7 +4,7 @@
  * 覆盖：formatWebReadResult, formatWebSearchResult
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatWebReadResult, formatWebSearchResult } from "./formatters.js";
 
 // ── formatWebReadResult ────────────────────────────
@@ -39,7 +39,11 @@ describe("formatWebReadResult", () => {
 	});
 
 	it("content 为空字符串", () => {
-		const raw = JSON.stringify({ title: "空页", url: "https://x.com", content: "" });
+		const raw = JSON.stringify({
+			title: "空页",
+			url: "https://x.com",
+			content: "",
+		});
 		const result = formatWebReadResult(raw);
 		expect(result).toContain("标题: 空页");
 		expect(result).toContain("URL: https://x.com");
@@ -66,7 +70,11 @@ describe("formatWebReadResult", () => {
 	});
 
 	it("双重编码解包后正确格式化", () => {
-		const inner = JSON.stringify({ title: "双层", url: "https://e.com", content: "内容" });
+		const inner = JSON.stringify({
+			title: "双层",
+			url: "https://e.com",
+			content: "内容",
+		});
 		const raw = JSON.stringify(inner);
 		const result = formatWebReadResult(raw);
 		expect(result).toContain("标题: 双层");
@@ -146,7 +154,9 @@ describe("formatWebSearchResult", () => {
 	});
 
 	it("双重编码解包后正确格式化", () => {
-		const inner = JSON.stringify([{ title: "双层结果", link: "https://d.com", content: "摘要" }]);
+		const inner = JSON.stringify([
+			{ title: "双层结果", link: "https://d.com", content: "摘要" },
+		]);
 		const raw = JSON.stringify(inner);
 		const result = formatWebSearchResult(raw);
 		expect(result).toContain("[1] 双层结果");

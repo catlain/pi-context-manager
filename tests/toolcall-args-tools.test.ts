@@ -8,11 +8,11 @@
  * - edit 只有 oldText 大
  * - 保留小字段（两个场景）
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	truncateToolCallArgs,
 	bigStr,
 	makeMessages,
+	truncateToolCallArgs,
 } from "./toolcall-args-helpers.js";
 
 describe("truncateToolCallArgs — 按工具类型截断", () => {
@@ -23,9 +23,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			command: bigStr(3000),
 			description: "build project",
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "bash", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "bash", args }]);
 		const truncatedIds = new Set<string>();
 
 		truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -41,9 +39,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 
 	it("bash 全部小字段不截断", () => {
 		const args = { command: "ls -la", description: "list files" };
-		const messages = makeMessages([
-			{ id: "tc1", name: "bash", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "bash", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -59,9 +55,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			path: "output.txt",
 			content: bigStr(3000),
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -74,9 +68,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 
 	it("write 只有 path 小字段不截断", () => {
 		const args = { path: "readme.md", content: "hello" };
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -93,9 +85,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			oldText: bigStr(2000),
 			newText: bigStr(2000),
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "edit", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "edit", args }]);
 		const truncatedIds = new Set<string>();
 
 		// threshold 较小以使 arguments 超阈值
@@ -117,9 +107,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			oldText: bigStr(3000),
 			newText: "console.log('fixed');",
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "edit", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "edit", args }]);
 		const truncatedIds = new Set<string>();
 
 		truncateToolCallArgs(messages, 500, truncatedIds);
@@ -139,9 +127,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			oldText: "old line",
 			newText: "new line",
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "edit", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "edit", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -159,9 +145,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			pattern: "TODO",
 			content: bigStr(3000),
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -182,9 +166,7 @@ describe("truncateToolCallArgs — 按工具类型截断", () => {
 			limit: "50",
 			content: bigStr(5000),
 		};
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		truncateToolCallArgs(messages, 1000, truncatedIds);

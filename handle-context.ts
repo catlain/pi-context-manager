@@ -1,6 +1,20 @@
 /** handle-context.ts — context 事件处理逻辑（纯操作，从 index.ts 闭包获取状态引用） */
-import { buildToolCallMap, estimateTokens, toolMeta, removeOrphanedToolCalls } from "./distill-helpers.js";
-import { getContextConfig, distilledMap, readCachedMessages, writeCachedMessages, saveManifest, loadManifest, hintsConfig, fillTemplate } from "./shared.js";
+import {
+	buildToolCallMap,
+	estimateTokens,
+	removeOrphanedToolCalls,
+	toolMeta,
+} from "./distill-helpers.js";
+import {
+	distilledMap,
+	fillTemplate,
+	getContextConfig,
+	hintsConfig,
+	loadManifest,
+	readCachedMessages,
+	saveManifest,
+	writeCachedMessages,
+} from "./shared.js";
 import { truncateToolCallArgs } from "./toolcall-args-truncator.js";
 
 export interface ContextState {
@@ -20,13 +34,24 @@ export function handleContextEvent(
 	state: ContextState,
 	pi: any,
 ) {
-	const { agingTracker, agingSnapshot, manuallyDeletedIds, agingDeletedIds, seenArgs, truncatedToolCallIds } = state;
+	const {
+		agingTracker,
+		agingSnapshot,
+		manuallyDeletedIds,
+		agingDeletedIds,
+		seenArgs,
+		truncatedToolCallIds,
+	} = state;
 
 	// 设置 sessionId 并加载对应的 manifest
 	const sid = _ctx?.sessionManager?.getSessionId?.();
 	if (sid && sid !== state.sessionId) {
 		state.sessionId = sid;
-		loadManifest(sid, { manuallyDeleted: manuallyDeletedIds, agingDeleted: agingDeletedIds, agingTracker });
+		loadManifest(sid, {
+			manuallyDeleted: manuallyDeletedIds,
+			agingDeleted: agingDeletedIds,
+			agingTracker,
+		});
 	}
 
 	const messages = event.messages as any[];
@@ -68,12 +93,15 @@ export function handleContextEvent(
 		}
 
 		const toolName = msg.toolName || "unknown";
-		const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+		const textParts = (msg.content as any[]).filter(
+			(p: any) => p.type === "text",
+		);
 		const origText = textParts.map((p: any) => p.text).join("");
 		const origTokens = estimateTokens(origText);
 
 		// 计算该 tcId 的实际阈值
-		const effectiveThreshold = origTokens >= distillThreshold ? 2 : agingThreshold;
+		const effectiveThreshold =
+			origTokens >= distillThreshold ? 2 : agingThreshold;
 		if (effectiveThreshold <= 0) continue; // aging 关闭时跳过普通结果
 
 		activeTcIds.add(tcId);
@@ -91,7 +119,10 @@ export function handleContextEvent(
 				const meta = toolMeta(msg, toolCallMap);
 				const label = meta.meta || toolName;
 				pi.events.emit("ephemeral:hint", {
-					text: fillTemplate(hintsConfig.distillWarning, { label, tokens: String(origTokens) }),
+					text: fillTemplate(hintsConfig.distillWarning, {
+						label,
+						tokens: String(origTokens),
+					}),
 					short: fillTemplate(hintsConfig.distillWarningShort, { label }),
 				});
 			}
@@ -110,7 +141,11 @@ export function handleContextEvent(
 		if (!activeTcIds.has(tcId)) agingTracker.delete(tcId);
 	}
 	// 每轮保存 manifest（含 agingCounts），确保 reload 后恢复计数
-	saveManifest(state.sessionId, { manuallyDeleted: manuallyDeletedIds, agingDeleted: agingDeletedIds, agingCounts: agingTracker });
+	saveManifest(state.sessionId, {
+		manuallyDeleted: manuallyDeletedIds,
+		agingDeleted: agingDeletedIds,
+		agingCounts: agingTracker,
+	});
 
 	// 更新 aging 快照
 	agingSnapshot.clear();

@@ -40,7 +40,9 @@ export function buildMessages(
 	return [
 		{
 			role: "assistant",
-			content: [{ type: "toolCall", id: tcId, name: toolName, arguments: args }],
+			content: [
+				{ type: "toolCall", id: tcId, name: toolName, arguments: args },
+			],
 			toolCallId: tcId,
 		},
 		{

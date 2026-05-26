@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatMcpError } from "../formatters-errors.js";
 
 describe("formatMcpError", () => {
@@ -6,7 +6,7 @@ describe("formatMcpError", () => {
 		// MCP 返回的格式：500 Internal Server Error: "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误\"}}"
 		// 在 JavaScript 字符串中需要双重转义
 		const result = formatMcpError(
-			'MCP error -500: 500 Internal Server Error: "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误\"}}"',
+			'MCP error -500: 500 Internal Server Error: "{"error":{"code":"1234","message":"网络错误"}}"',
 		);
 		expect(result).toBe("❌ 错误：网络错误 (错误码: -500)");
 	});
@@ -30,8 +30,10 @@ describe("formatMcpError", () => {
 
 	it("GLM 网络错误示例", () => {
 		const result = formatMcpError(
-			'MCP error -500: 500 Internal Server Error: "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：202605171616094135cf1c1bde4a1b，请稍后重试\"}}"',
+			'MCP error -500: 500 Internal Server Error: "{"error":{"code":"1234","message":"网络错误，错误id：202605171616094135cf1c1bde4a1b，请稍后重试"}}"',
 		);
-		expect(result).toContain("网络错误，错误id：202605171616094135cf1c1bde4a1b");
+		expect(result).toContain(
+			"网络错误，错误id：202605171616094135cf1c1bde4a1b",
+		);
 	});
 });

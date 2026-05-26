@@ -3,10 +3,10 @@
  *
  * 验证用户在 context 面板标记删除的工具结果被从上下文中移除
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	createMockPi,
 	buildMessages,
+	createMockPi,
 	triggerContext,
 } from "./aging-helpers.js";
 
@@ -88,7 +88,11 @@ describe("手动删除", () => {
 			// 删除内容为空的 assistant 消息
 			for (let i = messages.length - 1; i >= 0; i--) {
 				const m = messages[i];
-				if (m.role === "assistant" && Array.isArray(m.content) && m.content.length === 0) {
+				if (
+					m.role === "assistant" &&
+					Array.isArray(m.content) &&
+					m.content.length === 0
+				) {
 					messages.splice(i, 1);
 				}
 			}

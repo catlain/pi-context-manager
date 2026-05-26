@@ -4,41 +4,66 @@
  * 格式化器职责：嗅探识别、搜索排序、截断、空行压缩。
  */
 
-import { describe, it, expect } from "vitest";
-import { formatCodeGraphResult, sniffCodeGraph } from "./formatters-codegraph.js";
+import { describe, expect, it } from "vitest";
+import {
+	formatCodeGraphResult,
+	sniffCodeGraph,
+} from "./formatters-codegraph.js";
 
 // ── 嗅探：确认 code-graph 输出被识别 ───────────────
 
 describe("sniffCodeGraph — 嗅探", () => {
 	it("search 格式（fn 声明）", () => {
-		expect(sniffCodeGraph("fn processToolResult  extensions/context/core.ts:50-105  ((x)) -> void")).toBe(true);
+		expect(
+			sniffCodeGraph(
+				"fn processToolResult  extensions/context/core.ts:50-105  ((x)) -> void",
+			),
+		).toBe(true);
 	});
 	it("class 声明", () => {
 		expect(sniffCodeGraph("class DataStore  lib/storage.ts:10-200")).toBe(true);
 	});
 	it("callgraph 缩进箭头", () => {
-		expect(sniffCodeGraph("myFunc (src/main.ts)\n  ← called by: otherFunc (src/other.ts) [function]")).toBe(true);
+		expect(
+			sniffCodeGraph(
+				"myFunc (src/main.ts)\n  ← called by: otherFunc (src/other.ts) [function]",
+			),
+		).toBe(true);
 	});
 	it("Impact 行", () => {
-		expect(sniffCodeGraph("Impact: MyFunc — Risk: HIGH\n  10 direct callers")).toBe(true);
+		expect(
+			sniffCodeGraph("Impact: MyFunc — Risk: HIGH\n  10 direct callers"),
+		).toBe(true);
 	});
 	it("references 行", () => {
 		expect(sniffCodeGraph("3 references to 'MyFunc':")).toBe(true);
 	});
 	it("Module overview 行", () => {
-		expect(sniffCodeGraph("Module: extensions/context (108 nodes)\n  fn processToolResult  extensions/context/core.ts:50-105")).toBe(true);
+		expect(
+			sniffCodeGraph(
+				"Module: extensions/context (108 nodes)\n  fn processToolResult  extensions/context/core.ts:50-105",
+			),
+		).toBe(true);
 	});
 	it("Dead code 行", () => {
-		expect(sniffCodeGraph("Dead code: 10 results (5 orphan, 5 exported-unused)")).toBe(true);
+		expect(
+			sniffCodeGraph("Dead code: 10 results (5 orphan, 5 exported-unused)"),
+		).toBe(true);
 	});
 	it("普通文本不嗅探", () => {
 		expect(sniffCodeGraph("这是一段普通输出\nline 2")).toBe(false);
 	});
 	it("bash 输出不嗅探", () => {
-		expect(sniffCodeGraph("drwxr-xr-x  2 user group 4096 Jan 1 .\n-rw-r--r--  1 user group 123 Jan 1 file.ts")).toBe(false);
+		expect(
+			sniffCodeGraph(
+				"drwxr-xr-x  2 user group 4096 Jan 1 .\n-rw-r--r--  1 user group 123 Jan 1 file.ts",
+			),
+		).toBe(false);
 	});
 	it("JSON 不嗅探", () => {
-		expect(sniffCodeGraph(JSON.stringify({ title: "Test", url: "https://x.com" }))).toBe(false);
+		expect(
+			sniffCodeGraph(JSON.stringify({ title: "Test", url: "https://x.com" })),
+		).toBe(false);
 	});
 });
 
@@ -53,7 +78,11 @@ describe("formatCodeGraphResult — 回退", () => {
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 	it("web_read JSON → 原样返回（不误判）", () => {
-		const input = JSON.stringify({ title: "Test", url: "https://x.com", content: "hello" });
+		const input = JSON.stringify({
+			title: "Test",
+			url: "https://x.com",
+			content: "hello",
+		});
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 	it("gh CLI 输出 → 原样返回（不误判）", () => {
@@ -91,8 +120,9 @@ describe("formatCodeGraphResult — 搜索排序", () => {
 
 describe("formatCodeGraphResult — 截断", () => {
 	it("超过 200 行时截断并提示", () => {
-		const lines = Array.from({ length: 300 }, (_, i) =>
-			`fn func_${i}  src/file_${i}.ts:${i}-${i + 10}  ((x)) -> void`
+		const lines = Array.from(
+			{ length: 300 },
+			(_, i) => `fn func_${i}  src/file_${i}.ts:${i}-${i + 10}  ((x)) -> void`,
 		);
 		const input = lines.join("\n");
 

@@ -8,7 +8,7 @@
  * - 负数：报错
  * - 非法字符串：报错
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 /**
  * 模拟 registerAgingConfigCommand 的行为
@@ -18,10 +18,16 @@ import { describe, it, expect, vi } from "vitest";
 function createAgingConfigHandler() {
 	let currentThreshold = 8;
 
-	const handler = async (args: string | undefined, ctx: { ui: { notify: ReturnType<typeof vi.fn> } }) => {
+	const handler = async (
+		args: string | undefined,
+		ctx: { ui: { notify: ReturnType<typeof vi.fn> } },
+	) => {
 		const arg = args?.trim() ?? "";
 		if (!arg) {
-			ctx.ui.notify(`[aging-config] agingThreshold = ${currentThreshold}`, "info");
+			ctx.ui.notify(
+				`[aging-config] agingThreshold = ${currentThreshold}`,
+				"info",
+			);
 			return;
 		}
 		if (arg === "0" || arg === "off") {
@@ -76,7 +82,10 @@ describe("/aging-config 设置合法值", () => {
 		await handler("10", ctx);
 
 		expect(getThreshold()).toBe(10);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("✅ agingThreshold = 10", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			"✅ agingThreshold = 10",
+			"info",
+		);
 	});
 
 	it("设置为 1（最小有效值）", async () => {

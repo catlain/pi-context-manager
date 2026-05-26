@@ -4,10 +4,10 @@
  * 在 context handler 中截断 assistant 消息里过大的 toolCall.arguments，
  * 写临时文件并替换为摘要对象。
  */
-import { writeFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "path";
-import { DISTILL_DIR } from "./shared.js";
 import { estimateTokens } from "./distill-helpers.js";
+import { DISTILL_DIR } from "./shared.js";
 
 const TOOLCALL_PROCESSOR_DIR = join(DISTILL_DIR, "processor");
 
@@ -43,7 +43,10 @@ function writeArgsTmpFile(
 ): string | null {
 	const timestamp = Date.now();
 	const sidSuffix = tcId.length >= 8 ? tcId.slice(-8) : "anon";
-	const tmpPath = join(TOOLCALL_PROCESSOR_DIR, `toolcall-${sidSuffix}-${timestamp}.txt`);
+	const tmpPath = join(
+		TOOLCALL_PROCESSOR_DIR,
+		`toolcall-${sidSuffix}-${timestamp}.txt`,
+	);
 	try {
 		mkdirSync(TOOLCALL_PROCESSOR_DIR, { recursive: true });
 		const header = `=== ${toolName} toolCall.arguments ===\n时间: ${new Date().toISOString()}\n调用ID: ${tcId}\n`;
@@ -92,7 +95,12 @@ export function truncateToolCallArgs(
 			if (!tmpPath) continue;
 
 			// 替换为摘要
-			block.arguments = buildTruncatedArgs(block.name || "unknown", args, tokens, tmpPath);
+			block.arguments = buildTruncatedArgs(
+				block.name || "unknown",
+				args,
+				tokens,
+				tmpPath,
+			);
 			truncatedIds.add(block.id);
 			count++;
 		}

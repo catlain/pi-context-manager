@@ -4,11 +4,11 @@
  * 覆盖：unwrapDoubleEncodedJson, truncateAtParagraph, formatBashResult
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	unwrapDoubleEncodedJson,
-	truncateAtParagraph,
 	formatBashResult,
+	truncateAtParagraph,
+	unwrapDoubleEncodedJson,
 } from "./formatters.js";
 
 // ── unwrapDoubleEncodedJson ────────────────────────
@@ -16,7 +16,9 @@ import {
 describe("unwrapDoubleEncodedJson", () => {
 	it("解包双重编码的 JSON 对象", () => {
 		const raw = JSON.stringify(JSON.stringify({ title: "test" }));
-		expect(unwrapDoubleEncodedJson(raw)).toBe(JSON.stringify({ title: "test" }));
+		expect(unwrapDoubleEncodedJson(raw)).toBe(
+			JSON.stringify({ title: "test" }),
+		);
 	});
 
 	it("解包双重编码的 JSON 数组", () => {
@@ -48,7 +50,9 @@ describe("truncateAtParagraph", () => {
 	it("在段落边界截断", () => {
 		const text = "A".repeat(8000) + "\n\n" + "B".repeat(8000);
 		const result = truncateAtParagraph(text, 10000);
-		expect(result.endsWith(`...(内容已截断，共 ${text.length} 字符)`)).toBe(true);
+		expect(result.endsWith(`...(内容已截断，共 ${text.length} 字符)`)).toBe(
+			true,
+		);
 		expect(result.includes("BBBBB")).toBe(false);
 	});
 

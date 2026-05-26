@@ -6,15 +6,24 @@
  * 解析/格式化失败时 fallback 返回原始文本。
  */
 
-import {
-	unwrapDoubleEncodedJson,
-	truncateAtParagraph,
-	extractJsonPrefix,
-} from "./formatters-utils.js";
 import { formatGhResult } from "./formatters-gh.js";
-import { formatWebReadResult, formatWebSearchResult } from "./formatters-web.js";
+import {
+	extractJsonPrefix,
+	truncateAtParagraph,
+	unwrapDoubleEncodedJson,
+} from "./formatters-utils.js";
+import {
+	formatWebReadResult,
+	formatWebSearchResult,
+} from "./formatters-web.js";
 
-export { unwrapDoubleEncodedJson, truncateAtParagraph, formatGhResult, formatWebReadResult, formatWebSearchResult };
+export {
+	formatGhResult,
+	formatWebReadResult,
+	formatWebSearchResult,
+	truncateAtParagraph,
+	unwrapDoubleEncodedJson,
+};
 // ── bash 格式化 ───────────────────────────────────
 
 /**
@@ -38,7 +47,7 @@ export function formatMcpError(text: string): string {
 
 	// 尝试提取 JSON 错误详情
 	let errorDetail = "";
-	const jsonMatch = message.match(/\"\{(.+)\}\"$/s);
+	const jsonMatch = message.match(/"\{(.+)\}"$/s);
 	if (jsonMatch) {
 		try {
 			const errorJson = JSON.parse(`{${jsonMatch[1]}}`);

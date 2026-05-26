@@ -3,13 +3,13 @@
  *
  * 验证 aging 与 distill 的互斥关系，以及 agingTracker 清理行为
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	createMockPi,
 	buildMessages,
-	triggerContext,
-	setupAgingHandler,
+	createMockPi,
 	estimateTokens,
+	setupAgingHandler,
+	triggerContext,
 } from "./aging-helpers.js";
 
 describe("aging 与 distill 互斥", () => {
@@ -56,8 +56,18 @@ describe("aging 与 distill 互斥", () => {
 					{ type: "toolCall", id: "tc-small", name: "grep", arguments: {} },
 				],
 			},
-			{ role: "toolResult", toolCallId: "tc-big", toolName: "read", content: [{ type: "text", text: bigContent }] },
-			{ role: "toolResult", toolCallId: "tc-small", toolName: "grep", content: [{ type: "text", text: smallContent }] },
+			{
+				role: "toolResult",
+				toolCallId: "tc-big",
+				toolName: "read",
+				content: [{ type: "text", text: bigContent }],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-small",
+				toolName: "grep",
+				content: [{ type: "text", text: smallContent }],
+			},
 		];
 		triggerContext(handlers, msgs);
 		expect(tracker.has("tc-big")).toBe(true);
@@ -87,12 +97,25 @@ describe("aging tracker 清理", () => {
 
 		// 同一轮中两个 tcId
 		const m1 = [
-			{ role: "assistant", content: [
-				{ type: "toolCall", id: "tc-a", name: "read", arguments: {} },
-				{ type: "toolCall", id: "tc-b", name: "read", arguments: {} },
-			] },
-			{ role: "toolResult", toolCallId: "tc-a", toolName: "read", content: [{ type: "text", text: "a" }] },
-			{ role: "toolResult", toolCallId: "tc-b", toolName: "read", content: [{ type: "text", text: "b" }] },
+			{
+				role: "assistant",
+				content: [
+					{ type: "toolCall", id: "tc-a", name: "read", arguments: {} },
+					{ type: "toolCall", id: "tc-b", name: "read", arguments: {} },
+				],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-a",
+				toolName: "read",
+				content: [{ type: "text", text: "a" }],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-b",
+				toolName: "read",
+				content: [{ type: "text", text: "b" }],
+			},
 		];
 		triggerContext(handlers, m1);
 		expect(tracker.get("tc-a")).toBe(1);
@@ -122,8 +145,18 @@ describe("aging tracker 清理", () => {
 					{ type: "toolCall", id: "tc-sm", name: "grep", arguments: {} },
 				],
 			},
-			{ role: "toolResult", toolCallId: "tc-big", toolName: "read", content: [{ type: "text", text: bigContent }] },
-			{ role: "toolResult", toolCallId: "tc-sm", toolName: "grep", content: [{ type: "text", text: smallContent }] },
+			{
+				role: "toolResult",
+				toolCallId: "tc-big",
+				toolName: "read",
+				content: [{ type: "text", text: bigContent }],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-sm",
+				toolName: "grep",
+				content: [{ type: "text", text: smallContent }],
+			},
 		]);
 		expect(tracker.get("tc-sm")).toBe(1);
 
@@ -135,7 +168,12 @@ describe("aging tracker 清理", () => {
 					{ type: "toolCall", id: "tc-sm", name: "grep", arguments: {} },
 				],
 			},
-			{ role: "toolResult", toolCallId: "tc-sm", toolName: "grep", content: [{ type: "text", text: smallContent }] },
+			{
+				role: "toolResult",
+				toolCallId: "tc-sm",
+				toolName: "grep",
+				content: [{ type: "text", text: smallContent }],
+			},
 		]);
 		expect(tracker.get("tc-sm")).toBe(2);
 		expect(hints.length).toBe(1);
@@ -148,7 +186,12 @@ describe("aging tracker 清理", () => {
 					{ type: "toolCall", id: "tc-sm", name: "grep", arguments: {} },
 				],
 			},
-			{ role: "toolResult", toolCallId: "tc-sm", toolName: "grep", content: [{ type: "text", text: smallContent }] },
+			{
+				role: "toolResult",
+				toolCallId: "tc-sm",
+				toolName: "grep",
+				content: [{ type: "text", text: smallContent }],
+			},
 		];
 		triggerContext(handlers, m3);
 		expect(m3.filter((m: any) => m.role === "toolResult").length).toBe(0);

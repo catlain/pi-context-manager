@@ -4,14 +4,11 @@
  * 验证 warmup 逻辑在 seenArgs 为空且存在大量 toolResult 时正确预填，
  * 使 reload/tree 后首次 context 调用就恢复蒸馏/遗忘行为。
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createMockPi, triggerContext } from "./aging-helpers.js";
 import {
-	createMockPi,
-	triggerContext,
-} from "./aging-helpers.js";
-import {
-	setupWarmupAgingHandler,
 	buildMixedMessages,
+	setupWarmupAgingHandler,
 } from "./aging-warmup-helpers.js";
 
 describe("warmup 正常路径", () => {
@@ -21,8 +18,10 @@ describe("warmup 正常路径", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 3,
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 3,
 		});
 
 		// 7 个大（~600 token）+ 8 个小 = 15 个 toolResult
@@ -44,8 +43,10 @@ describe("warmup 正常路径", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 99,
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 99,
 		});
 
 		// 12 个大 + 3 个小 = 15 个
@@ -67,8 +68,10 @@ describe("warmup 边界", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 5,
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 5,
 		});
 
 		// 5 个大 + 5 个小 = 10 个（边界 >10，不触发）
@@ -88,8 +91,10 @@ describe("warmup 边界", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 3,
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 3,
 		});
 
 		// 6 个大 + 5 个小 = 11 个，>10 → 触发 warmup
@@ -109,8 +114,10 @@ describe("warmup agingThreshold=0", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 0, // aging 禁用
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 0, // aging 禁用
 		});
 
 		const messages = buildMixedMessages(7, 8, 2400, "x");
@@ -134,8 +141,10 @@ describe("非 warmup 路径", () => {
 		const agingTracker = new Map<string, number>();
 
 		setupWarmupAgingHandler(pi, handlers, {
-			seenArgs, agingTracker,
-			distillThreshold: 500, agingThreshold: 3,
+			seenArgs,
+			agingTracker,
+			distillThreshold: 500,
+			agingThreshold: 3,
 		});
 
 		const messages = buildMixedMessages(7, 8, 2400, "x");

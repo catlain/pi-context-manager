@@ -9,20 +9,18 @@
  * - 返回值和 truncatedIds 副作用
  * - 跨多个 assistant 消息
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	truncateToolCallArgs,
 	bigStr,
 	makeAssistantMsg,
 	makeMessages,
+	truncateToolCallArgs,
 } from "./toolcall-args-helpers.js";
 
 describe("truncateToolCallArgs — 基本路径", () => {
 	it("小 arguments 不截断：threshold 以下保持原样", () => {
 		const args = { path: "foo.ts", pattern: "TODO" };
-		const messages = makeMessages([
-			{ id: "tc1", name: "read", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "read", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 10_000, truncatedIds);
@@ -35,9 +33,7 @@ describe("truncateToolCallArgs — 基本路径", () => {
 
 	it("大 arguments 被截断：超阈值后 arguments 替换为摘要", () => {
 		const args = { path: "big.txt", content: bigStr(3000) };
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -54,8 +50,18 @@ describe("truncateToolCallArgs — 基本路径", () => {
 		const msg = {
 			role: "assistant",
 			content: [
-				{ type: "toolCall", id: "tc1", name: "read", arguments: { path: "small.ts" } },
-				{ type: "toolCall", id: "tc2", name: "write", arguments: { path: "big.ts", content: bigStr(3000) } },
+				{
+					type: "toolCall",
+					id: "tc1",
+					name: "read",
+					arguments: { path: "small.ts" },
+				},
+				{
+					type: "toolCall",
+					id: "tc2",
+					name: "write",
+					arguments: { path: "big.ts", content: bigStr(3000) },
+				},
 			],
 		};
 		const messages = [msg];
@@ -72,9 +78,7 @@ describe("truncateToolCallArgs — 基本路径", () => {
 
 	it("已截断不重复处理：truncatedIds 防止二次写入", () => {
 		const args = { path: "big.txt", content: bigStr(3000) };
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>(["tc1"]);
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -89,7 +93,11 @@ describe("truncateToolCallArgs — 基本路径", () => {
 	it("返回值为实际截断的 toolCall 数量", () => {
 		const messages = makeMessages([
 			{ id: "tc1", name: "read", args: { path: "small.ts" } },
-			{ id: "tc2", name: "write", args: { path: "big.ts", content: bigStr(3000) } },
+			{
+				id: "tc2",
+				name: "write",
+				args: { path: "big.ts", content: bigStr(3000) },
+			},
 			{ id: "tc3", name: "bash", args: { command: bigStr(3000) } },
 		]);
 		const truncatedIds = new Set<string>();
@@ -101,7 +109,11 @@ describe("truncateToolCallArgs — 基本路径", () => {
 
 	it("truncatedIds 记录所有被截断的 toolCall ID", () => {
 		const messages = makeMessages([
-			{ id: "tc1", name: "write", args: { path: "a.ts", content: bigStr(3000) } },
+			{
+				id: "tc1",
+				name: "write",
+				args: { path: "a.ts", content: bigStr(3000) },
+			},
 			{ id: "tc2", name: "read", args: { path: "b.ts" } },
 			{ id: "tc3", name: "bash", args: { command: bigStr(3000) } },
 		]);
@@ -118,10 +130,12 @@ describe("truncateToolCallArgs — 基本路径", () => {
 		const messages = makeMessages([
 			{ id: "tc1", name: "read", args: { path: "small.ts" } },
 		]);
-		messages.push(makeAssistantMsg("tc2", "write", {
-			path: "big.ts",
-			content: bigStr(3000),
-		}));
+		messages.push(
+			makeAssistantMsg("tc2", "write", {
+				path: "big.ts",
+				content: bigStr(3000),
+			}),
+		);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);

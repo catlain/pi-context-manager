@@ -4,7 +4,7 @@
  * 覆盖：格式化异常兜底、路由错误不崩溃、空内容、阈值边界
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 function createMockPi() {
@@ -21,7 +21,7 @@ function createMockPi() {
 	};
 
 	function triggerToolResult(event: any): any {
-		const trHandler = handlers.find(h => h.event === "tool_result");
+		const trHandler = handlers.find((h) => h.event === "tool_result");
 		if (!trHandler) throw new Error("tool_result handler not registered");
 		return trHandler.handler(event, {});
 	}
@@ -113,7 +113,11 @@ describe("阈值边界", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 		const nearThreshold = "N".repeat(15900);
-		const rawText = JSON.stringify({ title: "接近阈值", url: "https://x.com", content: nearThreshold });
+		const rawText = JSON.stringify({
+			title: "接近阈值",
+			url: "https://x.com",
+			content: nearThreshold,
+		});
 
 		const result = triggerToolResult({
 			toolName: "web_read",
@@ -131,7 +135,10 @@ describe("阈值边界", () => {
 		const { pi, triggerToolResult } = createMockPi();
 		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 		const items = Array.from({ length: 200 }, (_, i) => ({
-			name: `function_${i}_${"x".repeat(40)}`, kind: "function", startLine: i * 10, endLine: i * 10 + 9,
+			name: `function_${i}_${"x".repeat(40)}`,
+			kind: "function",
+			startLine: i * 10,
+			endLine: i * 10 + 9,
 		}));
 		const rawText = JSON.stringify(items);
 

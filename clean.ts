@@ -1,6 +1,7 @@
 /** clean.ts — distill 数据清理工具 */
-import { join } from "path";
+
 import { existsSync, readdirSync, rmSync, statSync } from "fs";
+import { join } from "path";
 import { DISTILL_DIR } from "./shared.js";
 
 /** 计算目录大小（字节） */
@@ -12,7 +13,9 @@ function dirSizeBytes(dir: string): number {
 			if (entry.isDirectory()) total += dirSizeBytes(full);
 			else if (entry.isFile()) total += statSync(full).size;
 		}
-	} catch { /* ignore */ }
+	} catch {
+		/* ignore */
+	}
 	return total;
 }
 
@@ -20,15 +23,18 @@ function dirSizeBytes(dir: string): number {
 export function listSessionData(): { sessionId: string; sizeMB: number }[] {
 	if (!existsSync(DISTILL_DIR)) return [];
 	return readdirSync(DISTILL_DIR, { withFileTypes: true })
-		.filter(d => d.isDirectory() && d.name.length >= 8) // UUID 格式的目录
-		.map(d => ({
+		.filter((d) => d.isDirectory() && d.name.length >= 8) // UUID 格式的目录
+		.map((d) => ({
 			sessionId: d.name,
 			sizeMB: dirSizeBytes(join(DISTILL_DIR, d.name)) / 1024 / 1024,
 		}));
 }
 
 /** 清理指定会话或全部的 distill 数据 */
-export function cleanContextData(sessionId?: string): { cleaned: number; freedMB: number } {
+export function cleanContextData(sessionId?: string): {
+	cleaned: number;
+	freedMB: number;
+} {
 	if (sessionId) {
 		const dir = join(DISTILL_DIR, sessionId);
 		if (!existsSync(dir)) return { cleaned: 0, freedMB: 0 };
@@ -47,7 +53,8 @@ export function cleanContextData(sessionId?: string): { cleaned: number; freedMB
 	}
 	// 清理 processor 目录
 	const processorDir = join(DISTILL_DIR, "processor");
-	if (existsSync(processorDir)) rmSync(processorDir, { recursive: true, force: true });
+	if (existsSync(processorDir))
+		rmSync(processorDir, { recursive: true, force: true });
 	// 清理全局缓存文件
 	for (const f of ["last-messages.json", "last-payload.json"]) {
 		const p = join(DISTILL_DIR, f);

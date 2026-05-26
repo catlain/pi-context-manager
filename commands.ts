@@ -1,7 +1,13 @@
 /** 命令注册：/record、/distill-config、/processor-config、/context-clean */
-import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { setRecording, isRecording, cleanRecordings, getContextConfig, setContextConfig } from "./shared.js";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { cleanContextData, listSessionData } from "./clean.js";
+import {
+	cleanRecordings,
+	getContextConfig,
+	isRecording,
+	setContextConfig,
+	setRecording,
+} from "./shared.js";
 
 export function registerRecordCommand(pi: ExtensionAPI) {
 	pi.registerCommand("record", {
@@ -25,13 +31,17 @@ export function registerRecordCommand(pi: ExtensionAPI) {
 
 export function registerContextCleanCommand(pi: ExtensionAPI) {
 	pi.registerCommand("context-clean", {
-		description: "清理 context 扩展持久化数据。/context-clean [sessionId] — 指定会话ID只清理该会话；不传参清理全部。",
+		description:
+			"清理 context 扩展持久化数据。/context-clean [sessionId] — 指定会话ID只清理该会话；不传参清理全部。",
 		handler: async (args, ctx) => {
 			const sid = args?.trim() ?? "";
 			if (sid) {
 				const { cleaned, freedMB } = cleanContextData(sid);
 				if (cleaned > 0) {
-					ctx.ui.notify(`🧹 已清理会话 ${sid} 的数据（释放 ${freedMB} MB）`, "info");
+					ctx.ui.notify(
+						`🧹 已清理会话 ${sid} 的数据（释放 ${freedMB} MB）`,
+						"info",
+					);
 				} else {
 					ctx.ui.notify(`会话 ${sid} 无数据可清理`, "info");
 				}
@@ -43,7 +53,10 @@ export function registerContextCleanCommand(pi: ExtensionAPI) {
 				}
 				const totalMB = sessions.reduce((s, x) => s + x.sizeMB, 0);
 				cleanContextData();
-				ctx.ui.notify(`🧹 已清理全部 ${sessions.length} 个会话数据（释放 ${Math.round(totalMB * 100) / 100} MB）`, "info");
+				ctx.ui.notify(
+					`🧹 已清理全部 ${sessions.length} 个会话数据（释放 ${Math.round(totalMB * 100) / 100} MB）`,
+					"info",
+				);
 			}
 		},
 	});
@@ -51,12 +64,16 @@ export function registerContextCleanCommand(pi: ExtensionAPI) {
 
 export function registerDistillConfigCommand(pi: ExtensionAPI) {
 	pi.registerCommand("distill-config", {
-		description: "View or set auto-distill token threshold. Usage: /distill-config | /distill-config 1500",
+		description:
+			"View or set auto-distill token threshold. Usage: /distill-config | /distill-config 1500",
 		handler: async (args, ctx) => {
 			const arg = args?.trim() ?? "";
 			if (!arg) {
 				const cfg = getContextConfig();
-				ctx.ui.notify(`[distill-config] distillThreshold = ${cfg.distillThreshold} tokens`, "info");
+				ctx.ui.notify(
+					`[distill-config] distillThreshold = ${cfg.distillThreshold} tokens`,
+					"info",
+				);
 				return;
 			}
 			const val = Number(arg);
@@ -65,19 +82,26 @@ export function registerDistillConfigCommand(pi: ExtensionAPI) {
 				return;
 			}
 			const updated = setContextConfig({ distillThreshold: val });
-			ctx.ui.notify(`✅ distillThreshold = ${updated.distillThreshold}`, "info");
+			ctx.ui.notify(
+				`✅ distillThreshold = ${updated.distillThreshold}`,
+				"info",
+			);
 		},
 	});
 }
 
 export function registerAgingConfigCommand(pi: ExtensionAPI) {
 	pi.registerCommand("aging-config", {
-		description: "View or set aging threshold (rounds before removal). Usage: /aging-config | /aging-config 10 | /aging-config off",
+		description:
+			"View or set aging threshold (rounds before removal). Usage: /aging-config | /aging-config 10 | /aging-config off",
 		handler: async (args, ctx) => {
 			const arg = args?.trim() ?? "";
 			const cfg = getContextConfig();
 			if (!arg) {
-				ctx.ui.notify(`[aging-config] agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）`, "info");
+				ctx.ui.notify(
+					`[aging-config] agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）`,
+					"info",
+				);
 				return;
 			}
 			if (arg === "off") {
@@ -91,19 +115,26 @@ export function registerAgingConfigCommand(pi: ExtensionAPI) {
 				return;
 			}
 			const updated = setContextConfig({ agingThreshold: val });
-			ctx.ui.notify(`✅ agingThreshold = ${updated.agingThreshold} 次请求${updated.agingThreshold === 0 ? "（禁用）" : ""}`, "info");
+			ctx.ui.notify(
+				`✅ agingThreshold = ${updated.agingThreshold} 次请求${updated.agingThreshold === 0 ? "（禁用）" : ""}`,
+				"info",
+			);
 		},
 	});
 }
 
 export function registerProcessorConfigCommand(pi: ExtensionAPI) {
 	pi.registerCommand("processor-config", {
-		description: "View or set tool-result-processor token threshold. Usage: /processor-config | /processor-config 2000",
+		description:
+			"View or set tool-result-processor token threshold. Usage: /processor-config | /processor-config 2000",
 		handler: async (args, ctx) => {
 			const arg = args?.trim() ?? "";
 			const cfg = getContextConfig();
 			if (!arg) {
-				ctx.ui.notify(`[processor-config] processorThreshold = ${cfg.processorThreshold} tokens`, "info");
+				ctx.ui.notify(
+					`[processor-config] processorThreshold = ${cfg.processorThreshold} tokens`,
+					"info",
+				);
 				return;
 			}
 			if (arg === "off" || arg === "0") {
@@ -117,7 +148,10 @@ export function registerProcessorConfigCommand(pi: ExtensionAPI) {
 				return;
 			}
 			const updated = setContextConfig({ processorThreshold: val });
-			ctx.ui.notify(`✅ processorThreshold = ${updated.processorThreshold}`, "info");
+			ctx.ui.notify(
+				`✅ processorThreshold = ${updated.processorThreshold}`,
+				"info",
+			);
 		},
 	});
 }

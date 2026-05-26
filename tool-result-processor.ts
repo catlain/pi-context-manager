@@ -5,8 +5,11 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { processToolResult, type ProcessorOptions } from "./tool-result-processor-core.js";
 import { getContextConfig } from "./shared.js";
+import {
+	type ProcessorOptions,
+	processToolResult,
+} from "./tool-result-processor-core.js";
 
 const DEFAULT_THRESHOLD = 4000;
 
@@ -25,10 +28,16 @@ export function registerToolResultProcessor(
 
 	(pi as any).on("tool_result", (event: any, ctx: any) => {
 		try {
-			const threshold = options?.distillThreshold ?? getContextConfig().processorThreshold;
+			const threshold =
+				options?.distillThreshold ?? getContextConfig().processorThreshold;
 			if (threshold <= 0) return undefined; // 0 = 禁用
 			const sessionId = ctx?.sessionManager?.getSessionId?.();
-			const result = processToolResult(event, threshold, writeFallback, sessionId);
+			const result = processToolResult(
+				event,
+				threshold,
+				writeFallback,
+				sessionId,
+			);
 
 			return result;
 		} catch {

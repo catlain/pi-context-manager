@@ -5,19 +5,19 @@
  */
 
 import { estimateTokens } from "./distill-helpers.js";
-import { formatTokens } from "./utils.js";
 import {
+	formatGhResult,
 	formatWebReadResult,
 	formatWebSearchResult,
-	formatGhResult,
 } from "./formatters.js";
 import { formatCodeGraphResult } from "./formatters-codegraph.js";
 import {
-	PROCESSOR_DIR,
 	extractBashSourcePath,
+	PROCESSOR_DIR,
 	writeRawToFile,
 } from "./raw-writer.js";
-import { hintsConfig, fillTemplate } from "./shared.js";
+import { fillTemplate, hintsConfig } from "./shared.js";
+import { formatTokens } from "./utils.js";
 
 // ── 类型 ──────────────────────────────────────────
 
@@ -64,9 +64,11 @@ export function processToolResult(
 
 	// 豁免：读 processor 自身临时文件时不再二次处理（避免套娃）
 	const inputPath = event.input?.path;
-	if (typeof inputPath === "string" && inputPath.startsWith(PROCESSOR_DIR)) return undefined;
+	if (typeof inputPath === "string" && inputPath.startsWith(PROCESSOR_DIR))
+		return undefined;
 
-	if (!Array.isArray(event.content) || event.content.length === 0) return undefined;
+	if (!Array.isArray(event.content) || event.content.length === 0)
+		return undefined;
 
 	const textParts = event.content.filter((p) => p.type === "text");
 	if (textParts.length === 0) return undefined;
@@ -77,7 +79,12 @@ export function processToolResult(
 
 	// 内容嗅探格式化：依次尝试所有格式化器，第一个有变化的生效
 	// 不再依赖工具名前缀，新增工具无需修改路由表
-	const formatters = [formatWebSearchResult, formatGhResult, formatWebReadResult, formatCodeGraphResult] as const;
+	const formatters = [
+		formatWebSearchResult,
+		formatGhResult,
+		formatWebReadResult,
+		formatCodeGraphResult,
+	] as const;
 	let formatted = rawText;
 	for (const fn of formatters) {
 		const result = fn(rawText);
@@ -92,8 +99,17 @@ export function processToolResult(
 
 	// 所有结果都写原文临时文件（AI 可按需精读）
 	// bash 如果已被 pi 截断，从 pi 的临时文件复制原文
-	const bashSourcePath = (toolName === "bash") ? extractBashSourcePath(event.details) : null;
-	const tmpPath = writeRawToFile(rawText, toolName, writeFallback, bashSourcePath, event.input, event.toolCallId, sessionId);
+	const bashSourcePath =
+		toolName === "bash" ? extractBashSourcePath(event.details) : null;
+	const tmpPath = writeRawToFile(
+		rawText,
+		toolName,
+		writeFallback,
+		bashSourcePath,
+		event.input,
+		event.toolCallId,
+		sessionId,
+	);
 
 	// 小结果：格式化文本 + 原文路径
 	if (tokens < threshold) {
@@ -135,10 +151,13 @@ function buildSummary(
 ): string {
 	const lines = formatted.split("\n");
 	const previewLines = lines.slice(0, PREVIEW_LINES);
-	const preview = previewLines.map((l, i) => `${(i + 1).toString().padStart(3)} ${l}`).join("\n");
-	const more = lines.length > PREVIEW_LINES
-		? `\n... (${lines.length - PREVIEW_LINES} more lines)`
-		: "";
+	const preview = previewLines
+		.map((l, i) => `${(i + 1).toString().padStart(3)} ${l}`)
+		.join("\n");
+	const more =
+		lines.length > PREVIEW_LINES
+			? `\n... (${lines.length - PREVIEW_LINES} more lines)`
+			: "";
 
 	return fillTemplate(hintsConfig.processorSummary, {
 		toolName,
