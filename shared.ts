@@ -2,6 +2,8 @@
 import { join, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
+import { getSettingsSection, patchSettingsSection } from "@pi-atelier/shared-utils";
+import { getEffectiveConfig as getEffective } from "@pi-atelier/shared-utils";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(process.env.HOME || "/root", ".pi/agent/distill");
@@ -67,8 +69,11 @@ const DEFAULT_CONFIG: ContextConfig = {
 	processorThreshold: 500,
 };
 
-export const getContextConfig = (): ContextConfig =>
-	getSettingsSection<ContextConfig>("context", DEFAULT_CONFIG);
+/** 获取 context 配置。传入 cwd 时支持项目级覆盖（.pi/settings.json）。 */
+export const getContextConfig = (cwd?: string): ContextConfig =>
+	cwd
+		? getEffective<ContextConfig>("context", DEFAULT_CONFIG, cwd).config
+		: getSettingsSection<ContextConfig>("context", DEFAULT_CONFIG);
 
 export const setContextConfig = (patch: Partial<ContextConfig>): ContextConfig =>
 	patchSettingsSection<ContextConfig>("context", patch, DEFAULT_CONFIG);
