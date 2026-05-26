@@ -2,8 +2,7 @@
 import { join, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { fileURLToPath } from "url";
-import { getSettingsSection, patchSettingsSection } from "@pi-atelier/shared-utils";
-import { getEffectiveConfig as getEffective } from "@pi-atelier/shared-utils";
+import { getSettingsSection, patchSettingsSection, getEffectiveConfig as getEffective } from "@pi-atelier/shared-utils";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(process.env.HOME || "/root", ".pi/agent/distill");
