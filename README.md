@@ -62,8 +62,56 @@ Settings are stored in `~/.pi/agent/settings.json` under the `context` section:
 }
 ```
 
-## Dependencies
+## Use Cases
 
+| Scenario | Feature | Benefit |
+|----------|---------|--------|
+| **Long coding sessions** | Distillation + Aging | Context stays focused on recent work |
+| **Web research** | Web search/reader processing | Clean summaries instead of raw HTML |
+| **Debugging token usage** | Payload recording + Context panel | See exactly where tokens go |
+| **MCP tool cleanup** | MCP error processing | Readable errors instead of raw traces |
+
+## Best Practices
+
+### ✅ Recommended
+- Enable distillation for long sessions — saves significant token budget
+- Use `/context` panel to monitor token usage during complex tasks
+- Record payloads (`/record on`) when debugging context issues, then turn off
+- Configure aging thresholds based on your typical session length
+
+### ❌ Not Recommended
+- Don't disable distillation for sessions > 1 hour — context will bloat
+- Don't leave payload recording on permanently — files grow large
+- Don't set aging too aggressive — you may lose important context
+
+## Limitations
+
+| Limitation | Detail |
+|------------|--------|
+| Distillation is lossy | Summaries may miss edge-case details |
+| No cross-session memory | Context resets between sessions |
+| Panel requires TUI | Context panel only works in terminal mode |
+| Recording overhead | Payload recording adds slight latency |
+
+## Architecture
+
+```
+pi-context/
+├── index.ts           # Entry: register processors + distillation + panel
+├── processors/        # Tool result formatters
+│   ├── web-search.ts  # Web search result compaction
+│   ├── web-reader.ts  # Web page content truncation
+│   ├── github.ts      # GitHub data formatting
+│   ├── bash.ts        # ANSI stripping + truncation
+│   └── mcp-error.ts   # MCP error cleanup
+├── distill.ts         # Distillation engine (replace → summarize)
+├── aging.ts           # Context aging rules
+├── panel.ts           # TUI context panel
+├── recorder.ts        # Provider payload recording
+└── package.json
+```
+
+**Dependencies**:
 - `@pi-atelier/shared-utils` (bundled) — settings management
 - `@earendil-works/pi-coding-agent` — ExtensionAPI (peer)
 - `@earendil-works/pi-tui` — context panel UI (peer)
