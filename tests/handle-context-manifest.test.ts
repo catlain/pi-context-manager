@@ -1,15 +1,19 @@
 /**
  * handleContextEvent 集成测试 — manifest 会话隔离、agingDeletedIds 持久化
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { handleContextEvent, ContextState } from "../handle-context.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type ContextState, handleContextEvent } from "../handle-context.js";
 
 // ── mocks ──
 const mockLoadManifest = vi.fn();
 const mockSaveManifest = vi.fn();
 
 vi.mock("../shared.js", () => ({
-	getContextConfig: () => ({ distillThreshold: 100, agingThreshold: 3, processorThreshold: 0 }),
+	getContextConfig: () => ({
+		distillThreshold: 100,
+		agingThreshold: 3,
+		processorThreshold: 0,
+	}),
 	distilledMap: new Map(),
 	readCachedMessages: () => [],
 	writeCachedMessages: vi.fn(),
@@ -23,38 +27,64 @@ vi.mock("../distill-helpers.js", () => ({
 	toolMeta: () => ({ meta: "" }),
 	removeOrphanedToolCalls: (msgs: any[]) => {
 		const activeIds = new Set<string>();
-		for (const m of msgs) if (m.role === "toolResult" && m.toolCallId) activeIds.add(m.toolCallId);
+		for (const m of msgs)
+			if (m.role === "toolResult" && m.toolCallId) activeIds.add(m.toolCallId);
 		for (const msg of msgs) {
 			if (msg.role === "assistant" && Array.isArray(msg.content))
-				msg.content = msg.content.filter((b: any) => b.type !== "toolCall" || activeIds.has(b.id));
+				msg.content = msg.content.filter(
+					(b: any) => b.type !== "toolCall" || activeIds.has(b.id),
+				);
 		}
 		for (let i = msgs.length - 1; i >= 0; i--) {
 			const m = msgs[i];
-			if (m.role === "assistant" && Array.isArray(m.content) && m.content.length === 0) msgs.splice(i, 1);
+			if (
+				m.role === "assistant" &&
+				Array.isArray(m.content) &&
+				m.content.length === 0
+			)
+				msgs.splice(i, 1);
 		}
 	},
 }));
 
-vi.mock("../toolcall-args-truncator.js", () => ({ truncateToolCallArgs: vi.fn() }));
+vi.mock("../toolcall-args-truncator.js", () => ({
+	truncateToolCallArgs: vi.fn(),
+}));
 
 // ── helpers ──
 function mkState(): ContextState {
 	return {
-		agingTracker: new Map(), agingSnapshot: new Map(),
-		manuallyDeletedIds: new Set(), agingDeletedIds: new Set(),
-		seenArgs: new Set(), truncatedToolCallIds: new Set(),
-		lastMessages: [], sessionId: "",
+		agingTracker: new Map(),
+		agingSnapshot: new Map(),
+		manuallyDeletedIds: new Set(),
+		agingDeletedIds: new Set(),
+		seenArgs: new Set(),
+		truncatedToolCallIds: new Set(),
+		lastMessages: [],
+		sessionId: "",
 	};
 }
-function mkPi() { return { events: { emit: vi.fn() } }; }
+function mkPi() {
+	return { events: { emit: vi.fn() } };
+}
 function mkMsg(tcId: string, text: string): any[] {
 	return [
-		{ role: "assistant", content: [{ type: "toolCall", id: tcId, name: "bash", arguments: {} }] },
-		{ role: "toolResult", toolCallId: tcId, toolName: "bash", content: [{ type: "text", text }] },
+		{
+			role: "assistant",
+			content: [{ type: "toolCall", id: tcId, name: "bash", arguments: {} }],
+		},
+		{
+			role: "toolResult",
+			toolCallId: tcId,
+			toolName: "bash",
+			content: [{ type: "text", text }],
+		},
 	];
 }
 function remaining(msgs: any[]): string[] {
-	return msgs.filter((m: any) => m.role === "toolResult").map((m: any) => m.toolCallId);
+	return msgs
+		.filter((m: any) => m.role === "toolResult")
+		.map((m: any) => m.toolCallId);
 }
 function trigger(state: ContextState, msgs: any[], pi: any, ctx?: any) {
 	handleContextEvent({ messages: msgs }, ctx ?? {}, state, pi);
@@ -99,7 +129,10 @@ describe("manifest 会话隔离", () => {
 		});
 
 		const ctx = { sessionManager: { getSessionId: () => "sess-1" } };
-		const msgs = [...mkMsg("tc-old-deleted", "old"), ...mkMsg("tc-alive", "alive")];
+		const msgs = [
+			...mkMsg("tc-old-deleted", "old"),
+			...mkMsg("tc-alive", "alive"),
+		];
 		trigger(state, msgs, pi, ctx);
 
 		expect(remaining(msgs)).toEqual(["tc-alive"]);
@@ -113,7 +146,10 @@ describe("manifest 会话隔离", () => {
 		});
 
 		const ctx = { sessionManager: { getSessionId: () => "sess-1" } };
-		const msgs = [...mkMsg("tc-manual", "manual"), ...mkMsg("tc-alive", "alive")];
+		const msgs = [
+			...mkMsg("tc-manual", "manual"),
+			...mkMsg("tc-alive", "alive"),
+		];
 		trigger(state, msgs, pi, ctx);
 
 		expect(remaining(msgs)).toEqual(["tc-alive"]);
@@ -128,7 +164,11 @@ describe("manifest 会话隔离", () => {
 		});
 
 		const ctx = { sessionManager: { getSessionId: () => "sess-1" } };
-		const msgs = [...mkMsg("tc-aged", "aged"), ...mkMsg("tc-man", "manual"), ...mkMsg("tc-alive", "alive")];
+		const msgs = [
+			...mkMsg("tc-aged", "aged"),
+			...mkMsg("tc-man", "manual"),
+			...mkMsg("tc-alive", "alive"),
+		];
 		trigger(state, msgs, pi, ctx);
 
 		expect(remaining(msgs)).toEqual(["tc-alive"]);
@@ -173,7 +213,11 @@ describe("toRemove index 排序", () => {
 		}
 
 		// 第 3 轮：tc-aging 达到阈值 3，tc-man 被 manuallyDeleted 删除，tc-alive 首次出现
-		const msgs3 = [...mkMsg("tc-aging", "hi"), ...mkMsg("tc-man", "manual"), ...mkMsg("tc-alive", "alive")];
+		const msgs3 = [
+			...mkMsg("tc-aging", "hi"),
+			...mkMsg("tc-man", "manual"),
+			...mkMsg("tc-alive", "alive"),
+		];
 		trigger(state, msgs3, pi);
 
 		expect(remaining(msgs3)).toEqual(["tc-alive"]);

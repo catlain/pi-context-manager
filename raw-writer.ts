@@ -4,7 +4,7 @@
  * 从 tool-result-processor-core.ts 提取，避免文件超 200 行。
  */
 
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DISTILL_DIR } from "./shared.js";
 
@@ -39,7 +39,9 @@ function buildFileHeader(
 	if (sessionId) lines.push(`会话: ${sessionId}`);
 	if (toolCallId) lines.push(`调用ID: ${toolCallId}`);
 	const argsStr = JSON.stringify(input);
-	lines.push(`参数: ${argsStr.length > 200 ? argsStr.slice(0, 200) + "..." : argsStr}`);
+	lines.push(
+		`参数: ${argsStr.length > 200 ? argsStr.slice(0, 200) + "..." : argsStr}`,
+	);
 	lines.push("");
 	return lines.join("\n");
 }
@@ -57,14 +59,21 @@ export function writeRawToFile(
 ): string | null {
 	const timestamp = Date.now();
 	const sidSuffix = sessionId ? sessionId.slice(-8) : "anon";
-	const tmpPath = join(PROCESSOR_DIR, `${toolName}-${sidSuffix}-${timestamp}.txt`);
+	const tmpPath = join(
+		PROCESSOR_DIR,
+		`${toolName}-${sidSuffix}-${timestamp}.txt`,
+	);
 	try {
 		mkdirSync(PROCESSOR_DIR, { recursive: true });
 		if (writeFallback) throw new Error("simulated write failure");
 		const header = buildFileHeader(toolName, input, toolCallId, sessionId);
-		const body = (sourcePath && existsSync(sourcePath))
-			? (() => { const f = require("fs"); return f.readFileSync(sourcePath, "utf-8"); })()
-			: rawText;
+		const body =
+			sourcePath && existsSync(sourcePath)
+				? (() => {
+						const f = require("fs");
+						return f.readFileSync(sourcePath, "utf-8");
+					})()
+				: rawText;
 		writeFileSync(tmpPath, header + body, "utf-8");
 		return tmpPath;
 	} catch (err) {

@@ -3,12 +3,12 @@
  *
  * 验证旧内容自动遗忘机制：首次达阈值发提示，下次移除
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	createMockPi,
 	buildMessages,
-	triggerContext,
+	createMockPi,
 	setupAgingHandler,
+	triggerContext,
 } from "./aging-helpers.js";
 
 describe("aging 两阶段（提示→移除）", () => {
@@ -90,9 +90,25 @@ describe("aging threshold 边界", () => {
 		setupAgingHandler(pi, tracker, hinted, 3, 500);
 
 		const msgs: any[] = [
-			{ role: "assistant", content: [{ type: "toolCall", id: "tc-a", name: "read", arguments: {} }, { type: "toolCall", id: "tc-b", name: "bash", arguments: {} }] },
-			{ role: "toolResult", toolCallId: "tc-a", toolName: "read", content: [{ type: "text", text: "a" }] },
-			{ role: "toolResult", toolCallId: "tc-b", toolName: "bash", content: [{ type: "text", text: "b" }] },
+			{
+				role: "assistant",
+				content: [
+					{ type: "toolCall", id: "tc-a", name: "read", arguments: {} },
+					{ type: "toolCall", id: "tc-b", name: "bash", arguments: {} },
+				],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-a",
+				toolName: "read",
+				content: [{ type: "text", text: "a" }],
+			},
+			{
+				role: "toolResult",
+				toolCallId: "tc-b",
+				toolName: "bash",
+				content: [{ type: "text", text: "b" }],
+			},
 		];
 		triggerContext(handlers, msgs);
 		expect(tracker.get("tc-a")).toBe(1);

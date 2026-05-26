@@ -5,8 +5,8 @@
  */
 
 import {
-	unwrapDoubleEncodedJson,
 	truncateAtParagraph,
+	unwrapDoubleEncodedJson,
 } from "./formatters-utils.js";
 
 // ── 配置常量 ──────────────────────────────────────
@@ -83,7 +83,7 @@ export function formatWebSearchResult(text: string): string {
 
 	// 语义验证：至少一个条目必须有 link 或 title（web_search 特征字段）
 	// 防止其他工具返回的 JSON 数组被误匹配
-	if (!results.some(r => r.link || r.title)) return text;
+	if (!results.some((r) => r.link || r.title)) return text;
 
 	const total = results.length;
 	const limited = results.slice(0, MAX_SEARCH_RESULTS);

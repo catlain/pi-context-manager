@@ -37,7 +37,9 @@ export function sniffCodeGraph(text: string): boolean {
 	// 每条特征都是 code-graph 独有的行模式，单条命中即判定
 	return (
 		// search: "fn name  file:line-range  ((params)) -> ret"
-		/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}\S+:\d+/.test(text) ||
+		/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}\S+:\d+/.test(
+			text,
+		) ||
 		// callgraph: 缩进箭头（← callers / → callees）
 		/^ {2}[←→]/m.test(text) ||
 		// impact: "Impact: xxx — Risk: LOW/MEDIUM/HIGH"
@@ -75,12 +77,16 @@ export function formatCodeGraphResult(text: string): string {
 	const isSearch =
 		lines.length >= 1 &&
 		lines.some((l) =>
-			/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(l),
+			/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(
+				l,
+			),
 		) &&
 		lines.every(
 			(l) =>
 				!l.trim() ||
-				/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(l),
+				/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(
+					l,
+				),
 		);
 	if (isSearch) {
 		lines = sortSearchLines(lines);

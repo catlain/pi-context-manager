@@ -5,7 +5,7 @@
  * 以及各种边界输入不会产生异常。
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatCodeGraphResult } from "./formatters-codegraph.js";
 
 describe("code-graph 各输出类型", () => {
@@ -20,12 +20,16 @@ describe("code-graph 各输出类型", () => {
 			"enum Status  src/enums.ts:1",
 		].join("\n");
 		const result = formatCodeGraphResult(input);
-		const kinds = result.split("\n").filter(l => l.trim()).map(l => l.split(" ")[0]);
+		const kinds = result
+			.split("\n")
+			.filter((l) => l.trim())
+			.map((l) => l.split(" ")[0]);
 		expect(kinds).toEqual(["class", "interface", "enum", "fn", "var"]);
 	});
 
 	it("search: 保持符号名和位置信息", () => {
-		const input = "fn processToolResult  extensions/context/core.ts:50-105  ((x)) -> void";
+		const input =
+			"fn processToolResult  extensions/context/core.ts:50-105  ((x)) -> void";
 		const result = formatCodeGraphResult(input);
 		expect(result).toContain("processToolResult");
 		expect(result).toContain("extensions/context/core.ts:50-105");
@@ -45,7 +49,7 @@ describe("code-graph 各输出类型", () => {
 		expect(result).toContain("← called by");
 		expect(result).toContain("→ calls");
 		expect(result).toContain("estimateTokens");
-		const lines = result.split("\n").filter(l => l.trim());
+		const lines = result.split("\n").filter((l) => l.trim());
 		expect(lines[0]).toContain("processToolResult");
 	});
 
@@ -141,8 +145,9 @@ describe("code-graph 各输出类型", () => {
 	// ── 截断 ──────────────────────────────────────
 
 	it("超长输出被截断并标注", () => {
-		const lines = Array.from({ length: 300 }, (_, i) =>
-			`fn func_${i}  src/file_${i}.ts:${i}-${i + 10}  ((x)) -> void`
+		const lines = Array.from(
+			{ length: 300 },
+			(_, i) => `fn func_${i}  src/file_${i}.ts:${i}-${i + 10}  ((x)) -> void`,
 		);
 		const input = lines.join("\n");
 		const result = formatCodeGraphResult(input);
@@ -153,7 +158,14 @@ describe("code-graph 各输出类型", () => {
 	// ── 空行压缩 ──────────────────────────────────
 
 	it("连续空行被压缩", () => {
-		const input = ["fn foo  src/a.ts:1-10", "", "", "", "", "fn bar  src/b.ts:1-10"].join("\n");
+		const input = [
+			"fn foo  src/a.ts:1-10",
+			"",
+			"",
+			"",
+			"",
+			"fn bar  src/b.ts:1-10",
+		].join("\n");
 		const result = formatCodeGraphResult(input);
 		expect(result).not.toMatch(/\n{3,}/);
 		expect(result).toContain("foo");
@@ -173,27 +185,32 @@ describe("边界情况", () => {
 	});
 
 	it("非 code-graph 的 grep 输出", () => {
-		const input = "src/file.ts:10:function foo() {\nsrc/other.ts:20:const bar = 1;";
+		const input =
+			"src/file.ts:10:function foo() {\nsrc/other.ts:20:const bar = 1;";
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 
 	it("非 code-graph 的 payload 分析输出", () => {
-		const input = "Token budget: 8000\n  System: 2000\n  Tools: 1500\n  History: 4500";
+		const input =
+			"Token budget: 8000\n  System: 2000\n  Tools: 1500\n  History: 4500";
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 
 	it("非 code-graph 的 vitest 输出", () => {
-		const input = " ✓ extensions/context/formatters.test.ts (12 tests) 15ms\n ✗ extensions/context/broken.ts (1 test) 5ms";
+		const input =
+			" ✓ extensions/context/formatters.test.ts (12 tests) 15ms\n ✗ extensions/context/broken.ts (1 test) 5ms";
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 
 	it("非 code-graph 的 git diff 输出", () => {
-		const input = "diff --git a/file.ts b/file.ts\n--- a/file.ts\n+++ b/file.ts\n@@ -1,5 +1,6 @@\n-fn old() {\n+fn new() {";
+		const input =
+			"diff --git a/file.ts b/file.ts\n--- a/file.ts\n+++ b/file.ts\n@@ -1,5 +1,6 @@\n-fn old() {\n+fn new() {";
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 
 	it("非 code-graph 的 session 分析输出", () => {
-		const input = "Session: abc-123\n  Tool calls: 15\n  Files modified: 3\n  Duration: 5m 30s";
+		const input =
+			"Session: abc-123\n  Tool calls: 15\n  Files modified: 3\n  Duration: 5m 30s";
 		expect(formatCodeGraphResult(input)).toBe(input);
 	});
 });

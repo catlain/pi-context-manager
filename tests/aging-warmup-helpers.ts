@@ -4,7 +4,11 @@
  * 模拟 index.ts 中 reload/tree 后恢复 distill/aging 状态的行为。
  * 包含 warmup → distill → aging 完整逻辑。
  */
-import { createMockPi, buildMessages, estimateTokens } from "./aging-helpers.js";
+import {
+	buildMessages,
+	type createMockPi,
+	estimateTokens,
+} from "./aging-helpers.js";
 
 export interface WarmupHandlerOptions {
 	seenArgs: Set<string>;
@@ -21,7 +25,12 @@ export function setupWarmupAgingHandler(
 	handlers: Record<string, Array<(event: any, ctx: any) => any>>,
 	opts: WarmupHandlerOptions,
 ) {
-	const { seenArgs, agingTracker, distillThreshold: dt, agingThreshold: at } = opts;
+	const {
+		seenArgs,
+		agingTracker,
+		distillThreshold: dt,
+		agingThreshold: at,
+	} = opts;
 
 	pi.on("context", (event: any) => {
 		const messages = event.messages as any[];
@@ -53,7 +62,9 @@ export function setupWarmupAgingHandler(
 			if (msg.role !== "toolResult") continue;
 			const tcId = msg.toolCallId || "";
 			if (!tcId) continue;
-			const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+			const textParts = (msg.content as any[]).filter(
+				(p: any) => p.type === "text",
+			);
 			const origText = textParts.map((p: any) => p.text).join("");
 			const origTokens = estimateTokens(origText);
 			if (origTokens < dt) continue;
@@ -80,7 +91,9 @@ export function setupWarmupAgingHandler(
 				const tcId = msg.toolCallId || "";
 				if (!tcId) continue;
 				if (distillRemovedIds.has(tcId)) continue;
-				const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+				const textParts = (msg.content as any[]).filter(
+					(p: any) => p.type === "text",
+				);
 				const origText = textParts.map((p: any) => p.text).join("");
 				const origTokens = estimateTokens(origText);
 				if (origTokens >= dt) continue;
@@ -117,7 +130,9 @@ export function buildMixedMessages(
 ): any[] {
 	const msgs: any[] = [];
 	for (let i = 0; i < largeCount; i++) {
-		msgs.push(...buildMessages("read", "x".repeat(largeSize), `${prefix}-lg-${i}`));
+		msgs.push(
+			...buildMessages("read", "x".repeat(largeSize), `${prefix}-lg-${i}`),
+		);
 	}
 	for (let i = 0; i < smallCount; i++) {
 		msgs.push(...buildMessages("read", smallText, `${prefix}-sm-${i}`));

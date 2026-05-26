@@ -7,9 +7,9 @@
  * - 完整链路：MCP 原始结果 → 后处理器格式化 → 模拟 AI 上下文
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { registerToolResultProcessor } from "./tool-result-processor.js";
+import { describe, expect, it, vi } from "vitest";
 import { formatWebReadResult, formatWebSearchResult } from "./formatters.js";
+import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 // ── mcp-lite 简化验证 ─────────────────────────────
 
@@ -22,7 +22,9 @@ describe("mcp-lite 不再做格式化", () => {
 	it("后处理器路由覆盖 mcp-lite 原格式化的所有工具类型", () => {
 		const mockPi = { on: vi.fn(), events: { emit: vi.fn() } };
 		registerToolResultProcessor(mockPi as any);
-		const handler = mockPi.on.mock.calls.find(c => c[0] === "tool_result")?.[1];
+		const handler = mockPi.on.mock.calls.find(
+			(c) => c[0] === "tool_result",
+		)?.[1];
 		expect(handler).toBeTypeOf("function");
 	});
 
@@ -32,7 +34,8 @@ describe("mcp-lite 不再做格式化", () => {
 		const fs = await import("node:fs");
 		const path = await import("node:path");
 		const mcpIndex = fs.readFileSync(
-			path.resolve(__dirname, "../../extensions/mcp-lite/index.ts"), "utf-8",
+			path.resolve(__dirname, "../../extensions/mcp-lite/index.ts"),
+			"utf-8",
 		);
 		// 不应包含 processResponse 调用（setupMcpLite 和 autoDiscoverMissingServers 两条路径）
 		expect(mcpIndex).not.toContain("processResponse");
@@ -46,7 +49,9 @@ describe("不影响其他 tool_result handler", () => {
 		const mockPi = { on: vi.fn(), events: { emit: vi.fn() } };
 		mockPi.on("tool_result", vi.fn());
 		registerToolResultProcessor(mockPi as any);
-		const toolResultCalls = mockPi.on.mock.calls.filter(c => c[0] === "tool_result");
+		const toolResultCalls = mockPi.on.mock.calls.filter(
+			(c) => c[0] === "tool_result",
+		);
 		expect(toolResultCalls.length).toBe(2);
 	});
 
@@ -63,7 +68,9 @@ describe("完整链路：MCP 原始结果 → 后处理格式化", () => {
 	function createHandler() {
 		const handlers: Array<(e: any, ctx: any) => any> = [];
 		const mockPi = {
-			on: vi.fn((_evt: string, h: any) => { handlers.push(h); }),
+			on: vi.fn((_evt: string, h: any) => {
+				handlers.push(h);
+			}),
 			events: { emit: vi.fn() },
 		};
 		registerToolResultProcessor(mockPi as any);
@@ -72,14 +79,23 @@ describe("完整链路：MCP 原始结果 → 后处理格式化", () => {
 
 	it("webReader 原始 JSON 经后处理器格式化", () => {
 		const handler = createHandler();
-		const rawText = JSON.stringify(JSON.stringify({
-			title: "集成测试", url: "https://example.com/int", content: "集成测试正文",
-		}));
+		const rawText = JSON.stringify(
+			JSON.stringify({
+				title: "集成测试",
+				url: "https://example.com/int",
+				content: "集成测试正文",
+			}),
+		);
 
-		const result = handler({
-			toolName: "web_read", content: [{ type: "text", text: rawText }],
-			input: { url: "https://example.com/int" }, isError: false,
-		}, {});
+		const result = handler(
+			{
+				toolName: "web_read",
+				content: [{ type: "text", text: rawText }],
+				input: { url: "https://example.com/int" },
+				isError: false,
+			},
+			{},
+		);
 
 		expect(result).not.toBeUndefined();
 		const text = result.content[0].text;
@@ -91,14 +107,21 @@ describe("完整链路：MCP 原始结果 → 后处理格式化", () => {
 
 	it("webSearch 原始双重编码 JSON 经后处理器格式化", () => {
 		const handler = createHandler();
-		const rawText = JSON.stringify(JSON.stringify([
-			{ title: "结果1", link: "https://a.com", content: "摘要1" },
-		]));
+		const rawText = JSON.stringify(
+			JSON.stringify([
+				{ title: "结果1", link: "https://a.com", content: "摘要1" },
+			]),
+		);
 
-		const result = handler({
-			toolName: "web_search", content: [{ type: "text", text: rawText }],
-			input: { query: "test" }, isError: false,
-		}, {});
+		const result = handler(
+			{
+				toolName: "web_search",
+				content: [{ type: "text", text: rawText }],
+				input: { query: "test" },
+				isError: false,
+			},
+			{},
+		);
 
 		expect(result).not.toBeUndefined();
 		expect(result.content[0].text).toContain("[1] 结果1");
@@ -107,12 +130,21 @@ describe("完整链路：MCP 原始结果 → 后处理格式化", () => {
 
 	it("原始 JSON（非双重编码）也能正确格式化", () => {
 		const handler = createHandler();
-		const rawText = JSON.stringify({ title: "直传", url: "https://x.com", content: "内容" });
+		const rawText = JSON.stringify({
+			title: "直传",
+			url: "https://x.com",
+			content: "内容",
+		});
 
-		const result = handler({
-			toolName: "web_read", content: [{ type: "text", text: rawText }],
-			input: { url: "https://x.com" }, isError: false,
-		}, {});
+		const result = handler(
+			{
+				toolName: "web_read",
+				content: [{ type: "text", text: rawText }],
+				input: { url: "https://x.com" },
+				isError: false,
+			},
+			{},
+		);
 
 		expect(result).not.toBeUndefined();
 		expect(result.content[0].text).toContain("标题: 直传");

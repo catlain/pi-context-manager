@@ -1,8 +1,13 @@
 /** index.ts — context 扩展入口：闭包持有运行时状态，创建 stateRef 传给子模块 */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+	registerAgingConfigCommand,
+	registerDistillConfigCommand,
+	registerProcessorConfigCommand,
+	registerRecordCommand,
+} from "./commands.js";
 import registerContextCommand from "./context.js";
-import { registerRecordCommand, registerDistillConfigCommand, registerAgingConfigCommand, registerProcessorConfigCommand } from "./commands.js";
-import { handleContextEvent, type ContextState } from "./handle-context.js";
+import { type ContextState, handleContextEvent } from "./handle-context.js";
 import { loadManifest } from "./shared.js";
 
 export default function (pi: ExtensionAPI) {
@@ -17,12 +22,24 @@ export default function (pi: ExtensionAPI) {
 	let sessionId = "";
 
 	const state: ContextState = {
-		agingTracker, agingSnapshot, manuallyDeletedIds, agingDeletedIds,
-		seenArgs, truncatedToolCallIds,
-		get lastMessages() { return lastMessages; },
-		set lastMessages(v) { lastMessages = v; },
-		get sessionId() { return sessionId; },
-		set sessionId(v) { sessionId = v; },
+		agingTracker,
+		agingSnapshot,
+		manuallyDeletedIds,
+		agingDeletedIds,
+		seenArgs,
+		truncatedToolCallIds,
+		get lastMessages() {
+			return lastMessages;
+		},
+		set lastMessages(v) {
+			lastMessages = v;
+		},
+		get sessionId() {
+			return sessionId;
+		},
+		set sessionId(v) {
+			sessionId = v;
+		},
 	};
 
 	// ── stateRef（传给 context.ts） ──
@@ -34,15 +51,25 @@ export default function (pi: ExtensionAPI) {
 			try {
 				const fs = require("fs");
 				const path = require("path");
-				const cachePath = path.join(require("os").homedir(), ".pi/agent/distill", "last-payload.json");
-				if (fs.existsSync(cachePath)) return JSON.parse(fs.readFileSync(cachePath, "utf-8"));
-			} catch { /* ignore */ }
+				const cachePath = path.join(
+					require("os").homedir(),
+					".pi/agent/distill",
+					"last-payload.json",
+				);
+				if (fs.existsSync(cachePath))
+					return JSON.parse(fs.readFileSync(cachePath, "utf-8"));
+			} catch {
+				/* ignore */
+			}
 			return null;
 		},
 		markManuallyDeleted: (tcId: string) => {
 			manuallyDeletedIds.add(tcId);
 			const { saveManifest } = require("./shared.js");
-			saveManifest(sessionId, { manuallyDeleted: manuallyDeletedIds, agingDeleted: agingDeletedIds });
+			saveManifest(sessionId, {
+				manuallyDeleted: manuallyDeletedIds,
+				agingDeleted: agingDeletedIds,
+			});
 		},
 	};
 

@@ -1,5 +1,5 @@
-import { defineConfig } from "vitest/config";
 import path from "node:path";
+import { defineConfig } from "vitest/config";
 
 const globalNodeModules =
 	"/home/lain/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules";

@@ -34,7 +34,9 @@ export function formatMcpError(text: string): string {
 
 	// 第三步：清理 HTTP 前缀，返回原始消息
 	// 匹配：（可选）数字空格 + HTTP 错误消息 + 冒号空格
-	const httpPrefixMatch = message.match(/^(?:\d+\s+)?(?:Internal Server Error|[A-Z][a-z]+ Error):\s*/);
+	const httpPrefixMatch = message.match(
+		/^(?:\d+\s+)?(?:Internal Server Error|[A-Z][a-z]+ Error):\s*/,
+	);
 	if (httpPrefixMatch) {
 		message = message.slice(httpPrefixMatch[0].length);
 	}

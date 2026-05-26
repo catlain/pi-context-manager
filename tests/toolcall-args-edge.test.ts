@@ -8,12 +8,12 @@
  * - toolCall 无 id 时跳过
  * - truncateToolCallArgs 纯函数行为
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	truncateToolCallArgs,
 	bigStr,
 	makeAssistantMsg,
 	makeMessages,
+	truncateToolCallArgs,
 } from "./toolcall-args-helpers.js";
 
 describe("truncateToolCallArgs — 边界值", () => {
@@ -27,7 +27,9 @@ describe("truncateToolCallArgs — 边界值", () => {
 		const messages = [msg];
 		const truncatedIds = new Set<string>();
 
-		expect(() => truncateToolCallArgs(messages, 1000, truncatedIds)).not.toThrow();
+		expect(() =>
+			truncateToolCallArgs(messages, 1000, truncatedIds),
+		).not.toThrow();
 	});
 
 	it("空 arguments（null）不崩溃", () => {
@@ -40,13 +42,13 @@ describe("truncateToolCallArgs — 边界值", () => {
 		const messages = [msg];
 		const truncatedIds = new Set<string>();
 
-		expect(() => truncateToolCallArgs(messages, 1000, truncatedIds)).not.toThrow();
+		expect(() =>
+			truncateToolCallArgs(messages, 1000, truncatedIds),
+		).not.toThrow();
 	});
 
 	it("空 arguments（空对象）不崩溃且不截断", () => {
-		const messages = makeMessages([
-			{ id: "tc1", name: "read", args: {} },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "read", args: {} }]);
 		const truncatedIds = new Set<string>();
 
 		const count = truncateToolCallArgs(messages, 1000, truncatedIds);
@@ -64,20 +66,26 @@ describe("truncateToolCallArgs — 边界值", () => {
 	it("messages 中没有 assistant 消息不崩溃", () => {
 		const messages = [
 			{ role: "user", content: "hello" },
-			{ role: "toolResult", toolCallId: "tc1", content: [{ type: "text", text: "ok" }] },
+			{
+				role: "toolResult",
+				toolCallId: "tc1",
+				content: [{ type: "text", text: "ok" }],
+			},
 		];
 		const truncatedIds = new Set<string>();
 
-		expect(() => truncateToolCallArgs(messages, 1000, truncatedIds)).not.toThrow();
+		expect(() =>
+			truncateToolCallArgs(messages, 1000, truncatedIds),
+		).not.toThrow();
 	});
 
 	it("assistant 消息 content 不是数组时不崩溃", () => {
-		const messages = [
-			{ role: "assistant", content: "plain text" },
-		];
+		const messages = [{ role: "assistant", content: "plain text" }];
 		const truncatedIds = new Set<string>();
 
-		expect(() => truncateToolCallArgs(messages, 1000, truncatedIds)).not.toThrow();
+		expect(() =>
+			truncateToolCallArgs(messages, 1000, truncatedIds),
+		).not.toThrow();
 	});
 
 	it("toolCall block 无 id 时跳过不崩溃", () => {
@@ -90,16 +98,16 @@ describe("truncateToolCallArgs — 边界值", () => {
 		const messages = [msg];
 		const truncatedIds = new Set<string>();
 
-		expect(() => truncateToolCallArgs(messages, 1000, truncatedIds)).not.toThrow();
+		expect(() =>
+			truncateToolCallArgs(messages, 1000, truncatedIds),
+		).not.toThrow();
 	});
 });
 
 describe("truncateToolCallArgs — 纯函数行为", () => {
 	it("传入不同 Set 实例：第二次因 arguments 已被截断（_truncated 标志）而跳过", () => {
 		const args = { path: "big.txt", content: bigStr(3000) };
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const ids1 = new Set<string>();
 		const ids2 = new Set<string>();
 
@@ -118,9 +126,7 @@ describe("truncateToolCallArgs — 纯函数行为", () => {
 
 	it("传入已有 tcId 的 Set：不再重复截断", () => {
 		const args = { path: "big.txt", content: bigStr(3000) };
-		const messages = makeMessages([
-			{ id: "tc1", name: "write", args },
-		]);
+		const messages = makeMessages([{ id: "tc1", name: "write", args }]);
 		const truncatedIds = new Set<string>();
 
 		const count1 = truncateToolCallArgs(messages, 1000, truncatedIds);

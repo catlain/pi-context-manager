@@ -4,8 +4,6 @@
  * 被 formatters.ts 和 tool-result-processor.ts 共用。
  */
 
-
-
 /**
  * 从文本中提取前导 JSON（数组或对象）。
  * 某些 MCP 工具可能返回 "JSON数组\n\nNext: ..." 格式。
@@ -14,19 +12,28 @@
  */
 export function extractJsonPrefix(text: string): string {
 	const trimmed = text.trimStart();
-	if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) return text;
+	if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) return text;
 
 	const openChar = trimmed[0];
-	const closeChar = openChar === '[' ? ']' : '}';
+	const closeChar = openChar === "[" ? "]" : "}";
 	let depth = 0;
 	let inString = false;
 	let escape = false;
 
 	for (let i = 0; i < trimmed.length; i++) {
 		const ch = trimmed[i];
-		if (escape) { escape = false; continue; }
-		if (ch === '\\' && inString) { escape = true; continue; }
-		if (ch === '"') { inString = !inString; continue; }
+		if (escape) {
+			escape = false;
+			continue;
+		}
+		if (ch === "\\" && inString) {
+			escape = true;
+			continue;
+		}
+		if (ch === '"') {
+			inString = !inString;
+			continue;
+		}
 		if (inString) continue;
 		if (ch === openChar) depth++;
 		else if (ch === closeChar) {
@@ -78,10 +85,13 @@ export function truncateAtParagraph(text: string, maxChars: number): string {
 		if (afterBoundary.length <= maxChars / 10) {
 			return text;
 		}
-		return text.slice(0, lastParagraph) + `\n\n...(内容已截断，共 ${text.length} 字符)`;
+		return (
+			text.slice(0, lastParagraph) +
+			`\n\n...(内容已截断，共 ${text.length} 字符)`
+		);
 	}
 
-	return text.slice(0, maxChars) + `\n\n...(内容已截断，共 ${text.length} 字符)`;
+	return (
+		text.slice(0, maxChars) + `\n\n...(内容已截断，共 ${text.length} 字符)`
+	);
 }
-
-

@@ -6,12 +6,14 @@
   "types": "index.ts",
   "scripts": {
     "test": "vitest run",
+    "lint": "biome check lib tests index.ts shared.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@pi-atelier/shared-utils": "file:../pi-shared-utils"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "vitest": "^3.0.0"
   },
   "pi": {

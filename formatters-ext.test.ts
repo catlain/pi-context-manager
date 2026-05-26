@@ -4,7 +4,7 @@
  * 覆盖：formatGhResult
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatGhResult } from "./formatters.js";
 
 // ── formatGhResult ─────────────────────────────────
@@ -13,8 +13,16 @@ describe("formatGhResult", () => {
 	it("gh_search_doc JSON 格式化为编号列表", () => {
 		const raw = JSON.stringify({
 			results: [
-				{ title: "Doc1", url: "https://github.com/docs/1", summary: "第一个文档" },
-				{ title: "Doc2", url: "https://github.com/docs/2", summary: "第二个文档" },
+				{
+					title: "Doc1",
+					url: "https://github.com/docs/1",
+					summary: "第一个文档",
+				},
+				{
+					title: "Doc2",
+					url: "https://github.com/docs/2",
+					summary: "第二个文档",
+				},
 			],
 		});
 		const result = formatGhResult(raw);
@@ -34,9 +42,11 @@ describe("formatGhResult", () => {
 	it("gh_repo_structure JSON 格式化为缩进树形", () => {
 		const raw = JSON.stringify({
 			tree: [
-				{ name: "src", type: "directory", children: [
-					{ name: "index.ts", type: "file" },
-				]},
+				{
+					name: "src",
+					type: "directory",
+					children: [{ name: "index.ts", type: "file" }],
+				},
 				{ name: "README.md", type: "file" },
 			],
 		});
@@ -84,21 +94,30 @@ describe("formatGhResult", () => {
 	// 回归：MCP web_reader 结果是双重编码 JSON，JSON.parse 后是字符串
 	// 旧代码 "path" in parsed 会对字符串抛 TypeError
 	it("JSON.parse 返回字符串时不抛异常", () => {
-		const raw = JSON.stringify(JSON.stringify({ url: "https://example.com", content: "HTML content" }));
+		const raw = JSON.stringify(
+			JSON.stringify({ url: "https://example.com", content: "HTML content" }),
+		);
 		// 不应抛异常
 		const result = formatGhResult(raw);
 		expect(typeof result).toBe("string");
 	});
 
 	it("web_read 格式数据（url+content）不应被 formatGhResult 匹配", () => {
-		const raw = JSON.stringify({ url: "https://example.com", content: "Page title\nSome content" });
+		const raw = JSON.stringify({
+			url: "https://example.com",
+			content: "Page title\nSome content",
+		});
 		const result = formatGhResult(raw);
 		// web_read 数据没有 path 字段，不应被 gh_read_file 分支匹配
 		expect(result).toBe(raw);
 	});
 
 	it("web_read 格式数据（title+url+content）不应被 formatGhResult 匹配", () => {
-		const raw = JSON.stringify({ title: "简短标题", url: "https://example.com", content: "简短正文" });
+		const raw = JSON.stringify({
+			title: "简短标题",
+			url: "https://example.com",
+			content: "简短正文",
+		});
 		const result = formatGhResult(raw);
 		expect(result).toBe(raw);
 	});

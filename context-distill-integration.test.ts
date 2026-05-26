@@ -6,7 +6,7 @@
  * - 第二次同参数：移除全文（"忘记"粗读）
  * - 不超阈值：不动
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 function createMockPi() {
 	const handlers: Record<string, Array<(event: any, ctx: any) => any>> = {};
@@ -16,18 +16,36 @@ function createMockPi() {
 			if (!handlers[event]) handlers[event] = [];
 			handlers[event].push(handler);
 		}),
-		events: { emit: vi.fn((event: string, data: any) => {
-			if (event === "ephemeral:hint") hints.push(data);
-		}) },
+		events: {
+			emit: vi.fn((event: string, data: any) => {
+				if (event === "ephemeral:hint") hints.push(data);
+			}),
+		},
 		registerCommand: vi.fn(),
 	};
 	return { pi, handlers, hints };
 }
 
-function buildMessages(toolName: string, content: string, tcId = "tc1", args = {}) {
+function buildMessages(
+	toolName: string,
+	content: string,
+	tcId = "tc1",
+	args = {},
+) {
 	return [
-		{ role: "assistant", content: [{ type: "toolCall", id: tcId, name: toolName, arguments: args }], toolCallId: tcId },
-		{ role: "toolResult", toolCallId: tcId, toolName, content: [{ type: "text", text: content }] },
+		{
+			role: "assistant",
+			content: [
+				{ type: "toolCall", id: tcId, name: toolName, arguments: args },
+			],
+			toolCallId: tcId,
+		},
+		{
+			role: "toolResult",
+			toolCallId: tcId,
+			toolName,
+			content: [{ type: "text", text: content }],
+		},
 	];
 }
 
@@ -54,13 +72,20 @@ describe("distill 简化：上下文可见性管理", () => {
 				if (!tcId) continue;
 				const toolName = msg.toolName || "unknown";
 				const argsSig = `${toolName}:${tcId}`;
-				const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+				const textParts = (msg.content as any[]).filter(
+					(p: any) => p.type === "text",
+				);
 				const origText = textParts.map((p: any) => p.text).join("");
 				const tokens = Math.ceil(origText.length / 4);
 				if (tokens < distillThreshold) continue;
 
 				if (seenArgs.has(argsSig)) {
-					msg.content = [{ type: "text", text: `[auto-distill] ${toolName} 结果已被蒸馏。如需查看，请重新调用该工具。` }];
+					msg.content = [
+						{
+							type: "text",
+							text: `[auto-distill] ${toolName} 结果已被蒸馏。如需查看，请重新调用该工具。`,
+						},
+					];
 					continue;
 				}
 				seenArgs.add(argsSig);
@@ -96,13 +121,20 @@ describe("distill 简化：上下文可见性管理", () => {
 				if (!tcId) continue;
 				const toolName = msg.toolName || "unknown";
 				const argsSig = `${toolName}:${tcId}`;
-				const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+				const textParts = (msg.content as any[]).filter(
+					(p: any) => p.type === "text",
+				);
 				const origText = textParts.map((p: any) => p.text).join("");
 				const tokens = Math.ceil(origText.length / 4);
 				if (tokens < distillThreshold) continue;
 
 				if (seenArgs.has(argsSig)) {
-					msg.content = [{ type: "text", text: `[auto-distill] ${toolName} 结果已被蒸馏。如需查看，请重新调用该工具。` }];
+					msg.content = [
+						{
+							type: "text",
+							text: `[auto-distill] ${toolName} 结果已被蒸馏。如需查看，请重新调用该工具。`,
+						},
+					];
 					continue;
 				}
 				seenArgs.add(argsSig);
@@ -119,9 +151,15 @@ describe("distill 简化：上下文可见性管理", () => {
 		const messages2 = buildMessages("read", bigText, "tc1");
 		triggerContext(handlers, messages2);
 		// 全文被替换
-		expect((messages2[1].content as any[]).find((p: any) => p.type === "text")?.text).toContain("[auto-distill]");
-		expect((messages2[1].content as any[]).find((p: any) => p.type === "text")?.text).not.toContain(bigText.slice(0, 100));
-		expect((messages2[1].content as any[]).find((p: any) => p.type === "text")?.text).not.toContain("/tmp/pi-distill/");  // 已迁移到 ~/.pi/agent/distill/
+		expect(
+			(messages2[1].content as any[]).find((p: any) => p.type === "text")?.text,
+		).toContain("[auto-distill]");
+		expect(
+			(messages2[1].content as any[]).find((p: any) => p.type === "text")?.text,
+		).not.toContain(bigText.slice(0, 100));
+		expect(
+			(messages2[1].content as any[]).find((p: any) => p.type === "text")?.text,
+		).not.toContain("/tmp/pi-distill/"); // 已迁移到 ~/.pi/agent/distill/
 	});
 
 	it("不超阈值不做任何操作", () => {
@@ -137,7 +175,9 @@ describe("distill 简化：上下文可见性管理", () => {
 				if (!tcId) continue;
 				const toolName = msg.toolName || "unknown";
 				const argsSig = `${toolName}:${tcId}`;
-				const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+				const textParts = (msg.content as any[]).filter(
+					(p: any) => p.type === "text",
+				);
 				const origText = textParts.map((p: any) => p.text).join("");
 				const tokens = Math.ceil(origText.length / 4);
 				if (tokens < distillThreshold) continue;

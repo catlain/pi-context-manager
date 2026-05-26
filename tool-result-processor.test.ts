@@ -4,7 +4,7 @@
  * 覆盖：注册校验、小结果路径、大结果路径
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 /** 构造最小化 MockExtensionAPI */
@@ -22,7 +22,7 @@ function createMockPi() {
 	};
 
 	function triggerToolResult(event: any): any {
-		const trHandler = handlers.find(h => h.event === "tool_result");
+		const trHandler = handlers.find((h) => h.event === "tool_result");
 		if (!trHandler) throw new Error("tool_result handler not registered");
 		return trHandler.handler(event, {});
 	}
@@ -93,7 +93,9 @@ describe("大结果（≥ 阈值）", () => {
 
 		const bigText = "A".repeat(20000);
 		const rawText = JSON.stringify({
-			title: "超长文档", url: "https://example.com/long", content: bigText,
+			title: "超长文档",
+			url: "https://example.com/long",
+			content: bigText,
 		});
 
 		const result = triggerToolResult({
@@ -117,7 +119,11 @@ describe("大结果（≥ 阈值）", () => {
 
 		// 生成足够大的数据（需要 >= 4000 tokens = 16000 chars）
 		const bigText = "B".repeat(20000);
-		const rawText = JSON.stringify({ title: "超长文档", url: "https://example.com/big", content: bigText });
+		const rawText = JSON.stringify({
+			title: "超长文档",
+			url: "https://example.com/big",
+			content: bigText,
+		});
 
 		const result = triggerToolResult({
 			toolName: "web_read",
@@ -138,7 +144,11 @@ describe("大结果（≥ 阈值）", () => {
 		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 
 		const bigText = "X".repeat(20000);
-		const rawText = JSON.stringify({ title: "大文件", url: "https://x.com", content: bigText });
+		const rawText = JSON.stringify({
+			title: "大文件",
+			url: "https://x.com",
+			content: bigText,
+		});
 
 		const result = triggerToolResult({
 			toolName: "web_read",

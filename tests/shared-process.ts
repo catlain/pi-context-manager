@@ -7,10 +7,10 @@
  * - seenArgs 永不 delete（once seen, forever seen）
  */
 import {
-	estimateTokens,
-	toolMeta,
 	buildToolCallMap,
+	estimateTokens,
 	removeOrphanedToolCalls,
+	toolMeta,
 } from "../distill-helpers.js";
 
 export interface DistillResult {
@@ -38,7 +38,9 @@ export function processContextMessages(
 
 		const toolName = msg.toolName || "unknown";
 
-		const textParts = (msg.content as any[]).filter((p: any) => p.type === "text");
+		const textParts = (msg.content as any[]).filter(
+			(p: any) => p.type === "text",
+		);
 		const origText = textParts.map((p: any) => p.text).join("");
 		const origTokens = estimateTokens(origText);
 		if (origTokens < distillThreshold) continue;
@@ -54,7 +56,9 @@ export function processContextMessages(
 		seenArgs.add(tcId);
 		const meta = toolMeta(msg, toolCallMap);
 		const label = meta.meta || toolName;
-		hints.push(`📋 [auto-distill] 「${label}」~${origTokens} tokens，全文将在下轮完全消失（不留痕迹）。`);
+		hints.push(
+			`📋 [auto-distill] 「${label}」~${origTokens} tokens，全文将在下轮完全消失（不留痕迹）。`,
+		);
 	}
 
 	// 反向删除 + 清理孤立
