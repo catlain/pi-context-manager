@@ -82,7 +82,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// ── before_provider_request：写 last-payload + recordings ──
-	pi.on("before_provider_request", async (event) => {
+	pi.on("before_provider_request", async (event, ctx) => {
 		const payload = event.payload;
 		if (!payload) return;
 
@@ -95,7 +95,8 @@ export default function (pi: ExtensionAPI) {
 
 			// recordings（按 /record on 启用）
 			if (isRecording()) {
-				const sid = sessionId || "unknown";
+				// 优先从 ctx.sessionManager 获取 sessionId（闭包变量可能在 context 事件前为空）
+				const sid = ctx?.sessionManager?.getSessionId?.() || sessionId || "unknown";
 				const sessionDir = join(RECORDINGS_DIR, sid);
 				mkdirSync(sessionDir, { recursive: true });
 				const files = readdirSync(sessionDir).filter((f: string) => f.endsWith(".json"));
