@@ -2,13 +2,15 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
 	registerAgingConfigCommand,
+	registerContextCleanCommand,
 	registerDistillConfigCommand,
 	registerProcessorConfigCommand,
 	registerRecordCommand,
 } from "./commands.js";
 import registerContextCommand from "./context.js";
 import { type ContextState, handleContextEvent } from "./handle-context.js";
-import { loadManifest } from "./shared.js";
+import { isRecording, RECORDINGS_DIR } from "./recording.js";
+import { DISTILL_DIR, loadManifest, PAYLOAD_CACHE } from "./shared.js";
 
 export default function (pi: ExtensionAPI) {
 	// ── 闭包状态 ──
@@ -79,10 +81,42 @@ export default function (pi: ExtensionAPI) {
 		return { messages: event.messages };
 	});
 
+	// ── before_provider_request：写 last-payload + recordings ──
+	pi.on("before_provider_request", async (event) => {
+		const payload = event.payload;
+		if (!payload) return;
+
+		try {
+			const { mkdirSync, writeFileSync, readdirSync } = require("fs");
+			const { join } = require("path");
+
+			mkdirSync(DISTILL_DIR, { recursive: true });
+			writeFileSync(PAYLOAD_CACHE, JSON.stringify(payload));
+
+			// recordings（按 /record on 启用）
+			if (isRecording()) {
+				const sid = sessionId || "unknown";
+				const sessionDir = join(RECORDINGS_DIR, sid);
+				mkdirSync(sessionDir, { recursive: true });
+				const files = readdirSync(sessionDir).filter((f: string) => f.endsWith(".json"));
+				const nextIdx = files.length + 1;
+				const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+				writeFileSync(
+					join(sessionDir, `req-${String(nextIdx).padStart(4, "0")}-${ts}.json`),
+					JSON.stringify(payload),
+					{ mode: 0o600 },
+				);
+			}
+		} catch {
+			/* ignore — 录制不应影响主流程 */
+		}
+	});
+
 	// ── 注册命令 ──
 	registerContextCommand(pi, stateRef);
 	registerRecordCommand(pi);
 	registerDistillConfigCommand(pi);
 	registerAgingConfigCommand(pi);
 	registerProcessorConfigCommand(pi);
+	registerContextCleanCommand(pi);
 }
