@@ -158,7 +158,14 @@ export function loadManifest(sessionId: string, opts: { manuallyDeleted: Set<str
 		for (const id of data.agingDeleted || []) opts.agingDeleted.add(id);
 		if (opts.agingTracker) {
 			opts.agingTracker.clear();
-			for (const [k, v] of data.agingCounts || []) opts.agingTracker.set(k, v);
+			// 已达到阈值的直接加入 agingDeleted，不需要等下一轮处理
+			for (const [k, v] of data.agingCounts || []) {
+				if (v >= 2) {
+					opts.agingDeleted.add(k);
+				} else {
+					opts.agingTracker.set(k, v);
+				}
+			}
 		}
 	} catch { /* ignore */ }
 }
