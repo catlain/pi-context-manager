@@ -64,22 +64,34 @@ export function registerContextCleanCommand(pi: ExtensionAPI) {
 export function registerDistillConfigCommand(pi: ExtensionAPI) {
 	pi.registerCommand("distill-config", {
 		description:
-			"View or set auto-distill token threshold. Usage: /distill-config | /distill-config 1500",
+			"View or set distill config. Usage: /distill-config | /distill-config 1500 | /distill-config --cap 20000",
 		handler: async (args, ctx) => {
 			const arg = args?.trim() ?? "";
 			if (!arg) {
 				const cfg = getContextConfig();
 				ctx.ui.notify(
-					`[distill-config] distillThreshold = ${cfg.distillThreshold} tokens`,
+					`[distill-config] distillThreshold = ${cfg.distillThreshold} tokens\nfirstSeenCap = ${cfg.firstSeenCap} tokens（0 = 不设上限）`,
 					"info",
 				);
 				return;
-			}
+				}
+			// --cap 子命令
+			const capMatch = arg.match(/^--cap\s+(\d+)$/);
+			if (capMatch) {
+				const val = Number(capMatch[1]);
+				const updated = setContextConfig({ firstSeenCap: val });
+				ctx.ui.notify(
+					`✅ firstSeenCap = ${updated.firstSeenCap}${updated.firstSeenCap === 0 ? "（不设上限）" : " tokens"}`,
+					"info",
+				);
+				return;
+				}
+			// 设置 distillThreshold
 			const val = Number(arg);
 			if (isNaN(val) || val <= 0) {
 				ctx.ui.notify(`❌ 无效值: ${arg}（需要正整数）`, "error");
 				return;
-			}
+				}
 			const updated = setContextConfig({ distillThreshold: val });
 			ctx.ui.notify(
 				`✅ distillThreshold = ${updated.distillThreshold}`,

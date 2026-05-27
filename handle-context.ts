@@ -56,7 +56,10 @@ export function handleContextEvent(
 
 	const messages = event.messages as any[];
 	const toolCallMap = buildToolCallMap(messages);
-	const { distillThreshold, agingThreshold } = getContextConfig();
+	const { distillThreshold, agingThreshold, firstSeenCap } =
+		getContextConfig();
+	// 有效 cap：不低于 distillThreshold，避免架空 distill 机制
+	const effectiveCap = Math.max(firstSeenCap, distillThreshold);
 
 	// ── warmup ──
 	if (seenArgs.size === 0) {
@@ -113,8 +116,29 @@ export function handleContextEvent(
 			toRemove.push(i);
 			removedTcIds.add(tcId);
 		} else if (origTokens >= distillThreshold && count === 1) {
-			// 大结果首次出现 → 保留全文，提示 AI 用精确方法获取信息
-			if (!seenArgs.has(tcId)) {
+			// 大结果首次出现
+			if (firstSeenCap !== 0 && origTokens > effectiveCap) {
+				// 超大结果（> cap）→ 首次也直接删除
+				toRemove.push(i);
+				removedTcIds.add(tcId);
+				if (!seenArgs.has(tcId)) {
+					seenArgs.add(tcId);
+					const meta = toolMeta(msg, toolCallMap);
+					const label = meta.meta || toolName;
+					pi.events.emit("ephemeral:hint", {
+						text: fillTemplate(hintsConfig.distillOverCapWarning, {
+							label,
+							tokens: String(origTokens),
+							cap: String(effectiveCap),
+						}),
+						short: fillTemplate(
+							hintsConfig.distillOverCapWarningShort,
+							{ label },
+						),
+					});
+				}
+			} else if (!seenArgs.has(tcId)) {
+				// 正常首次（≤ cap）→ 保留全文，提示 AI 用精确方法获取信息
 				seenArgs.add(tcId);
 				const meta = toolMeta(msg, toolCallMap);
 				const label = meta.meta || toolName;

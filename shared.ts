@@ -14,6 +14,8 @@ export const DISTILL_DIR = join(
 export interface HintsConfig {
 	distillWarning: string;
 	distillWarningShort: string;
+	distillOverCapWarning: string;
+	distillOverCapWarningShort: string;
 	processorSummary: string;
 	processorSmallResult: string;
 }
@@ -22,6 +24,9 @@ const DEFAULT_HINTS: HintsConfig = {
 	distillWarning:
 		"📋 [auto-distill] 「{label}」全文 ~{tokens} tokens，超过上下文阈值。请使用 read(offset,limit)/grep 等精确方法获取所需信息，下轮请求时此结果会被自动移除。",
 	distillWarningShort: "📋 大结果「{label}」下轮自动移除",
+	distillOverCapWarning:
+		"⚠️ [auto-distill] 「{label}」~{tokens} tokens 超过安全上限（{cap} tokens），已直接移除。请用 read(offset,limit) 分段获取所需信息。",
+	distillOverCapWarningShort: "⚠️ 超大结果「{label}」已自动移除",
 	processorSummary:
 		"[processed] {toolName} 结果（~{tokens} tokens）\n完整内容：{tmpPath}\n\n{preview}\n{more}",
 	processorSmallResult: "{formatted}\n\n原文：{tmpPath}",
@@ -77,12 +82,15 @@ export interface ContextConfig {
 	distillThreshold: number;
 	agingThreshold: number;
 	processorThreshold: number;
+	/** 首次给全文的 token 上限。超大结果首次也直接删除。默认 15000。设 0 禁用首次保留。 */
+	firstSeenCap: number;
 }
 
 const DEFAULT_CONFIG: ContextConfig = {
 	distillThreshold: 5000,
 	agingThreshold: 10,
 	processorThreshold: 500,
+	firstSeenCap: 15000,
 };
 
 export const getContextConfig = (): ContextConfig =>
