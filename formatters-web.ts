@@ -83,7 +83,9 @@ export function formatWebSearchResult(text: string): string {
 
 	// 语义验证：至少一个条目必须有 link 或 title（web_search 特征字段）
 	// 防止其他工具返回的 JSON 数组被误匹配
-	if (!results.some((r) => r.link || r.title)) return text;
+	// 注意：必须用 typeof 检查，因为 String.prototype.link 是已废弃的 HTML 方法，
+	// 会导致 { source: "git:..." } 等普通对象误判
+	if (!results.some((r) => typeof r.link === "string" || typeof r.title === "string")) return text;
 
 	const total = results.length;
 	const limited = results.slice(0, MAX_SEARCH_RESULTS);
