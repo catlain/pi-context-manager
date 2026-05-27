@@ -1,5 +1,5 @@
 {
-  "name": "pi-context",
+  "name": "pi-context-manager",
   "version": "0.1.0",
   "description": "Tool result processing, distillation, and context management for pi-coding-agent",
   "main": "index.ts",
