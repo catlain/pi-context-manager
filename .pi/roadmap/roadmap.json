@@ -17,21 +17,28 @@
           "createdDate": "2026-05-26",
           "doneDate": "2026-05-26",
           "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "验证通过：MCP registerTool 的 execute 结果走 afterToolCall → emitToolResult → context-manager handler 完整链路。问题在 formatter 嗅探规则不识别 MCP 输出格式，不在事件链。"
+          "note": "验证确认：MCP 工具输出确实走 tool_result 事件链（pi afterToolCall 统一触发）。问题在 estimateTokens 低估 + formatter 不识别 MCP JSON 格式。"
         },
         {
           "id": "E5.S1.T2",
-          "title": "实现 Godot MCP 输出 formatter（场景树压缩 + 节点属性摘要）",
-          "status": "todo",
+          "title": "修复 estimateTokens 低估问题 + 实现 Godot MCP formatter",
+          "status": "done",
           "priority": "high",
-          "createdDate": "2026-05-26"
+          "createdDate": "2026-05-26",
+          "doingDate": "2026-05-26",
+          "doneDate": "2026-05-26",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "tool-result-processor-core.ts: 加 CHAR_HARD_LIMIT=8000 字符数硬限制，charHardLimit = max(8000, threshold*2) 随阈值放大。formatters-mcp-json.ts: 新增 MCP JSON formatter，嗅探 JSON.stringify(result,null,2) 格式，智能压缩场景树和一般 JSON。formatters-codegraph.ts: 增加 AST JSON 嗅探（get_ast_node JSON 输出），保留 signature + 前 20 行源码。45+ 新测试全绿。"
         },
         {
           "id": "E5.S1.T3",
           "title": "增强 code-graph formatter：覆盖 get_ast_node 和 module_overview 大输出",
-          "status": "todo",
+          "status": "done",
           "priority": "high",
-          "createdDate": "2026-05-26"
+          "createdDate": "2026-05-26",
+          "doneDate": "2026-05-26",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "code-graph formatter 增加 AST JSON 嗅探：检测含 code_content 字段的 JSON → 保留 signature + 元数据 + 前 20 行源码。formatters-codegraph-ast.test.ts: 45 测试覆盖。"
         },
         {
           "id": "E5.S1.T4",

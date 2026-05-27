@@ -54,6 +54,7 @@ const PREVIEW_LINES = 15;
 // 导致 8K~16K 字符的内容（估算 ~2000~4000 tokens）绕过压缩
 const CHAR_HARD_LIMIT = 8000;
 
+
 // ── 核心处理 ──────────────────────────────────────
 
 export function processToolResult(
