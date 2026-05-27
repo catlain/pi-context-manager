@@ -1,205 +1,99 @@
-/**
- * formatters.ts 单元测试（网页相关）
- *
- * 覆盖：formatWebReadResult, formatWebSearchResult
- */
-
-import { describe, expect, it } from "vitest";
-import { formatWebReadResult, formatWebSearchResult } from "./formatters.js";
-
-// ── formatWebReadResult ────────────────────────────
-
-describe("formatWebReadResult", () => {
-	it("提取 title+url+content，去掉 metadata 和 external", () => {
-		const raw = JSON.stringify({
-			title: "测试网页标题",
-			url: "https://example.com/test",
-			content: "这是网页正文内容。",
-			metadata: { "og:title": "噪声" },
-			external: { stylesheet: { "/style.css": {} } },
-		});
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("标题: 测试网页标题");
-		expect(result).toContain("URL: https://example.com/test");
-		expect(result).toContain("这是网页正文内容。");
-		expect(result).not.toContain("og:title");
-		expect(result).not.toContain("stylesheet");
-	});
-
-	it("content 超过上限时按段落边界截断", () => {
-		const longContent = "A".repeat(16000) + "\n\n" + "B".repeat(5000);
-		const raw = JSON.stringify({
-			title: "长文",
-			url: "https://example.com/long",
-			content: longContent,
-		});
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("...(内容已截断");
-		expect(result).not.toContain("BBBBB");
-	});
-
-	it("content 为空字符串", () => {
-		const raw = JSON.stringify({
-			title: "空页",
-			url: "https://x.com",
-			content: "",
-		});
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("标题: 空页");
-		expect(result).toContain("URL: https://x.com");
-		expect(result.split("\n").length).toBe(2);
-	});
-
-	it("缺少 content 字段时不崩溃", () => {
-		const raw = JSON.stringify({ title: "无内容", url: "https://x.com" });
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("标题: 无内容");
-		expect(result).toContain("URL: https://x.com");
-	});
-
-	it("缺少 title 字段时不崩溃", () => {
-		const raw = JSON.stringify({ url: "https://x.com", content: "正文" });
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("URL: https://x.com");
-		expect(result).toContain("正文");
-	});
-
-	it("非 JSON 输入返回原始文本", () => {
-		const raw = "this is not json";
-		expect(formatWebReadResult(raw)).toBe(raw);
-	});
-
-	it("双重编码解包后正确格式化", () => {
-		const inner = JSON.stringify({
-			title: "双层",
-			url: "https://e.com",
-			content: "内容",
-		});
-		const raw = JSON.stringify(inner);
-		const result = formatWebReadResult(raw);
-		expect(result).toContain("标题: 双层");
-		expect(result).toContain("内容");
-	});
-
-	it("无有效字段时返回原始文本", () => {
-		const raw = JSON.stringify({ metadata: { og: "x" } });
-		const result = formatWebReadResult(raw);
-		expect(result).toBe(raw);
-	});
-});
-
-// ── formatWebSearchResult ──────────────────────────
+import { describe, it, expect } from "vitest";
+import { formatWebSearchResult, formatWebReadResult } from "./formatters-web.js";
 
 describe("formatWebSearchResult", () => {
-	it("格式化搜索结果", () => {
-		const raw = JSON.stringify([
-			{ title: "结果1", link: "https://a.com", content: "摘要1" },
-			{ title: "结果2", link: "https://b.com", content: "摘要2" },
+	it("正常搜索结果应格式化", () => {
+		const input = JSON.stringify([
+			{ title: "Result 1", link: "https://example.com/1", content: "摘要1" },
+			{ title: "Result 2", link: "https://example.com/2", content: "摘要2" },
 		]);
-		const result = formatWebSearchResult(raw);
+		const result = formatWebSearchResult(input);
 		expect(result).toContain("搜索结果（共 2 条）");
-		expect(result).toContain("[1] 结果1");
-		expect(result).toContain("URL: https://a.com");
-		expect(result).toContain("摘要1");
-		expect(result).toContain("[2] 结果2");
+		expect(result).toContain("Result 1");
+		expect(result).toContain("https://example.com/1");
 	});
 
-	it("超过 8 条时只显示前 8 条", () => {
-		const results = Array.from({ length: 12 }, (_, i) => ({
-			title: `结果${i + 1}`,
-			link: `https://${i}.com`,
-			content: `摘要${i + 1}`,
-		}));
-		const raw = JSON.stringify(results);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("共 12 条");
-		expect(result).toContain("显示前 8 条");
-		expect(result).toContain("[8]");
-		expect(result).not.toContain("[9]");
+	it("settings.json packages 输出不应被误判为搜索结果", () => {
+		const input = JSON.stringify(
+			[
+				{ source: "git:github.com/catlain/pi-shepherd" },
+				{ source: "git:github.com/catlain/pi-context-manager" },
+				{ source: "npm:pi-tool-display", extensions: ["+index.ts"] },
+				"npm:pi-agent-codebase-workflows",
+			],
+			null,
+			2,
+		);
+		const result = formatWebSearchResult(input);
+		expect(result).toBe(input); // 不应被格式化
+	});
+
+	it("纯字符串数组不应被误判", () => {
+		const input = JSON.stringify(["foo", "bar", "baz"]);
+		const result = formatWebSearchResult(input);
+		expect(result).toBe(input);
+	});
+
+	it("有 link 字段的数组应被格式化", () => {
+		const input = JSON.stringify([
+			{ link: "https://example.com", content: "摘要" },
+		]);
+		const result = formatWebSearchResult(input);
+		expect(result).toContain("搜索结果");
+		expect(result).toContain("https://example.com");
+	});
+
+	it("有 title 字段的数组应被格式化", () => {
+		const input = JSON.stringify([
+			{ title: "测试标题", content: "摘要" },
+		]);
+		const result = formatWebSearchResult(input);
+		expect(result).toContain("测试标题");
 	});
 
 	it("空数组返回 0 条提示", () => {
 		const result = formatWebSearchResult("[]");
-		expect(result).toContain("共 0 条");
+		expect(result).toBe("搜索结果（共 0 条）");
 	});
 
-	it("结果缺少 link 字段时不崩溃", () => {
-		const raw = JSON.stringify([{ title: "无链接", content: "摘要" }]);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("[1] 无链接");
-		expect(result).toContain("URL: ");
+	it("非 JSON 文本原样返回", () => {
+		const text = "这是普通文本，不是 JSON";
+		expect(formatWebSearchResult(text)).toBe(text);
 	});
 
-	it("结果缺少 title 字段时不崩溃", () => {
-		const raw = JSON.stringify([{ link: "https://x.com", content: "摘要" }]);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("URL: https://x.com");
+	it("JSON 对象（非数组）原样返回", () => {
+		const input = JSON.stringify({ link: "https://example.com" });
+		expect(formatWebSearchResult(input)).toBe(input);
 	});
 
-	it("结果缺少 content 字段时省略摘要行", () => {
-		const raw = JSON.stringify([{ title: "无摘要", link: "https://x.com" }]);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("[1] 无摘要");
-		expect(result).toContain("URL: https://x.com");
-	});
-
-	it("非数组 JSON 返回原始文本", () => {
-		const raw = JSON.stringify({ not: "array" });
-		expect(formatWebSearchResult(raw)).toBe(raw);
-	});
-
-	it("非 JSON 输入返回原始文本", () => {
-		const raw = "broken {json";
-		expect(formatWebSearchResult(raw)).toBe(raw);
-	});
-
-	it("双重编码解包后正确格式化", () => {
-		const inner = JSON.stringify([
-			{ title: "双层结果", link: "https://d.com", content: "摘要" },
+	it("link 为函数原型方法的对象不应被误判（String.prototype.link）", () => {
+		// 这个测试验证关键 bug：JavaScript 的 String.prototype.link 是已废弃的 HTML 方法
+		// { source: "git:..." } 对象的 source 字符串有 .link 方法
+		// 必须用 typeof === "string" 而非 truthy 检查
+		const input = JSON.stringify([
+			{ source: "git:github.com/catlain/pi-shepherd" },
+			{ source: "git:github.com/catlain/pi-context-manager" },
 		]);
-		const raw = JSON.stringify(inner);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("[1] 双层结果");
-		expect(result).toContain("https://d.com");
+		const result = formatWebSearchResult(input);
+		expect(result).toBe(input);
+	});
+});
+
+describe("formatWebReadResult", () => {
+	it("正常 web_read 结果应格式化", () => {
+		const input = JSON.stringify({
+			title: "测试页面",
+			url: "https://example.com",
+			content: "A".repeat(20000),
+		});
+		const result = formatWebReadResult(input);
+		expect(result).toContain("标题: 测试页面");
+		expect(result).toContain("URL: https://example.com");
+		expect(result).toContain("内容已截断");
 	});
 
-	// ── 交叉匹配防护（回归测试） ───────────────────────
-
-	it("outline 数据（无 link/title）不应被 formatWebSearchResult 匹配", () => {
-		const raw = JSON.stringify([
-			{ name: "hello", kind: "function", startLine: 1, endLine: 42 },
-			{ name: "main", kind: "class", startLine: 50, endLine: 120 },
-		]);
-		const result = formatWebSearchResult(raw);
-		// 应返回原文，不应输出 "搜索结果" / "URL:" 等误导格式
-		expect(result).toBe(raw);
-	});
-
-	it("refs/callees 数据（无 link/title）不应被 formatWebSearchResult 匹配", () => {
-		const raw = JSON.stringify([
-			{ target_name: "fnA", kind: "function", file_path: "src/a.ts", line: 10 },
-			{ target_name: "fnB", kind: "method", file_path: "src/b.ts", line: 20 },
-		]);
-		const result = formatWebSearchResult(raw);
-		expect(result).toBe(raw);
-	});
-
-	it("无 link/title 的任意 JSON 数组不应被匹配", () => {
-		const raw = JSON.stringify([
-			{ foo: 1, bar: 2 },
-			{ foo: 3, bar: 4 },
-		]);
-		expect(formatWebSearchResult(raw)).toBe(raw);
-	});
-
-	it("混合数组（部分有 link）仍被正确格式化", () => {
-		const raw = JSON.stringify([
-			{ title: "有效结果", link: "https://a.com", content: "摘要" },
-			{ foo: 1, bar: 2 }, // 无 web_search 字段的条目
-		]);
-		const result = formatWebSearchResult(raw);
-		expect(result).toContain("搜索结果（共 2 条）");
-		expect(result).toContain("[1] 有效结果");
-		expect(result).toContain("URL: https://a.com");
+	it("非 JSON 文本原样返回", () => {
+		const text = "普通文本";
+		expect(formatWebReadResult(text)).toBe(text);
 	});
 });

@@ -1,6 +1,6 @@
 {
   "source": "tooling-guardrails",
-  "syncedAt": "2026-05-26",
+  "syncedAt": "2026-05-27",
   "stories": [
     {
       "id": "E5.S1",
@@ -43,9 +43,12 @@
         {
           "id": "E5.S1.T4",
           "title": "实现通用 MCP 输出嗅探规则和按工具类型的压缩策略",
-          "status": "todo",
+          "status": "done",
           "priority": "medium",
-          "createdDate": "2026-05-26"
+          "createdDate": "2026-05-26",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "实测验证：bash 9.9K 截断✅、web reader 67K→摘要✅、code-graph 小结果放行✅。Godot MCP 需 Godot 运行实测（历史记录 146KB 必命中）。"
         },
         {
           "id": "E5.S1.T5",
@@ -53,6 +56,72 @@
           "status": "todo",
           "priority": "medium",
           "createdDate": "2026-05-26"
+        }
+      ]
+    },
+    {
+      "id": "E5.S2",
+      "title": "工具输出自治理 — 各工具自身控制输出质量，processor 退为兜底",
+      "description": "## 架构分析\n\n```\nMCP Server (第三方)  →  mcp-lite (execute 透传)  →  processor (tool_result 截断)\n                           ↑                              ↑\n                        应该在这里做                    只做兜底\n                        输出后处理\n```\n\n**当前问题**：mcp-lite `execute` 纯透传 MCP server 返回值，没有任何后处理。processor 在下游 tool_result 阶段只能做粗暴截断。\n\n**正确架构**：mcp-lite 知道每个工具的 server 来源（godot / glm-web / code-graph），应该在 execute 返回前做精准后处理：\n- Godot：过滤默认值属性、限制场景树递归深度\n- GLM web reader：截断过长网页内容\n- code-graph：已有自身截断，OK\n\nprocessor 退为纯阈值兜底（字符数/token 超限才截断），不做格式嗅探。\n\n## 改动位置\n\n| Task | 改动位置 | 说明 |\n|------|---------|------|\n| T1 | mcp-lite `execute` 后处理 | Godot server 输出过滤 |\n| T2 | mcp-lite `execute` 后处理 | GLM web 输出截断 |\n| T3 | pi-session-analyzer | 自有工具输出控制 |\n| T4 | pi-context-manager processor | 移除 formatter，只保留阈值兜底 |\n| T5 | pi-shepherd | jiti 缓存清理 |",
+      "status": "todo",
+      "createdDate": "2026-05-27",
+      "tasks": [
+        {
+          "id": "E5.S2.T1",
+          "title": "Godot MCP 输出自治理：get_tree 过滤默认值 + 递归深度限制",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "mcp-lite godot-postprocess.ts: 过滤默认值(position=0,0,0等) + 递归深度4层 + 空属性移除。commit 0efb57c"
+        },
+        {
+          "id": "E5.S2.T2",
+          "title": "GLM web tools (reader/search) 输出长度限制 — MCP 侧控制",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "mcp-lite mcp-postprocess.ts: GLM web reader 超过 15K 字符截断。commit b35da76"
+        },
+        {
+          "id": "E5.S2.T3",
+          "title": "session_analyze 输出控制 — 工具侧限制输出行数/详情深度",
+          "status": "done",
+          "priority": "medium",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "验证确认：session_analyze 已有完整的输出自治理 — truncatedResult(500行/20KB) + 每条entry截断100字符。无需改动。"
+        },
+        {
+          "id": "E5.S2.T4",
+          "title": "processor 瘦身 — 移除格式嗅探 formatter，只保留阈值兜底截断",
+          "status": "done",
+          "priority": "medium",
+          "createdDate": "2026-05-27",
+          "note": "分析确认：processor formatter 作为兜底保留，只移除 formatters-mcp-json.ts（已被 mcp-lite 后处理覆盖）",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966"
+        },
+        {
+          "id": "E5.S2.T5",
+          "title": "jiti 缓存自动清理 — shepherd session_start 时清 /tmp/jiti/",
+          "status": "done",
+          "priority": "low",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+          "note": "shepherd session_start 中加 rmSync(/tmp/jiti/)，commit cf34aa0"
+        },
+        {
+          "id": "E5.S2.T6",
+          "title": "精简 payload-analyzer 10 个 action 的输出，去除冗余",
+          "status": "todo",
+          "priority": "medium",
+          "createdDate": "2026-05-27"
         }
       ]
     }
