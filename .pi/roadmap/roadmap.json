@@ -235,19 +235,22 @@
       "id": "E5.S5",
       "title": "aging 豁免技能文件 — read 技能内容不遗忘",
       "description": "当 AI 用 read 工具读取技能文件（SKILL.md 及 references 目录下的参考文件）时，aging 不应淘汰这些 toolResult。\n\n**原因**：技能文件通常 1-5K tokens，占用小但对 AI 行为至关重要。AI 读一次技能文件后，该内容应该一直留在上下文里。\n\n**方案**：在 handle-context.ts 的 aging 循环中，通过 toolCallMap 反查 read 调用的 path 参数，如果路径匹配技能目录模式则跳过 aging。\n\n**路径模式**：\n- ~/.pi/agent/skills/{name}/**（内联技能）\n- ~/.pi/agent/npm/node_modules/{pkg}/skills/{name}/**（npm 技能）\n\n**改动**：约 10 行代码 + 测试。无需配置开关（用户明确\"读到就留\"）。",
-      "status": "todo",
+      "status": "done",
       "createdDate": "2026-05-27",
       "tasks": [
         {
           "id": "E5.S5.T1",
           "title": "实现技能文件 aging 豁免逻辑 + 完整测试覆盖",
-          "status": "doing",
+          "status": "done",
           "priority": "high",
           "createdDate": "2026-05-27",
           "doingDate": "2026-05-27",
-          "doingSessionId": "2026-05-27T02-23-17-424Z_019e673e-4fb0-72b9-b6c8-8fe3d2648f90"
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-27T02-23-17-424Z_019e673e-4fb0-72b9-b6c8-8fe3d2648f90",
+          "note": "commit 6af19d7 — isSkillFilePath() 辅助函数 + aging 循环 continue 跳过，7 个新测试全部通过，全量 472/473"
         }
-      ]
+      ],
+      "doneDate": "2026-05-27"
     }
   ]
 }
