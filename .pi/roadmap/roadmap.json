@@ -124,6 +124,57 @@
           "createdDate": "2026-05-27"
         }
       ]
+    },
+    {
+      "id": "E5.S3",
+      "title": "payload-analyzer 新增 messages action — 按消息索引精确定位",
+      "description": "AI 在调试上下文问题时，经常需要查看 payload 中特定的几条消息（最后几条、第 N 条附近、按关键词过滤），但当前只有 overview（全量输出）和 single（统计），无法精确定位。导致 AI 先 overview（被 distill 截断）→ 再 read processor 输出文件 → 绕了一大圈。\n\n新增 `messages` action，支持：\n1. `msgIndex` — 查看第 N 条消息的完整详情 + 前后文\n2. `msgRange` — 查看范围（如 \"137-145\"、\"last:5\"）\n3. `grep` — 按关键词搜索消息\n4. `toolName` — 按工具名过滤\n\nTDD 流程，测试全覆盖边缘情况。",
+      "status": "done",
+      "createdDate": "2026-05-27",
+      "tasks": [
+        {
+          "id": "E5.S3.T1",
+          "title": "编写 messages action 完整测试用例（TDD Red Phase）",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doingDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+          "note": "41 测试用例已通过（basic 25 + filter 16），测试文件拆分为 messages-basic.test.ts + messages-filter.test.ts + helpers/mock-core.ts"
+        },
+        {
+          "id": "E5.S3.T2",
+          "title": "实现 doMessages 函数（TDD Green Phase）",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+          "note": "doMessages 实现 + messages-helpers.ts 拆分，96 tests passed"
+        },
+        {
+          "id": "E5.S3.T3",
+          "title": "注册 messages action 到 index.ts 入口",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+          "note": "Union Literal + 5 Optional 参数 + case 路由 + description 更新"
+        },
+        {
+          "id": "E5.S3.T4",
+          "title": "全量测试验证 + 边缘情况覆盖",
+          "status": "done",
+          "priority": "high",
+          "createdDate": "2026-05-27",
+          "doneDate": "2026-05-27",
+          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+          "note": "96 tests passed，AGENTS.md 已创建，registerTool action 三处同步漏洞已修"
+        }
+      ],
+      "doneDate": "2026-05-27"
     }
   ]
 }

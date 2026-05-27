@@ -13,10 +13,17 @@ export function registerRecordCommand(pi: ExtensionAPI) {
 		description: "Toggle provider payload recording (on/off).",
 		handler: async (_args, ctx) => {
 			const arg = _args?.trim()?.toLowerCase() ?? "";
-			let on: boolean;
-			if (arg === "on") on = setRecording(true);
-			else if (arg === "off") on = setRecording(false);
-			else on = setRecording(!isRecording());
+		if (arg === "help" || arg === "-h") {
+			ctx.ui.notify(
+				`[record] 切换 provider payload 录制\n\n用法:\n  /record        # 切换开关\n  /record on     # 开启录制\n  /record off    # 关闭录制`,
+				"info",
+			);
+				return;
+			}
+		let on: boolean;
+		if (arg === "on") on = setRecording(true);
+		else if (arg === "off") on = setRecording(false);
+		else on = setRecording(!isRecording());
 			if (on) {
 				const cleaned = cleanRecordings();
 				const extra = cleaned > 0 ? `（已清理 ${cleaned} 个旧文件）` : "";
@@ -34,6 +41,13 @@ export function registerContextCleanCommand(pi: ExtensionAPI) {
 			"清理 context 扩展持久化数据。/context-clean [sessionId] — 指定会话ID只清理该会话；不传参清理全部。",
 		handler: async (args, ctx) => {
 			const sid = args?.trim() ?? "";
+			if (sid === "help" || sid === "-h") {
+				ctx.ui.notify(
+					`[context-clean] 清理 context 持久化数据\n\n用法:\n  /context-clean            # 清理全部会话数据\n  /context-clean <sessionId> # 只清理指定会话`,
+					"info",
+				);
+				return;
+			}
 			if (sid) {
 				const { cleaned, freedMB } = cleanContextData(sid);
 				if (cleaned > 0) {
@@ -110,7 +124,7 @@ export function registerAgingConfigCommand(pi: ExtensionAPI) {
 			const cfg = getContextConfig();
 			if (!arg) {
 				ctx.ui.notify(
-					`[aging-config] agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）`,
+					`[aging-config]\n  agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）\n\n用法:\n  /aging-config 10   # 设置 aging 轮数\n  /aging-config off  # 禁用 aging`,
 					"info",
 				);
 				return;
@@ -143,7 +157,7 @@ export function registerProcessorConfigCommand(pi: ExtensionAPI) {
 			const cfg = getContextConfig();
 			if (!arg) {
 				ctx.ui.notify(
-					`[processor-config] processorThreshold = ${cfg.processorThreshold} tokens`,
+					`[processor-config]\n  processorThreshold = ${cfg.processorThreshold} tokens\n\n用法:\n  /processor-config 2000  # 设置 processor 阈值\n  /processor-config off   # 禁用 processor`,
 					"info",
 				);
 				return;
