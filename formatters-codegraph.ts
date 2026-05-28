@@ -75,7 +75,7 @@ function sortSearchLines(lines: string[]): string[] {
 // ── AST JSON 格式化 ────────────────────────────
 
 function formatAstJson(text: string): string {
-	let obj: any;
+	let obj: Record<string, unknown>;
 	try { obj = JSON.parse(text); } catch { return text; }
 
 	const code = obj.code_content as string | undefined;
@@ -94,7 +94,7 @@ function formatAstJson(text: string): string {
 	return JSON.stringify({ ...obj, code_content: truncated }, null, 2);
 }
 
-function formatAstMetadata(obj: any): string {
+function formatAstMetadata(obj: Record<string, unknown>): string {
 	const parts: string[] = [];
 	if (obj.name) parts.push(`name: ${obj.name}`);
 	if (obj.type) parts.push(`type: ${obj.type}`);

@@ -16,8 +16,10 @@ import {
 } from "./core.js";
 import {
 	summaryLine, detailBlock, parseRange, searchableText,
+	extractFilePaths, matchesToolName,
 	DEFAULT_SUMMARY_LIMIT,
 } from "./messages-helpers.js";
+import { matchToolName as matchToolNameUtil, matchFile } from "@pi-atelier/shared-utils";
 
 // ── 接口 ──
 
@@ -27,13 +29,14 @@ export interface MessagesParams {
 	msgRange?: string;
 	grep?: string;
 	toolName?: string;
+	file?: string;
 	context?: number;
 }
 
 // ── 主函数 ──
 
 export function doMessages(params: MessagesParams): string {
-	const { payloadPath, msgIndex, msgRange, grep, toolName, context = 3 } = params;
+	const { payloadPath, msgIndex, msgRange, grep, toolName, file, context = 3 } = params;
 
 	const data = readJsonFile(payloadPath);
 	if (!data) return `❌ 文件不存在: ${payloadPath}`;
@@ -103,22 +106,24 @@ export function doMessages(params: MessagesParams): string {
 		indices = indices.filter(i => regex.test(searchableText(msgs[i])));
 	}
 
-	// toolName 过滤：只保留匹配的 tool result 消息
+	// toolName 过滤：增强匹配（精确/通配符/多值/前缀）
 	if (toolName) {
-		indices = indices.filter(i => {
-			const m = msgs[i];
-			if (m.role !== "tool") return false;
-			const info = toolIdx.get(m.tool_call_id ?? "");
-			return info?.name === toolName;
-		});
+		indices = indices.filter(i => matchesToolName(msgs[i], toolName, toolIdx));
+	}
+
+	// file 过滤：匹配工具参数中的路径
+	if (file) {
+		indices = indices.filter(i => matchFile(file, extractFilePaths(msgs[i])));
 	}
 
 	if (indices.length === 0) {
-		return `没有匹配的消息（grep=${grep ?? "-"} toolName=${toolName ?? "-"}）`;
+		const filters = [`grep=${grep ?? "-"}`, `toolName=${toolName ?? "-"}`];
+		if (file) filters.push(`file=${file}`);
+		return `没有匹配的消息（${filters.join(" ")}）`;
 	}
 
 	// ── 无参数全量模式：截断 ──
-	if (!msgRange && !grep && !toolName) {
+	if (!msgRange && !grep && !toolName && !file) {
 		const truncated = indices.length > DEFAULT_SUMMARY_LIMIT;
 		const showIndices = truncated ? indices.slice(0, DEFAULT_SUMMARY_LIMIT) : indices;
 

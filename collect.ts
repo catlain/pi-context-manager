@@ -7,33 +7,40 @@ import type {
 	DetailItem,
 	RecordItem,
 } from "./types.js";
+import type {
+	ContextUsage,
+	PayloadContentBlock,
+	PayloadMessage,
+	ProviderPayload,
+	ToolDefinition,
+} from "./types-payload.js";
 import { formatTokens } from "./utils.js";
 
 const est = (s: string) => Math.ceil(s.length / 4);
 
 /** 从 provider payload 中提取 system prompt 文本 */
-function extractSystemFromPayload(payload: any): string {
+function extractSystemFromPayload(payload: ProviderPayload | undefined): string {
 	if (!payload) return "";
 	if (payload.system != null) {
 		if (typeof payload.system === "string") return payload.system;
 		if (Array.isArray(payload.system)) {
 			return payload.system
-				.filter((b: any) => b.type === "text")
-				.map((b: any) => b.text)
+				.filter((b: PayloadContentBlock) => b.type === "text")
+				.map((b: PayloadContentBlock) => b.text ?? "")
 				.join("\n");
 		}
 	}
 	if (typeof payload.instructions === "string") return payload.instructions;
 	if (Array.isArray(payload.messages)) {
 		const sysMsg = payload.messages.find(
-			(m: any) => m.role === "system" || m.role === "developer",
+			(m: PayloadMessage) => m.role === "system" || m.role === "developer",
 		);
 		if (sysMsg?.content) {
 			if (typeof sysMsg.content === "string") return sysMsg.content;
 			if (Array.isArray(sysMsg.content)) {
 				return sysMsg.content
-					.filter((p: any) => p.type === "text")
-					.map((p: any) => p.text)
+					.filter((p: PayloadContentBlock) => p.type === "text")
+					.map((p: PayloadContentBlock) => p.text ?? "")
 					.join("\n");
 			}
 		}
@@ -42,19 +49,17 @@ function extractSystemFromPayload(payload: any): string {
 }
 
 /** 从 provider payload 中提取 tools 定义 */
-function extractToolsFromPayload(payload: any): any[] {
+function extractToolsFromPayload(payload: ProviderPayload | undefined): ToolDefinition[] {
 	if (!payload?.tools) return [];
 	return payload.tools;
 }
 
 export function collectData(
 	pi: ExtensionAPI,
-	ctx: { getContextUsage(): any; getSystemPrompt(): string },
+	ctx: { getContextUsage(): ContextUsage | undefined; getSystemPrompt(): string },
 	opts: CollectOpts,
 ): ContextData | null {
-	const usage = ctx.getContextUsage() as
-		| { tokens: number; contextWindow: number; percent: number }
-		| undefined;
+	const usage = ctx.getContextUsage();
 	if (!usage || usage.tokens == null || usage.contextWindow == null)
 		return null;
 
@@ -65,7 +70,7 @@ export function collectData(
 	const payloadTools = extractToolsFromPayload(payload);
 	const fallbackTools = pi
 		.getAllTools()
-		.filter((t: any) => pi.getActiveTools().includes(t.name));
+		.filter((t: ToolDefinition) => pi.getActiveTools().includes(t.name ?? t.function?.name ?? ""));
 	const toolsSource = payloadTools.length > 0 ? payloadTools : fallbackTools;
 
 	// System Prompt
@@ -73,7 +78,7 @@ export function collectData(
 
 	// System Tools
 	const toolChildren: DetailItem[] = toolsSource
-		.map((t: any) => {
+		.map((t: ToolDefinition) => {
 			const defText = JSON.stringify(t, null, 2);
 			const tName = t.name || t.function?.name || "unknown";
 			return {

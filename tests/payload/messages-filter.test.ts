@@ -204,12 +204,13 @@ describe("doMessages — 组合参数和边缘情况", () => {
 		hasIdx(result, 0);
 	});
 
-	it("tool result 的 tool_call_id 不匹配任何 tool_call 时不崩溃", () => {
+	it("tool result 的 tool_call_id 不匹配任何 tool_call 时返回匹配的 assistant 消息", () => {
 		mockReadJsonFile.mockReturnValue(makePayload([
 			tc("tc1", "read", '{"path":"a.ts"}'),
 			tr("tc_unknown", "orphan result"),
 		]));
 		const result = doMessages({ payloadPath: "/tmp/test.json", toolName: "read" });
-		expect(result).toContain("没有匹配");
+		// 增强匹配后，assistant 消息含 read tool_call 也被匹配
+		hasIdx(result, 0);
 	});
 });

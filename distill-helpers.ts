@@ -1,15 +1,16 @@
 import { createHash } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
+import type { PayloadMessage, PayloadContentBlock } from "./types-payload.js";
 import { formatTokens } from "./utils.js";
 
 // ── toolCall 映射 ──
 
 /** 从 assistant 消息中提取 toolCall 映射（pi 内部格式：type="toolCall", id, name, arguments） */
 export function buildToolCallMap(
-	messages: any[],
-): Map<string, { name: string; arguments: any }> {
-	const map = new Map<string, { name: string; arguments: any }>();
+	messages: PayloadMessage[],
+): Map<string, { name: string; arguments: unknown }> {
+	const map = new Map<string, { name: string; arguments: unknown }>();
 	for (const msg of messages) {
 		if (msg.role !== "assistant") continue;
 		for (const block of Array.isArray(msg.content) ? msg.content : []) {
@@ -23,8 +24,8 @@ export function buildToolCallMap(
 
 /** 提取工具元信息：优先用 ToolResultMessage 自带的 toolName，再从 toolCallMap 查参数细节 */
 export function toolMeta(
-	msg: any,
-	toolCallMap: Map<string, { name: string; arguments: any }>,
+	msg: PayloadMessage,
+	toolCallMap: Map<string, { name: string; arguments: unknown }>,
 ): { name: string; meta: string } {
 	const name = msg.toolName || "unknown";
 	const callId = msg.toolCallId || "";
@@ -68,7 +69,7 @@ export function estimateTokens(text: string): number {
 // ── toolCall/toolResult 配对清理 ──
 
 /** 清理孤立的 toolCall block（删除 toolResult 后必须调用） */
-export function removeOrphanedToolCalls(messages: any[]): void {
+export function removeOrphanedToolCalls(messages: PayloadMessage[]): void {
 	// 1. 收集所有剩余 toolResult 的 toolCallId
 	const activeToolCallIds = new Set<string>();
 	for (const msg of messages) {
@@ -79,9 +80,9 @@ export function removeOrphanedToolCalls(messages: any[]): void {
 	// 2. 从 assistant 消息中移除没有对应 toolResult 的 toolCall block
 	for (const msg of messages) {
 		if (msg.role === "assistant" && Array.isArray(msg.content)) {
-			if (!msg.content.some((b: any) => b.type === "toolCall")) continue;
+			if (!msg.content.some((b: PayloadContentBlock) => b.type === "toolCall")) continue;
 			msg.content = msg.content.filter(
-				(b: any) => b.type !== "toolCall" || activeToolCallIds.has(b.id),
+				(b: PayloadContentBlock) => b.type !== "toolCall" || activeToolCallIds.has(b.id ?? ""),
 			);
 		}
 	}
@@ -103,7 +104,7 @@ export function removeOrphanedToolCalls(messages: any[]): void {
 /** 按工具类型提取关键参数作为去重签名 */
 export function buildArgsSignature(
 	name: string,
-	args: Record<string, any> | undefined,
+	args: Record<string, unknown> | undefined,
 ): string {
 	if (!args) return "";
 	switch (name) {

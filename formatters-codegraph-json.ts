@@ -28,7 +28,7 @@ export function sniffCodeGraphJson(text: string): boolean {
 	const trimmed = text.trimStart();
 	if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return false;
 
-	let obj: any;
+	let obj: unknown;
 	try { obj = JSON.parse(text); } catch { return false; }
 
 	// semantic_code_search: [{name, file_path, ...}]
@@ -69,7 +69,7 @@ export function sniffCodeGraphJson(text: string): boolean {
 
 /** 分派 code-graph JSON 到对应格式化器 */
 export function formatCodeGraphJson(text: string): string {
-	let obj: any;
+	let obj: unknown;
 	try { obj = JSON.parse(text); } catch { return text; }
 
 	let formatted: string;

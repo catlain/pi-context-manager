@@ -22,7 +22,7 @@ export default function (pi: ExtensionAPI) {
 	const agingDeletedIds = new Set<string>();
 	const seenArgs = new Set<string>();
 	const truncatedToolCallIds = new Set<string>();
-	let lastMessages: any[] = [];
+	let lastMessages: PayloadMessage[] = [];
 	let sessionId = "";
 
 	const state: ContextState = {
@@ -78,7 +78,7 @@ export default function (pi: ExtensionAPI) {
 	};
 
 	// ── 注册事件 ──
-	pi.on("context", async (event: any, _ctx: any) => {
+	pi.on("context", async (event: { messages: PayloadMessage[] }, _ctx: unknown) => {
 		handleContextEvent(event, _ctx, state, pi);
 		return { messages: event.messages };
 	});

@@ -4,6 +4,7 @@
  * expensive 在独立文件 expensive.ts 中。
  */
 
+import type { PayloadMessage } from "../types-payload.js";
 import {
 	estTokens, fmtTok, getText,
 	readJsonFile,
@@ -38,9 +39,9 @@ export function doBudget(sessionId?: string): string {
 		const tools = data.tools ?? [];
 		const model = (data.model ?? "?").slice(0, 16);
 
-		const sysMsg = msgs.find((m: any) => m.role === "system" || m.role === "developer");
+		const sysMsg = msgs.find((m: PayloadMessage) => m.role === "system" || m.role === "developer");
 		const sysTokens = sysMsg ? estTokens(getText(sysMsg.content)) : 0;
-		const toolsTokens = tools.reduce((s: number, t: any) => s + estTokens(JSON.stringify(t)), 0);
+		const toolsTokens = tools.reduce((s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)), 0);
 
 		let histTokens = 0;
 		for (const m of msgs) {
