@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
+import type { PayloadContentBlock, PayloadMessage } from "../types-payload.js";
 import { DISTILL_DIR } from "../shared.js";
 
 export const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");
@@ -30,13 +31,13 @@ export function fmtSize(bytes: number): string {
 
 // ── 文本提取 ──
 
-export function getText(content: any): string {
+export function getText(content: string | PayloadContentBlock[] | null | undefined): string {
 	if (content == null) return "";
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
 		return content
-			.filter((p: any) => typeof p === "object" && p.type === "text")
-			.map((p: any) => p.text ?? "")
+			.filter((p): p is PayloadContentBlock & { type: "text" } => typeof p === "object" && p.type === "text")
+			.map((p) => p.text ?? "")
 			.join("\n");
 	}
 	return String(content);
@@ -46,11 +47,11 @@ export function getText(content: any): string {
 
 export interface ToolCallInfo { name: string; argsStr: string }
 
-export function buildProviderToolCallIndex(messages: any[]): Map<string, ToolCallInfo> {
+export function buildProviderToolCallIndex(messages: PayloadMessage[]): Map<string, ToolCallInfo> {
 	const idx = new Map<string, ToolCallInfo>();
 	for (const m of messages) {
 		if (m.role !== "assistant") continue;
-		for (const tc of m.tool_calls ?? []) {
+		for (const tc of (m as Record<string, unknown>).tool_calls as Array<{ id?: string; function?: { name?: string; arguments?: string } }> ?? []) {
 			idx.set(tc.id ?? "", {
 				name: tc.function?.name ?? "unknown",
 				argsStr: tc.function?.arguments ?? "",
@@ -60,18 +61,19 @@ export function buildProviderToolCallIndex(messages: any[]): Map<string, ToolCal
 	return idx;
 }
 
-export function buildPiToolCallIndex(messages: any[]): Map<string, ToolCallInfo> {
+export function buildPiToolCallIndex(messages: PayloadMessage[]): Map<string, ToolCallInfo> {
 	const idx = new Map<string, ToolCallInfo>();
 	for (const m of messages) {
 		if (m.role !== "assistant") continue;
 		const content = Array.isArray(m.content) ? m.content : [];
 		for (const block of content) {
-			if (block.type === "toolCall") {
-				idx.set(block.id ?? "", {
-					name: block.name ?? "unknown",
-					argsStr: typeof block.arguments === "string"
-						? block.arguments
-						: JSON.stringify(block.arguments ?? {}),
+			if (typeof block === "object" && block.type === "toolCall") {
+				const b = block as PayloadContentBlock;
+				idx.set(b.id ?? "", {
+					name: b.name ?? "unknown",
+					argsStr: typeof b.arguments === "string"
+						? b.arguments
+						: JSON.stringify(b.arguments ?? {}),
 				});
 			}
 		}
@@ -122,7 +124,7 @@ export function parseDistillHeader(text: string): DistillHeader | null {
 
 // ── 参数解析 ──
 
-export function parseArgs(argsStr: string): Record<string, any> {
+export function parseArgs(argsStr: string): Record<string, unknown> {
 	try { return JSON.parse(argsStr); }
 	catch { return {}; }
 }
@@ -133,7 +135,7 @@ export function extractReadPath(argsStr: string): string {
 
 // ── 文件 I/O ──
 
-export function readJsonFile<T = any>(filepath: string): T | null {
+export function readJsonFile<T = Record<string, unknown>>(filepath: string): T | null {
 	if (!existsSync(filepath)) return null;
 	try { return JSON.parse(readFileSync(filepath, "utf-8")); }
 	catch { return null; }

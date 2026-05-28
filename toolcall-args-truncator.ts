@@ -4,6 +4,8 @@
  * 在 context handler 中截断 assistant 消息里过大的 toolCall.arguments，
  * 写临时文件并替换为摘要对象。
  */
+
+import type { PayloadMessage } from "./types-payload.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "path";
 import { estimateTokens } from "./distill-helpers.js";
@@ -64,7 +66,7 @@ function writeArgsTmpFile(
  *  @returns 实际截断的数量
  */
 export function truncateToolCallArgs(
-	messages: any[],
+	messages: PayloadMessage[],
 	threshold: number,
 	truncatedIds: Set<string>,
 ): number {

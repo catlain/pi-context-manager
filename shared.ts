@@ -3,6 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import type { PayloadMessage } from "./collect-payload-types";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(
@@ -111,7 +112,7 @@ function safeReadFileSync(p: string) {
 }
 
 /** 读取最后一次 context messages（文件缓存） */
-export function readCachedMessages(): any[] {
+export function readCachedMessages(): PayloadMessage[] {
 	try {
 		if (existsSync(MSG_CACHE)) {
 			const data = JSON.parse(safeReadFileSync(MSG_CACHE));
@@ -124,7 +125,7 @@ export function readCachedMessages(): any[] {
 }
 
 /** 写入 context messages 到文件缓存 */
-export function writeCachedMessages(msgs: any[]) {
+export function writeCachedMessages(msgs: PayloadMessage[]) {
 	try {
 		mkdirSync(DISTILL_DIR, { recursive: true });
 		writeFileSync(MSG_CACHE, JSON.stringify(msgs));
@@ -134,7 +135,7 @@ export function writeCachedMessages(msgs: any[]) {
 }
 
 /** 读取最后一次 provider payload（文件缓存） */
-export function readCachedPayload(): any {
+export function readCachedPayload(): Record<string, unknown> | null {
 	try {
 		if (existsSync(PAYLOAD_CACHE))
 			return JSON.parse(safeReadFileSync(PAYLOAD_CACHE));

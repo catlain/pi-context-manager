@@ -7,6 +7,7 @@ import {
 	buildProviderToolCallIndex, classifyStatus,
 	parseDistillHeader, parseArgs, readJsonFile,
 } from "./core.js";
+import type { PayloadMessage, ToolDefinition } from "../types-payload.js";
 import { formatToolStats } from "./format.js";
 
 export function doOverview(payloadPath: string, verbose = false): string {
@@ -24,7 +25,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 	];
 
 	// Tools
-	const toolTotalTok = tools.reduce((s: number, t: any) => s + estTokens(JSON.stringify(t)), 0);
+	const toolTotalTok = tools.reduce((s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)), 0);
 	lines.push(`\n📦 Tools: ${tools.length} 个, ~${fmtTok(toolTotalTok)} tokens`);
 	if (verbose) {
 		for (const t of tools) {
@@ -35,7 +36,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 	}
 
 	// System prompt
-	const sysMsg = msgs.find((m: any) => m.role === "system" || m.role === "developer");
+	const sysMsg = msgs.find((m: PayloadMessage) => m.role === "system" || m.role === "developer");
 	if (sysMsg) {
 		const sysText = getText(sysMsg.content);
 		lines.push(`\n📝 System Prompt: ~${fmtTok(estTokens(sysText))} tokens, ${fmtSize(sysText.length)}`);
@@ -57,7 +58,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 		const firstLine = text.split("\n")[0]?.slice(0, 60) ?? "";
 
 		if (role === "assistant") {
-			const calls: Array<{ name: string; args: any }> = [];
+			const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
 			for (const tc of m.tool_calls ?? []) {
 				const name = tc.function?.name ?? "unknown";
 				const args = parseArgs(tc.function?.arguments ?? "{}");

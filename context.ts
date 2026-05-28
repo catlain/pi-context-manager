@@ -105,7 +105,7 @@ export default function registerContextCommand(
 							return lines;
 						},
 						invalidate: () => container.invalidate(),
-						handleInput: (kd: any) => {
+						handleInput: (kd: unknown) => {
 							const up = kb.matches(kd, "tui.select.up");
 							const dn = kb.matches(kd, "tui.select.down");
 							const ok = kb.matches(kd, "tui.select.confirm");

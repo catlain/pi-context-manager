@@ -33,31 +33,4 @@ export function formatBashResult(text: string): string {
 	return text;
 }
 
-/**
- * MCP 错误格式化。
- * 提取错误码和错误消息，提供友好提示。
- */
-export function formatMcpError(text: string): string {
-	// MCP 错误格式："MCP error -500: 500 Internal Server Error: \"{...}\""
-	const mcpErrorMatch = text.match(/^MCP error\s+(-?\d+):\s+(.+)$/s);
-	if (!mcpErrorMatch) return text;
-
-	const code = mcpErrorMatch[1];
-	const message = mcpErrorMatch[2];
-
-	// 尝试提取 JSON 错误详情
-	let errorDetail = "";
-	const jsonMatch = message.match(/"\{(.+)\}"$/s);
-	if (jsonMatch) {
-		try {
-			const errorJson = JSON.parse(`{${jsonMatch[1]}}`);
-			if (errorJson.error?.message) {
-				errorDetail = errorJson.error.message;
-			}
-		} catch {
-			// JSON 解析失败，使用原始消息
-		}
-	}
-
-	return `❌ 错误：${errorDetail || message} (错误码: ${code})`;
-}
+// formatMcpError 已迁移到 formatters-errors.ts（更完善的实现）

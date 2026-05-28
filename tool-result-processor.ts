@@ -4,7 +4,7 @@
  * 注册 tool_result handler，委托核心逻辑到 tool-result-processor-core。
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ToolResultEvent, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { getContextConfig } from "./shared.js";
 import {
 	type ProcessorOptions,
@@ -26,7 +26,7 @@ export function registerToolResultProcessor(
 	// 每次调用时从 settings 读阈值（支持 /processor-config 热更新）
 	const writeFallback = options?.writeFallback ?? false;
 
-	(pi as any).on("tool_result", (event: any, ctx: any) => {
+	pi.on("tool_result", (event: ToolResultEvent, ctx: ExtensionContext) => {
 		try {
 			const threshold =
 				options?.distillThreshold ?? getContextConfig().processorThreshold;

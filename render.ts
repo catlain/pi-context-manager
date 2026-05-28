@@ -1,4 +1,4 @@
-import { DynamicBorder } from "@earendil-works/pi-coding-agent";
+import { DynamicBorder, type Theme, type ThemeColor } from "@earendil-works/pi-coding-agent";
 import { type Container, Spacer, Text } from "@earendil-works/pi-tui";
 import type {
 	CategoryItem,
@@ -8,13 +8,13 @@ import type {
 } from "./types.js";
 import { formatTokens } from "./utils.js";
 
-const bdr = (c: Container, t: any) =>
+const bdr = (c: Container, t: Theme) =>
 	c.addChild(new DynamicBorder((s: string) => t.fg("accent", s)));
-const ln = (c: Container, t: any, s: string) => c.addChild(new Text(s, 1, 0));
+const ln = (c: Container, t: Theme, s: string) => c.addChild(new Text(s, 1, 0));
 const sp = (c: Container) => c.addChild(new Spacer(1));
 const pct = (v: number, lim: number) => `${((v / lim) * 100).toFixed(1)}%`;
 
-function makeBar(pct: number, w: number, t: any): string {
+function makeBar(pct: number, w: number, t: Theme): string {
 	const f = Math.round((pct / 100) * w);
 	return (
 		t.fg("accent", "█".repeat(Math.max(0, f))) +
@@ -26,7 +26,7 @@ function makeBar(pct: number, w: number, t: any): string {
 export function renderOverview(
 	c: Container,
 	d: ContextData,
-	t: any,
+	t: Theme,
 	sel: number,
 ) {
 	c.clear();
@@ -58,7 +58,7 @@ export function renderOverview(
 		ln(
 			c,
 			t,
-			`${ptr}${t.fg(cat.color as any, "■")} ${t.fg("text", cat.label.padEnd(14))} ${t.fg("accent", formatTokens(cat.value).padStart(7))} ${t.fg("dim", `(${pct(cat.value, d.limit)})`)} ${icon}`,
+			`${ptr}${t.fg(cat.color as ThemeColor, "■")} ${t.fg("text", cat.label.padEnd(14))} ${t.fg("accent", formatTokens(cat.value).padStart(7))} ${t.fg("dim", `(${pct(cat.value, d.limit)})`)} ${icon}`,
 		);
 	}
 	sp(c);
@@ -70,7 +70,7 @@ export function renderOverview(
 export function renderCategory(
 	c: Container,
 	d: ContextData,
-	t: any,
+	t: Theme,
 	cat: CategoryItem,
 	sel: number,
 ) {
@@ -111,7 +111,7 @@ export function renderCategory(
 export function renderRecords(
 	c: Container,
 	d: ContextData,
-	t: any,
+	t: Theme,
 	breadcrumb: string,
 	records: RecordItem[],
 	sel: number,
@@ -177,15 +177,15 @@ export function renderRecords(
 	bdr(c, t);
 }
 
-export function getViewport(tui: any): number {
+export function getViewport(tui: unknown): number {
 	const termHeight =
-		(tui as any)?.terminal?.rows || parseInt(process.env.LINES || "40");
+		(tui as { terminal?: { rows?: number } })?.terminal?.rows || parseInt(process.env.LINES || "40");
 	return Math.max(10, Math.floor(termHeight * 0.8));
 }
 
 export function renderContent(
 	c: Container,
-	t: any,
+	t: Theme,
 	breadcrumb: string,
 	record: RecordItem,
 	scroll: number,

@@ -20,12 +20,48 @@ const SCENE_TREE_MAX_DEPTH = 2;
 const PREVIEW_HEAD = 30;
 const PREVIEW_TAIL = 10;
 
+// ── Godot MCP JSON 类型定义 ──────────────────────
+
+interface GodotSceneNode {
+	name?: string;
+	type?: string;
+	path?: string;
+	children?: GodotSceneNode[];
+	[key: string]: unknown;
+}
+
+interface GodotMcpResponse {
+	status: "success" | "error";
+	data: GodotSceneNode & {
+		root?: GodotSceneNode;
+		children?: GodotSceneNode[];
+		properties?: Record<string, unknown>;
+	};
+}
+
+interface PrunedNode {
+	name: string;
+	type: string;
+	path?: string;
+	children?: PrunedNode[] | string;
+}
+
+interface TreeStats {
+	nodes: number;
+	maxDepth: number;
+	types: Record<string, number>;
+}
+
+interface NodeCountStats {
+	nodes: number;
+}
+
 // ── 嗅探：检测 MCP 工具的 JSON 输出 ──────────────
 
 export function sniffMcpJson(text: string): boolean {
 	if (!text.startsWith("{")) return false;
 	try {
-		const obj = JSON.parse(text);
+		const obj = JSON.parse(text) as GodotMcpResponse;
 		// Godot MCP 输出特征：status + data，data 含场景树或节点属性
 		if (obj.status !== "success" && obj.status !== "error") return false;
 		if (typeof obj.data !== "object" || !obj.data) return false;
@@ -49,9 +85,9 @@ export function formatMcpJsonResult(text: string): string {
 	if (!text) return text;
 	if (!sniffMcpJson(text)) return text;
 
-	let obj: any;
+	let obj: GodotMcpResponse;
 	try {
-		obj = JSON.parse(text);
+		obj = JSON.parse(text) as GodotMcpResponse;
 	} catch {
 		return text;
 	}
@@ -75,9 +111,9 @@ export function formatMcpJsonResult(text: string): string {
 
 // ── 场景树压缩 ───────────────────────────────────
 
-function formatSceneTree(obj: any): string {
+function formatSceneTree(obj: GodotMcpResponse): string {
 	const root = obj.data.root || obj.data;
-	const stats = { nodes: 0, maxDepth: 0, types: {} as Record<string, number> };
+	const stats: TreeStats = { nodes: 0, maxDepth: 0, types: {} };
 	const pruned = pruneTree(root, 0, stats);
 
 	const summary = [
@@ -98,25 +134,25 @@ function formatSceneTree(obj: any): string {
 
 /** 递归剪裁场景树：只保留前 SCENE_TREE_MAX_DEPTH 层，统计深层节点 */
 function pruneTree(
-	node: any,
+	node: GodotSceneNode,
 	depth: number,
-	stats: { nodes: number; maxDepth: number; types: Record<string, number> },
-): any {
+	stats: TreeStats,
+): PrunedNode {
 	stats.nodes++;
 	if (depth > stats.maxDepth) stats.maxDepth = depth;
 	const t = node.type || "Unknown";
 	stats.types[t] = (stats.types[t] || 0) + 1;
 
-	const result: any = { name: node.name || "?", type: t };
+	const result: PrunedNode = { name: node.name || "?", type: t };
 	if (node.path) result.path = node.path;
 
 	if (Array.isArray(node.children) && node.children.length > 0) {
 		if (depth < SCENE_TREE_MAX_DEPTH) {
-			result.children = node.children.map((c: any) =>
+			result.children = node.children.map((c) =>
 				pruneTree(c, depth + 1, stats),
 			);
 		} else {
-			const childStats = { nodes: 0 };
+			const childStats: NodeCountStats = { nodes: 0 };
 			countNodes(node, childStats);
 			result.children = `... (${childStats.nodes} nodes hidden)`;
 		}
@@ -126,7 +162,7 @@ function pruneTree(
 }
 
 /** 递归统计子节点数 */
-function countNodes(node: any, stats: { nodes: number }): void {
+function countNodes(node: GodotSceneNode, stats: NodeCountStats): void {
 	stats.nodes++;
 	if (Array.isArray(node.children)) {
 		for (const c of node.children) countNodes(c, stats);
@@ -135,12 +171,12 @@ function countNodes(node: any, stats: { nodes: number }): void {
 
 // ── 节点属性压缩 ─────────────────────────────────
 
-function formatNodeProperties(obj: any): string {
+function formatNodeProperties(obj: GodotMcpResponse): string {
 	const data = obj.data;
-	const props = data.properties || {};
+	const props = (data.properties || {}) as Record<string, unknown>;
 
 	// 分离非默认属性和默认属性
-	const nonDefault: Record<string, any> = {};
+	const nonDefault: Record<string, unknown> = {};
 	const defaultKeys: string[] = [];
 
 	for (const [key, value] of Object.entries(props)) {

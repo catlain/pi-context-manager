@@ -90,7 +90,10 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 				Type.String({ description: "messages action: 按关键词/正则过滤消息文本" }),
 			),
 			toolName: Type.Optional(
-				Type.String({ description: "messages action: 按工具名过滤 tool result" }),
+				Type.String({ description: "messages action: 按工具名过滤（支持通配符 *、多值 | 分隔）" }),
+			),
+			file: Type.Optional(
+				Type.String({ description: "messages action: 按文件路径过滤工具参数（支持通配符 *、多值 | 分隔）" }),
 			),
 			context: Type.Optional(
 				Type.Number({ description: "messages action: msgIndex 模式的上下文条数（默认 3）" }),
@@ -99,11 +102,11 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 
 		async execute(
 			_id: string,
-			params: any,
-			_signal: any,
-			_onUpdate: any,
-			_ctx: any,
-		): Promise<any> {
+			params: Record<string, unknown>,
+			_signal: unknown,
+			_onUpdate: unknown,
+			_ctx: unknown,
+		): Promise<{ content: Array<{ type: string; text: string }>; details: Record<string, unknown> }> {
 			try {
 				const sid = params.sessionId || undefined;
 				switch (params.action) {

@@ -42,9 +42,9 @@ export interface ContextData {
 /** collectData 需要的外部数据（纯函数参数） */
 export interface CollectOpts {
 	/** 最后一次发给 LLM 的 messages（aging/distill 后） */
-	messages: any[];
+	messages: PayloadMessage[];
 	/** 最后一次 provider payload */
-	payload: any;
+	payload: ProviderPayload | null;
 	/** aging 计数快照（tcId → count） */
 	agingSnapshot: Map<string, number>;
 	/** 用户手动删除的 tcId 集合 */
@@ -58,9 +58,9 @@ export interface ContextStateRef {
 	/** 用户手动删除的 tcId 集合 */
 	readonly manuallyDeletedIds: Set<string>;
 	/** 获取最后一次发给 LLM 的 messages */
-	getLastContextMessages(): any[];
+	getLastContextMessages(): PayloadMessage[];
 	/** 获取最后一次 provider payload（从文件缓存读取） */
-	getLastProviderPayload(): any;
+	getLastProviderPayload(): ProviderPayload | null;
 	/** 标记工具结果为手动删除 */
 	markManuallyDeleted(tcId: string): void;
 }

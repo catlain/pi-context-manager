@@ -25,15 +25,15 @@ export interface ContextState {
 	agingDeletedIds: Set<string>;
 	seenArgs: Set<string>;
 	truncatedToolCallIds: Set<string>;
-	lastMessages: any[];
+	lastMessages: PayloadMessage[];
 	sessionId: string;
 }
 
 export function handleContextEvent(
-	event: { messages: any[] },
-	_ctx: any,
+	event: { messages: PayloadMessage[] },
+	_ctx: unknown,
 	state: ContextState,
-	pi: any,
+	pi: ExtensionAPI,
 ) {
 	const {
 		agingTracker,
@@ -97,10 +97,9 @@ export function handleContextEvent(
 		}
 
 		const toolName = msg.toolName || "unknown";
-		const textParts = (msg.content as any[]).filter(
-			(p: any) => p.type === "text",
-		);
-		const origText = textParts.map((p: any) => p.text).join("");
+		const textParts = (Array.isArray(msg.content) ? msg.content : [])
+			.filter((p: PayloadContentBlock) => p.type === "text");
+		const origText = textParts.map((p: PayloadContentBlock) => p.text ?? "").join("");
 		const origTokens = estimateTokens(origText);
 
 		// 计算该 tcId 的实际阈值
