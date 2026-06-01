@@ -44,7 +44,7 @@ vi.mock("../toolcall-args-truncator.js", () => ({
 }));
 
 // ── Helpers ──
-const AGENT_DIR = "/home/lain/.pi/agent";
+const AGENT_DIR = process.env.PI_AGENT_DIR || require("path").join(process.env.HOME || "/root", ".pi", "agent");
 
 const mkState = (): ContextState => ({
 	agingTracker: new Map(), agingSnapshot: new Map(),

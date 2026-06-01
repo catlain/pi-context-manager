@@ -1,5 +1,1 @@
-{
-	"mcp": {
-		"enabled": ["code-graph-pi-context-mgr"]
-	}
-}
+{"mcp":{"enabled":["code-graph"]}}

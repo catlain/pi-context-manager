@@ -66,17 +66,17 @@ describe("buildArgsSignature", () => {
 describe("buildTmpPath", () => {
 	it("有签名时生成带 hash 的路径", () => {
 		const result = buildTmpPath("read", "foo.ts");
-		expect(result).toMatch(/\/pi-distill\/read-[a-f0-9]{8}\.txt$/);
+		expect(result).toMatch(/[\\/]pi-distill[\\/]read-[a-f0-9]{8}\.txt$/);
 	});
 
 	it("无签名时用 no-sig", () => {
 		const result = buildTmpPath("bash", "");
-		expect(result).toMatch(/\/pi-distill\/bash-no-sig\.txt$/);
+		expect(result).toMatch(/[\\/]pi-distill[\\/]bash-no-sig\.txt$/);
 	});
 
 	it("自定义 distillDir", () => {
 		const result = buildTmpPath("read", "foo.ts", "/custom/dir");
-		expect(result).toMatch(/^\/custom\/dir\/read-[a-f0-9]{8}\.txt$/);
+		expect(result).toMatch(/^[\\/]custom[\\/]dir[\\/]read-[a-f0-9]{8}\.txt$/);
 	});
 });
 

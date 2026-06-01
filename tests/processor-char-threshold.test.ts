@@ -37,8 +37,8 @@ function createMockPi() {
 describe("字符数硬限制", () => {
 	it("8K+ 字符的非格式化内容进入大结果处理", () => {
 		const { pi, triggerToolResult } = createMockPi();
-		// 使用默认阈值 4000 → charHardLimit = max(8000, 4000*2) = 8000
-		registerToolResultProcessor(pi as any, {});
+		// 显式传阈值 4000 → charHardLimit = max(8000, 4000*2) = 8000
+		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 
 		// 9000 字符 → estimateTokens = 2250 < 4000 阈值
 		// 但字符数超过 8000 硬限制，应进入大结果
@@ -59,7 +59,7 @@ describe("字符数硬限制", () => {
 
 	it("6K 字符内容不触发字符数硬限制（token 阈值也够低）", () => {
 		const { pi, triggerToolResult } = createMockPi();
-		registerToolResultProcessor(pi as any, {});
+		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 
 		// 6000 字符 → 1500 tokens < 4000，且 < 8000 字符限制
 		const rawText = "Y".repeat(6000);
@@ -78,7 +78,7 @@ describe("字符数硬限制", () => {
 
 	it("Godot MCP 风格 JSON（11K 字符）进入大结果处理", () => {
 		const { pi, triggerToolResult } = createMockPi();
-		registerToolResultProcessor(pi as any, {});
+		registerToolResultProcessor(pi as any, { distillThreshold: 4000 });
 
 		// 模拟 Godot game_query get_tree 返回的场景树 JSON
 		const godotTree = {

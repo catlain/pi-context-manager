@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pi-atelier/shared-utils": "github:catlain/pi-shared-utils",
+    "@pi-atelier/shared-utils": "^1.0.0",
     "@sinclair/typebox": "^0.34.49"
   },
   "devDependencies": {
@@ -45,5 +45,17 @@
     "tsconfig.json",
     "vitest.config.ts",
     "package.json"
-  ]
+  ],
+  "bundleDependencies": [
+    "@pi-atelier/shared-utils"
+  ],
+  "homepage": "https://catlain.github.io/pi-atelier/",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:catlain/pi-context-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/catlain/pi-context-manager/issues"
+  },
+  "license": "MIT"
 }

@@ -5,8 +5,14 @@
  * Mock fs 函数，模拟 RECORDINGS_DIR 下的目录和文件结构。
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { join } from "path";
 
 const mockDir = vi.hoisted(() => "/fake/recordings");
+
+/** 跨平台路径匹配：将 Unix 风格路径转为当前平台格式 */
+function pj(...segments: string[]): string {
+	return join(...segments);
+}
 
 // ── Mock fs ──────────────────────────────────────
 
@@ -58,7 +64,7 @@ describe("listSessions", () => {
 			if (p === mockDir) {
 				return ["session-abc"];
 			}
-			if (p === "/fake/recordings/session-abc") {
+			if (p === pj("/fake", "recordings", "session-abc")) {
 				return ["other.json"]; // 没有 req-* 文件
 			}
 			return [];
@@ -77,20 +83,20 @@ describe("listSessions", () => {
 			if (p === mockDir) {
 				return ["session-a", "session-b"];
 			}
-			if (p === "/fake/recordings/session-a") {
+			if (p === pj("/fake", "recordings", "session-a")) {
 				return [
 					"req-0001-100000.123.json",
 					"req-0002-100001.456.json",
 				];
 			}
-			if (p === "/fake/recordings/session-b") {
+			if (p === pj("/fake", "recordings", "session-b")) {
 				return ["req-0001-100002.789.json"];
 			}
 			return [];
 		});
 		mockFs.statSync.mockReturnValue({ isDirectory: () => true });
 		mockFs.readFileSync.mockImplementation((p: string) => {
-			if (p === "/fake/recordings/session-a/req-0001-100000.123.json") {
+			if (p === pj("/fake", "recordings", "session-a", "req-0001-100000.123.json")) {
 				return JSON.stringify({ model: "gpt-4" });
 			}
 			return JSON.stringify({ model: "claude-3" });
@@ -110,13 +116,13 @@ describe("listSessions", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
 			if (p === mockDir) return ["bad-entry", "good-session"];
-			if (p === "/fake/recordings/good-session") {
+			if (p === pj("/fake", "recordings", "good-session")) {
 				return ["req-0001-abc.json"];
 			}
 			return [];
 		});
 		mockFs.statSync.mockImplementation((p: string) => {
-			if (p === "/fake/recordings/bad-entry") throw new Error("permission");
+			if (p === pj("/fake", "recordings", "bad-entry")) throw new Error("permission");
 			return { isDirectory: () => true, size: 100 };
 		});
 		mockFs.readFileSync.mockReturnValue(
@@ -131,7 +137,7 @@ describe("listSessions", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
 			if (p === mockDir) return ["session-x"];
-			if (p === "/fake/recordings/session-x") {
+			if (p === pj("/fake", "recordings", "session-x")) {
 				return ["req-0001-abc.json"];
 			}
 			return [];
@@ -169,7 +175,7 @@ describe("listRecordings", () => {
 	it("指定 sessionId → 只返回该会话文件", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
-			if (p === "/fake/recordings/session-a") {
+			if (p === pj("/fake", "recordings", "session-a")) {
 				return [
 					"req-0001-abc.json",
 					"req-0002-def.json",
@@ -191,10 +197,10 @@ describe("listRecordings", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
 			if (p === mockDir) return ["session-a", "session-b"];
-			if (p === "/fake/recordings/session-a") {
+			if (p === pj("/fake", "recordings", "session-a")) {
 				return ["req-0001-abc.json"];
 			}
-			if (p === "/fake/recordings/session-b") {
+			if (p === pj("/fake", "recordings", "session-b")) {
 				return ["req-0001-def.json"];
 			}
 			return [];
@@ -210,7 +216,7 @@ describe("listRecordings", () => {
 	it("读取文件抛异常 → 捕获并返回安全对象", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
-			if (p === "/fake/recordings/session-x") {
+			if (p === pj("/fake", "recordings", "session-x")) {
 				return ["req-0001-bad.json"];
 			}
 			if (p === mockDir) return ["session-x"];

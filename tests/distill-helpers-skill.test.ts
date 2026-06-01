@@ -9,7 +9,7 @@ import { describe, it, expect, afterAll } from "vitest";
 const ORIG_PI_AGENT = process.env.PI_AGENT_DIR;
 
 // 必须在 import distill-helpers 前设置 PI_AGENT_DIR
-process.env.PI_AGENT_DIR = "/home/user/.pi/agent";
+process.env.PI_AGENT_DIR = require("path").resolve("/home/user/.pi/agent");
 
 const { isSkillFilePath } = await import("../distill-helpers.js");
 
@@ -44,10 +44,12 @@ describe("isSkillFilePath", () => {
 	});
 
 	it("绝对路径匹配 skills/ 返回 true", () => {
-		expect(isSkillFilePath("/home/user/.pi/agent/skills/code-graph/SKILL.md")).toBe(true);
+		const p = require("path").join(process.env.PI_AGENT_DIR!, "skills/code-graph/SKILL.md");
+		expect(isSkillFilePath(p)).toBe(true);
 	});
 
 	it("绝对路径不匹配 skills/ 返回 false", () => {
-		expect(isSkillFilePath("/home/user/.pi/agent/memory/foo.md")).toBe(false);
+		const p = require("path").join(process.env.PI_AGENT_DIR!, "memory/foo.md");
+		expect(isSkillFilePath(p)).toBe(false);
 	});
 });

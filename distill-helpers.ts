@@ -183,8 +183,8 @@ const AGENT_DIR = process.env.PI_AGENT_DIR || join(process.env.HOME || "/root", 
 /** 判断路径是否属于技能文件（内联技能或 npm 技能） */
 export function isSkillFilePath(path: string | undefined): boolean {
 	if (!path) return false;
-	const resolved = path.startsWith("/") ? path : join(AGENT_DIR, path);
+	const resolved = path.startsWith("/") || path.startsWith("C:") ? path : join(AGENT_DIR, path);
 	if (!resolved.startsWith(AGENT_DIR)) return false;
 	// 匹配 skills/{name}/ 或 node_modules/{pkg}/skills/{name}/
-	return /\/skills\/[^/]+\//.test(resolved);
+	return /[\\/]skills[\\/][^\\/]+[\\/]/.test(resolved);
 }

@@ -61,7 +61,7 @@ import {
 
 describe("常量", () => {
 	it("DISTILL_DIR 包含 .pi/agent/distill", () => {
-		expect(DISTILL_DIR).toContain(".pi/agent/distill");
+		expect(DISTILL_DIR).toMatch(/[\\/]\.pi[\\/]agent[\\/]distill/);
 	});
 
 	it("MSG_CACHE 和 PAYLOAD_CACHE 基于 DISTILL_DIR", () => {
