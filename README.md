@@ -1,60 +1,95 @@
-> 📖 **[pi-atelier 实战指南](https://catlain.github.io/pi-atelier/)** — 从零教会你使用 pi-atelier 扩展生态，包含完整示例和最佳实践。
+> 📖 **[pi-atelier 实战指南](https://catlain.github.io/pi-atelier/)** — 从零教会你使用 pi-atelier 扩展生态
 
-# pi-context
+# pi-context-manager
 
 [源码仓库](https://github.com/catlain/pi-context-manager) | [npm](https://www.npmjs.com/package/pi-context-manager)
 
-Context management extension for [pi-coding-agent](https://github.com/earendil-works/pi-coding-agent) — tool result formatting, distillation, context panel, and aging.
+pi-coding-agent 的 **上下文生命周期管理** — 工具结果格式化、distill 自动压缩、aging 淘汰、payload 录制分析。
 
-## What It Does
+## 解决什么问题
 
-AI coding agents accumulate context quickly — tool outputs pile up, old messages become irrelevant, and the agent loses track of what matters. pi-context automatically manages your agent's context window:
+AI 编程助手在长会话中积累上下文极快——工具输出堆叠、旧消息变得无关、token 预算耗尽。pi-context-manager 自动管理上下文窗口：
 
-- **Tool result processing** — Formats and truncates tool outputs (bash, web search, web reader, MCP errors) to keep context lean
-- **Distillation** — Replaces verbose tool results with compact summaries, preserving key information
-- **Context aging** — Marks older messages for compaction based on configurable rules
-- **Context panel** — Displays a TUI sidebar showing context usage, distillation stats, and message metadata
-- **Payload recording** — Records provider payloads for debugging token usage
+- **工具结果格式化**：bash 去 ANSI 码、web search 提取摘要、GitHub API 数据精简、code-graph 输出压缩
+- **Distill 自动压缩**：将历史工具结果替换为紧凑摘要，保留关键信息
+- **Context aging**：按可配置轮数淘汰旧消息，保持上下文聚焦
+- **Payload 录制分析**：录制 provider 请求，事后分析 token 分布、昂贵调用、增长趋势
 
-## Installation
+## 安装
 
 ```bash
-pi install git:github.com/catlain/pi-context
+pi install git:github.com/catlain/pi-context-manager
 ```
 
-## Commands
+## 命令
 
-| Command | Description |
-|---------|-------------|
-| `/context` | Toggle context panel visibility |
-| `/record [on/off]` | Enable/disable provider payload recording |
-| `/distill-config` | Configure distillation rules |
-| `/aging-config` | Configure context aging rules |
-| `/processor-config` | Configure tool result processor rules |
+| 命令 | 说明 |
+|------|------|
+| `/context` | TUI 面板：可视化上下文使用（分类浏览、工具详情、标记删除） |
+| `/record [on\|off]` | 开关 provider payload 录制 |
+| `/distill-config [N]` | 查看/设置 distill token 阈值 |
+| `/processor-config [N\|off]` | 查看/设置 tool-result-processor 阈值 |
+| `/aging-config [N\|off]` | 查看/设置 aging 淘汰轮数 |
+| `/context-clean [sessionId]` | 清理持久化数据 |
 
-## How It Works
+## 工具
 
-### Tool Result Processing Chain
+### `payload_analyze` — 分析录制文件
 
-When a tool returns a result, pi-context runs it through a chain of formatters:
+```bash
+# 列出录制文件
+payload_analyze(action: "list")
 
-1. **Web search** → Extract titles, URLs, summaries; strip boilerplate
-2. **GitHub** → Compact issue/PR/commit data
-3. **Web reader** → Truncate large pages, extract key content
-4. **Bash** → Strip ANSI codes, truncate long output
-5. **MCP errors** → Clean up verbose error traces
+# 单文件分析（token 分布、工具调用统计）
+payload_analyze(action: "single", payloadPath: "recording-xxx.jsonl")
 
-### Distillation
+# Token 预算分析（system/tools/history 构成）
+payload_analyze(action: "budget", payloadPath: "...")
 
-After processing, distillation replaces old tool results with compact summaries. Configure which tools to distill and retention rules via `/distill-config`.
+# 上下文增长趋势（token 随请求变化的曲线）
+payload_analyze(action: "growth")
 
-### Context Aging
+# 最贵的工具调用（按 token 排序）
+payload_analyze(action: "expensive", topN: 10)
 
-Messages older than a configurable threshold get marked for compaction, keeping the context window focused on recent, relevant information.
+# 精确定位消息（按索引、范围、关键词、工具名）
+payload_analyze(action: "messages", msgRange: "last:5")
+payload_analyze(action: "messages", toolName: "code_graph*")
+```
 
-## Configuration
+## 工作原理
 
-Settings are stored in `~/.pi/agent/settings.json` under the `context` section:
+### 工具结果处理链
+
+工具返回结果后，自动经过格式化链：
+
+1. **code-graph** → 压缩 JSON 输出，保留关键签名
+2. **Web search** → 提取标题、URL、摘要，去掉模板
+3. **Web reader** → 截断大页面，提取核心内容
+4. **GitHub** → 精简 issue/PR/commit 数据
+5. **Bash** → 去 ANSI 码，截断长输出
+6. **MCP 错误** → 清理冗长的错误堆栈
+
+### Distill 压缩
+
+格式化后，distill 将历史工具结果替换为紧凑摘要。保留最近的 N 条完整结果，更早的自动摘要。
+
+### Aging 淘汰
+
+超过配置轮数的消息标记为可淘汰，在 compaction 时优先移除。
+
+## 使用场景
+
+| 场景 | 功能 | 效果 |
+|------|------|------|
+| **长编程会话** | Distill + Aging | 上下文聚焦近期工作 |
+| **Web 调研** | Web 格式化 | 干净摘要替代原始 HTML |
+| **调试 token 用量** | Payload 录制 + 分析面板 | 精确看到 token 去向 |
+| **code-graph 输出** | JSON 格式化 | 压缩冗长输出，保留关键信息 |
+
+## 配置
+
+存储在 `~/.pi/agent/settings.json` 的 `context` section：
 
 ```json
 {
@@ -66,59 +101,31 @@ Settings are stored in `~/.pi/agent/settings.json` under the `context` section:
 }
 ```
 
-## Use Cases
+通过 `/distill-config`、`/processor-config`、`/aging-config` 命令动态调整。
 
-| Scenario | Feature | Benefit |
-|----------|---------|--------|
-| **Long coding sessions** | Distillation + Aging | Context stays focused on recent work |
-| **Web research** | Web search/reader processing | Clean summaries instead of raw HTML |
-| **Debugging token usage** | Payload recording + Context panel | See exactly where tokens go |
-| **MCP tool cleanup** | MCP error processing | Readable errors instead of raw traces |
-
-## Best Practices
-
-### ✅ Recommended
-- Enable distillation for long sessions — saves significant token budget
-- Use `/context` panel to monitor token usage during complex tasks
-- Record payloads (`/record on`) when debugging context issues, then turn off
-- Configure aging thresholds based on your typical session length
-
-### ❌ Not Recommended
-- Don't disable distillation for sessions > 1 hour — context will bloat
-- Don't leave payload recording on permanently — files grow large
-- Don't set aging too aggressive — you may lose important context
-
-## Limitations
-
-| Limitation | Detail |
-|------------|--------|
-| Distillation is lossy | Summaries may miss edge-case details |
-| No cross-session memory | Context resets between sessions |
-| Panel requires TUI | Context panel only works in terminal mode |
-| Recording overhead | Payload recording adds slight latency |
-
-## Architecture
+## 架构
 
 ```
-pi-context/
-├── index.ts           # Entry: register processors + distillation + panel
-├── processors/        # Tool result formatters
-│   ├── web-search.ts  # Web search result compaction
-│   ├── web-reader.ts  # Web page content truncation
-│   ├── github.ts      # GitHub data formatting
-│   ├── bash.ts        # ANSI stripping + truncation
-│   └── mcp-error.ts   # MCP error cleanup
-├── distill.ts         # Distillation engine (replace → summarize)
-├── aging.ts           # Context aging rules
-├── panel.ts           # TUI context panel
-├── recorder.ts        # Provider payload recording
-└── package.json
+pi-context-manager/
+├── index.ts                     # 入口：注册处理器 + distill + 面板
+├── formatters.ts                # 工具结果格式化主入口
+├── formatters-codegraph.ts      # code-graph 输出压缩
+├── formatters-web.ts            # Web search/reader 格式化
+├── formatters-gh.ts             # GitHub 数据格式化
+├── formatters-errors.ts         # MCP 错误清理
+├── formatters-mcp-json.ts       # 通用 MCP JSON 格式化
+├── tool-result-processor.ts     # 工具结果处理引擎
+├── distill-helpers.ts           # Distill 辅助函数
+├── context.ts                   # Context 面板逻辑
+├── recording.ts                 # Payload 录制
+├── payload/                     # Payload 分析子目录
+│   └── ...                      # 分析工具（budget/growth/expensive/messages 等）
+└── tests/                       # 测试
 ```
 
-**Dependencies**:
-- `@pi-atelier/shared-utils` (bundled) — settings management
-- `@earendil-works/pi-coding-agent` — ExtensionAPI (peer)
-- `@earendil-works/pi-tui` — context panel UI (peer)
+**依赖**：
+- `@pi-atelier/shared-utils` — 配置 API、工具输出格式化
+- `@earendil-works/pi-coding-agent` — ExtensionAPI（peer）
 
 ## License
 
