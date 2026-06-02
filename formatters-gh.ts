@@ -35,6 +35,18 @@ function formatGhSearchDoc(data: GhSearchDocResult): string | null {
 	if (!Array.isArray(data.results)) return null;
 	if (data.results.length === 0) return "（共 0 条）";
 
+	// 语义验证：至少一个条目必须有 gh 特征字段（title/url/summary），
+	// 防止 code-graph ast_search 等工具的 {count, results} 被误匹配
+	if (
+		!data.results.some(
+			(r) =>
+				typeof r.title === "string" ||
+				typeof r.url === "string" ||
+				typeof r.summary === "string",
+		)
+	)
+		return null;
+
 	const lines: string[] = [];
 	for (let i = 0; i < data.results.length; i++) {
 		const r = data.results[i];

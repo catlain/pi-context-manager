@@ -125,6 +125,39 @@ describe("formatGhResult — gh_repo_structure", () => {
 // 回退场景
 // ═══════════════════════════════════════════════════════════════
 
+describe("formatGhResult — 语义验证：防止非 gh 工具的 results 被误匹配", () => {
+	it("code-graph ast_search 的 {count, results} 不应被误匹配为 gh_search_doc", () => {
+		const input = JSON.stringify({
+			count: 5,
+			results: [
+				{ name: "compileRules", type: "function", file_path: "pi-shepherd/shepherd/rules.ts", start_line: 138, end_line: 157 },
+				{ name: "ruleMatches", type: "function", file_path: "pi-shepherd/shepherd/rules.ts", start_line: 261, end_line: 279 },
+			],
+		});
+		// 不应被 gh formatter 改变，应 fallback 返回原文
+		expect(formatGhResult(input)).toBe(input);
+	});
+
+	it("results 只有 name 字段（无 title/url/summary）→ fallback 到原文", () => {
+		const input = JSON.stringify({
+			results: [{ name: "foo" }, { name: "bar" }],
+		});
+		expect(formatGhResult(input)).toBe(input);
+	});
+
+	it("results 混合 gh 和非 gh 字段，但至少有一个 title → 匹配成功", () => {
+		const input = JSON.stringify({
+			results: [
+				{ title: "API 文档", url: "https://example.com" },
+				{ name: "foo" },
+			],
+		});
+		const result = formatGhResult(input);
+		expect(result).toContain("[1]");
+		expect(result).toContain("API 文档");
+	});
+});
+
 describe("formatGhResult — 回退", () => {
 	it("非 JSON 文本 → 返回原文", () => {
 		const text = "This is not JSON at all";
