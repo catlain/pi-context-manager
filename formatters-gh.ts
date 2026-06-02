@@ -59,13 +59,13 @@ function formatGhSearchDoc(data: GhSearchDocResult): string | null {
 }
 
 function formatGhReadFile(data: GhReadFileResult): string | null {
-	if (data.content == null && data.path == null) return null;
-	const pathStr = data.path ? `文件: ${data.path}` : "";
+	// 必须同时有 path 和 content — 只有 path 没有 content 的 JSON
+	// 可能是 code-graph 的 module_overview / get_ast_node 等工具的结果
+	// （它们也含 path 字段但不含 content）
+	if (typeof data.path !== "string" || data.content == null) return null;
+	const pathStr = `文件: ${data.path}`;
 	const contentStr = data.content ?? "";
-	if (pathStr) {
-		return `${pathStr}\n\n${contentStr}`;
-	}
-	return contentStr || null;
+	return `${pathStr}\n\n${contentStr}`;
 }
 
 function formatGhTree(entries: GhTreeEntry[], indent: string = ""): string[] {

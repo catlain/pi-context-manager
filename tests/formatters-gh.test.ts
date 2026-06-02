@@ -63,9 +63,9 @@ describe("formatGhResult — gh_read_file", () => {
 		expect(formatGhResult(input)).toBe("文件: src/main.ts\n\nconst x = 1;");
 	});
 
-	it("只有 path，无 content → 只显示路径", () => {
+	it("只有 path，无 content → fallback 到原文（防止 code-graph 等工具误匹配）", () => {
 		const input = JSON.stringify({ path: "README.md" });
-		expect(formatGhResult(input)).toBe("文件: README.md\n\n");
+		expect(formatGhResult(input)).toBe(input);
 	});
 
 	it("只有 content，无 path → 因为没有 path 特征字段，fallback 到原文", () => {
@@ -74,9 +74,9 @@ describe("formatGhResult — gh_read_file", () => {
 		expect(formatGhResult(input)).toBe(input);
 	});
 
-	it("path + null content → 只显示路径", () => {
+	it("path + null content → fallback 到原文（content 为 null 等于无内容）", () => {
 		const input = JSON.stringify({ path: "file.txt", content: null });
-		expect(formatGhResult(input)).toBe("文件: file.txt\n\n");
+		expect(formatGhResult(input)).toBe(input);
 	});
 
 	it("null path + null content → fallback 到原文", () => {
@@ -155,6 +155,40 @@ describe("formatGhResult — 语义验证：防止非 gh 工具的 results 被�
 		const result = formatGhResult(input);
 		expect(result).toContain("[1]");
 		expect(result).toContain("API 文档");
+	});
+});
+
+describe("formatGhResult — code-graph 误匹配防护", () => {
+	it("code-graph module_overview（含 path 但无 content）不应被误匹配", () => {
+		const input = JSON.stringify({
+			path: "pi-shepherd/shepherd",
+			files_count: 3,
+			summary: "Module 'shepherd' — Hook rule engine",
+			active_exports: [
+				{ name: "compileRules", type: "function", callers: 5 },
+			],
+			_dead_exports: [],
+		});
+		expect(formatGhResult(input)).toBe(input);
+	});
+
+	it("code-graph get_ast_node（含 path 但无 content）不应被误匹配", () => {
+		const input = JSON.stringify({
+			path: "src/index.ts",
+			name: "main",
+			type: "function",
+			signature: "function main(): void",
+		});
+		expect(formatGhResult(input)).toBe(input);
+	});
+
+	it("code-graph project_map（含 path 但无 content）不应被误匹配", () => {
+		const input = JSON.stringify({
+			path: ".",
+			modules: [{ path: "src", file_count: 10 }],
+			hot_functions: [],
+		});
+		expect(formatGhResult(input)).toBe(input);
 	});
 });
 
