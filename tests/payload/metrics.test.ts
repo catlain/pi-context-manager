@@ -4,7 +4,7 @@
  * 覆盖：doBudget, doGrowth
  * Mock getRecordingFiles + readJsonFile，测试纯格式化逻辑。
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // ── Mock 数据 ─────────────────────────────────────
 
@@ -19,7 +19,8 @@ const mockJsonData = vi.hoisted(() => ({
 		messages: [
 			{
 				role: "system",
-				content: "You are a helpful assistant that follows instructions carefully.",
+				content:
+					"You are a helpful assistant that follows instructions carefully.",
 			},
 			{ role: "user", content: "Hello" },
 			{
@@ -57,8 +58,8 @@ const mockJsonData = vi.hoisted(() => ({
 }));
 
 const mockGetRecordingFiles = vi.hoisted(() => vi.fn());
-const mockReadJsonFile = vi.hoisted(
-	() => vi.fn((p: string) => mockJsonData[p] ?? null),
+const mockReadJsonFile = vi.hoisted(() =>
+	vi.fn((p: string) => mockJsonData[p] ?? null),
 );
 const mockListSessions = vi.hoisted(() => vi.fn(() => []));
 const mockListRecordings = vi.hoisted(() => vi.fn(() => []));
@@ -74,7 +75,10 @@ vi.mock("../../payload/core.js", () => ({
 		typeof c === "string"
 			? c
 			: Array.isArray(c)
-				? c.filter((p: any) => p.type === "text").map((p: any) => p.text ?? "").join("\n")
+				? c
+						.filter((p: any) => p.type === "text")
+						.map((p: any) => p.text ?? "")
+						.join("\n")
 				: "",
 	readJsonFile: mockReadJsonFile,
 	RECORDINGS_DIR: "/fake/recordings",

@@ -49,7 +49,9 @@ describe("sniffCodeGraph — JSON 输出", () => {
 			function: "loadRules",
 			direction: "both",
 			callees: [{ name: "loadRulesFromFile", file_path: "shepherd/rules.ts" }],
-			callers: [{ name: "registerToolCall", file_path: "shepherd/tool-hooks.ts" }],
+			callers: [
+				{ name: "registerToolCall", file_path: "shepherd/tool-hooks.ts" },
+			],
 		});
 		expect(sniffCodeGraph(input)).toBe(true);
 	});
@@ -253,9 +255,7 @@ describe("formatCodeGraphResult — JSON 格式化", () => {
 			function: "main",
 			direction: "callees",
 			callers: [],
-			callees: [
-				{ name: "init", file_path: "src/init.ts", depth: 1 },
-			],
+			callees: [{ name: "init", file_path: "src/init.ts", depth: 1 }],
 		});
 		const result = formatCodeGraphResult(input);
 		expect(result).toContain("main");
@@ -325,14 +325,19 @@ describe("formatCodeGraphResult — JSON 格式化", () => {
 				},
 			],
 			inactive_summary: [
-				{ type: "interface", count: 3, names: ["Condition", "Rule", "LoadRulesOptions"] },
+				{
+					type: "interface",
+					count: 3,
+					names: ["Condition", "Rule", "LoadRulesOptions"],
+				},
 			],
 			files_count: 1,
 			hot_paths: [
 				{ name: "isSubagent", caller_count: 4, file: "shepherd/rules.ts" },
 			],
 			path: "shepherd/rules.ts",
-			summary: "Module 'shepherd/rules.ts': 8 active + 3 inactive exports across 1 files",
+			summary:
+				"Module 'shepherd/rules.ts': 8 active + 3 inactive exports across 1 files",
 		});
 		const result = formatCodeGraphResult(input);
 		expect(result).toContain("shepherd/rules.ts");

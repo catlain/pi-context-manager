@@ -3,14 +3,14 @@
  *
  * 覆盖：readCachedMessages, writeCachedMessages, readCachedPayload
  */
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
-import { join } from "path";
+
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
-	const { join: pJoin } = require("path") as typeof import("path");
-	const os = require("os") as typeof import("os");
-	process.env.HOME = pJoin(os.tmpdir(), "pi-context-cache-" + Date.now());
+	const { join: pJoin } = require("node:path") as typeof import("path");
+	const os = require("node:os") as typeof import("os");
+	process.env.HOME = pJoin(os.tmpdir(), `pi-context-cache-${Date.now()}`);
 });
 
 vi.mock("@pi-atelier/shared-utils", () => ({
@@ -24,12 +24,12 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 }));
 
 import {
-	readCachedMessages,
-	writeCachedMessages,
-	readCachedPayload,
 	DISTILL_DIR,
 	MSG_CACHE,
 	PAYLOAD_CACHE,
+	readCachedMessages,
+	readCachedPayload,
+	writeCachedMessages,
 } from "../shared.js";
 
 beforeAll(() => {

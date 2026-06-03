@@ -4,7 +4,7 @@
  * 覆盖：fillTemplate, 常量, hintsConfig 默认值,
  *      getContextConfig, setContextConfig
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // vi.mock 工厂被 hoist 到顶部，所以用 vi.hoisted 定义数据
 const mockFs = vi.hoisted(() => ({
@@ -48,12 +48,12 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 }));
 
 import {
-	fillTemplate,
 	DISTILL_DIR,
+	fillTemplate,
+	getContextConfig,
+	hintsConfig,
 	MSG_CACHE,
 	PAYLOAD_CACHE,
-	hintsConfig,
-	getContextConfig,
 	setContextConfig,
 } from "../shared.js";
 

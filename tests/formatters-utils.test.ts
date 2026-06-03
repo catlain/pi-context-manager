@@ -31,7 +31,7 @@ describe("extractJsonPrefix", () => {
 	});
 
 	it("处理嵌套 JSON 数组", () => {
-		const text = '[[1,2],[3,4]]\n\nnext';
+		const text = "[[1,2],[3,4]]\n\nnext";
 		expect(extractJsonPrefix(text)).toBe("[[1,2],[3,4]]");
 	});
 
@@ -101,7 +101,7 @@ describe("truncateAtParagraph", () => {
 	});
 
 	it("无段落边界 → 硬截断", () => {
-		const text = "这是一个没有段落边界的极长文本，硬截断测试" + "x".repeat(50);
+		const text = `这是一个没有段落边界的极长文本，硬截断测试${"x".repeat(50)}`;
 		const result = truncateAtParagraph(text, 20);
 		expect(result).toMatch(/^.{20}\n\n\.\.\.\(内容已截断，共 \d+ 字符\)/);
 	});
@@ -121,10 +121,10 @@ describe("truncateAtParagraph", () => {
 	it("边界后剩余内容恰好等于 maxChars/10", () => {
 		// 剩余内容 = maxChars/10，不返回全文
 		const maxChars = 20;
-		const paragraphPart = "xxxxxxxxxxxxxxxxxxx";  // 19 chars
-		const afterBoundary = "ab";  // 2 chars — > maxChars/10 (= 2)? No, maxChars/10 = 2, so afterBoundary.length must be > 2 for truncation
+		const paragraphPart = "xxxxxxxxxxxxxxxxxxx"; // 19 chars
+		const _afterBoundary = "ab"; // 2 chars — > maxChars/10 (= 2)? No, maxChars/10 = 2, so afterBoundary.length must be > 2 for truncation
 		// Let's try: afterBoundary.length = 3 > 2 → truncation
-		const text = paragraphPart + "\n\n" + "abc";
+		const text = `${paragraphPart}\n\nabc`;
 		const result = truncateAtParagraph(text, maxChars);
 		expect(result).toContain("内容已截断");
 	});
@@ -147,13 +147,15 @@ describe("unwrapDoubleEncodedJson", () => {
 	});
 
 	it("JSON 解析失败 → 返回原文", () => {
-		const text = '"不是一个有效的编码"';  // 没有转义，外部是 "，内部是中文
-		const result = unwrapDoubleEncodedJson('"\\u4e0d\\u662f\\u6709\\u6548\\u7f16\\u7801"');
-		expect(result).toBe('不是有效编码');
+		const _text = '"不是一个有效的编码"'; // 没有转义，外部是 "，内部是中文
+		const result = unwrapDoubleEncodedJson(
+			'"\\u4e0d\\u662f\\u6709\\u6548\\u7f16\\u7801"',
+		);
+		expect(result).toBe("不是有效编码");
 	});
 
 	it("JSON.parse 返回非字符串 → 返回原文", () => {
-		const raw = '"42"';  // JSON.parse('"42"') → "42" (string), not number
+		const raw = '"42"'; // JSON.parse('"42"') → "42" (string), not number
 		const result = unwrapDoubleEncodedJson(raw);
 		expect(result).toBe("42");
 	});

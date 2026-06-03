@@ -18,16 +18,16 @@ export function extractJsonPrefix(text: string): string {
 	const closeChar = openChar === "[" ? "]" : "}";
 	let depth = 0;
 	let inString = false;
-	let escape = false;
+	let isEscaped = false;
 
 	for (let i = 0; i < trimmed.length; i++) {
 		const ch = trimmed[i];
-		if (escape) {
-			escape = false;
+		if (isEscaped) {
+			isEscaped = false;
 			continue;
 		}
 		if (ch === "\\" && inString) {
-			escape = true;
+			isEscaped = true;
 			continue;
 		}
 		if (ch === '"') {
@@ -91,7 +91,5 @@ export function truncateAtParagraph(text: string, maxChars: number): string {
 		);
 	}
 
-	return (
-		text.slice(0, maxChars) + `\n\n...(内容已截断，共 ${text.length} 字符)`
-	);
+	return `${text.slice(0, maxChars)}\n\n...(内容已截断，共 ${text.length} 字符)`;
 }

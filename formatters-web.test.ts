@@ -1,5 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { formatWebSearchResult, formatWebReadResult } from "./formatters-web.js";
+import { describe, expect, it } from "vitest";
+import {
+	formatWebReadResult,
+	formatWebSearchResult,
+} from "./formatters-web.js";
 
 describe("formatWebSearchResult", () => {
 	it("正常搜索结果应格式化", () => {
@@ -44,9 +47,7 @@ describe("formatWebSearchResult", () => {
 	});
 
 	it("有 title 字段的数组应被格式化", () => {
-		const input = JSON.stringify([
-			{ title: "测试标题", content: "摘要" },
-		]);
+		const input = JSON.stringify([{ title: "测试标题", content: "摘要" }]);
 		const result = formatWebSearchResult(input);
 		expect(result).toContain("测试标题");
 	});

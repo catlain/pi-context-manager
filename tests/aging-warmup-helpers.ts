@@ -22,7 +22,7 @@ export interface WarmupHandlerOptions {
  */
 export function setupWarmupAgingHandler(
 	pi: ReturnType<typeof createMockPi>["pi"],
-	handlers: Record<string, Array<(event: any, ctx: any) => any>>,
+	_handlers: Record<string, Array<(event: any, ctx: any) => any>>,
 	opts: WarmupHandlerOptions,
 ) {
 	const {

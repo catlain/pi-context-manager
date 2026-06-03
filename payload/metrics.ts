@@ -5,11 +5,9 @@
  */
 
 import type { PayloadMessage } from "../types-payload.js";
-import {
-	estTokens, fmtTok, getText,
-	readJsonFile,
-} from "./core.js";
-import { type RecordingEntry, getRecordingFiles } from "./files.js";
+import { estTokens, fmtTok, getText, readJsonFile } from "./core.js";
+import { getRecordingFiles } from "./files.js";
+
 export { doExpensive } from "./expensive.js";
 
 // ════════════════════════════════════════════════════════════
@@ -18,7 +16,8 @@ export { doExpensive } from "./expensive.js";
 
 export function doBudget(sessionId?: string): string {
 	const files = getRecordingFiles(sessionId);
-	if (!files) return `没找到 req-*.json${sessionId ? ` (session: ${sessionId})` : ""}`;
+	if (!files)
+		return `没找到 req-*.json${sessionId ? ` (session: ${sessionId})` : ""}`;
 
 	const lines = [
 		"Token 预算分析",
@@ -39,9 +38,15 @@ export function doBudget(sessionId?: string): string {
 		const tools = data.tools ?? [];
 		const model = (data.model ?? "?").slice(0, 16);
 
-		const sysMsg = msgs.find((m: PayloadMessage) => m.role === "system" || m.role === "developer");
+		const sysMsg = msgs.find(
+			(m: PayloadMessage) => m.role === "system" || m.role === "developer",
+		);
 		const sysTokens = sysMsg ? estTokens(getText(sysMsg.content)) : 0;
-		const toolsTokens = tools.reduce((s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)), 0);
+		const toolsTokens = tools.reduce(
+			(s: number, t: Record<string, unknown>) =>
+				s + estTokens(JSON.stringify(t)),
+			0,
+		);
 
 		let histTokens = 0;
 		for (const m of msgs) {
@@ -58,11 +63,15 @@ export function doBudget(sessionId?: string): string {
 		totalTools += toolsTokens;
 
 		const reqNum = filename.split("-")[1];
-		lines.push(`   ${reqNum.padEnd(6)} ${model.padEnd(18)} ${fmtTok(reqTotal).padStart(8)} ${fmtTok(sysTokens).padStart(8)} ${fmtTok(toolsTokens).padStart(8)} ${fmtTok(histTokens).padStart(8)} ${String(msgs.length).padStart(5)}`);
+		lines.push(
+			`   ${reqNum.padEnd(6)} ${model.padEnd(18)} ${fmtTok(reqTotal).padStart(8)} ${fmtTok(sysTokens).padStart(8)} ${fmtTok(toolsTokens).padStart(8)} ${fmtTok(histTokens).padStart(8)} ${String(msgs.length).padStart(5)}`,
+		);
 	}
 
 	lines.push(`   ${"─".repeat(80)}`);
-	lines.push(`   ${"合计".padEnd(6)} ${"".padEnd(18)} ${fmtTok(totalTokens).padStart(8)} ${fmtTok(totalSystem).padStart(8)} ${fmtTok(totalTools).padStart(8)}`);
+	lines.push(
+		`   ${"合计".padEnd(6)} ${"".padEnd(18)} ${fmtTok(totalTokens).padStart(8)} ${fmtTok(totalSystem).padStart(8)} ${fmtTok(totalTools).padStart(8)}`,
+	);
 
 	return lines.join("\n");
 }
@@ -73,11 +82,15 @@ export function doBudget(sessionId?: string): string {
 
 export function doGrowth(sessionId?: string): string {
 	const files = getRecordingFiles(sessionId);
-	if (!files) return `没找到 req-*.json${sessionId ? ` (session: ${sessionId})` : ""}`;
+	if (!files)
+		return `没找到 req-*.json${sessionId ? ` (session: ${sessionId})` : ""}`;
 
 	const dataPoints: Array<{
-		req: string; model: string; totalTokens: number;
-		msgCount: number; delta: number;
+		req: string;
+		model: string;
+		totalTokens: number;
+		msgCount: number;
+		delta: number;
 	}> = [];
 
 	let prevTotal = 0;
@@ -98,8 +111,11 @@ export function doGrowth(sessionId?: string): string {
 
 		const delta = prevTotal > 0 ? total - prevTotal : 0;
 		dataPoints.push({
-			req: filename.split("-")[1], model, totalTokens: total,
-			msgCount: msgs.length, delta,
+			req: filename.split("-")[1],
+			model,
+			totalTokens: total,
+			msgCount: msgs.length,
+			delta,
 		});
 		prevTotal = total;
 	}
@@ -112,8 +128,11 @@ export function doGrowth(sessionId?: string): string {
 	];
 
 	for (const d of dataPoints) {
-		const deltaStr = d.delta > 0 ? `+${fmtTok(d.delta)}` : d.delta < 0 ? fmtTok(d.delta) : "-";
-		lines.push(`   ${d.req.padEnd(6)} ${String(d.msgCount).padStart(5)} ${fmtTok(d.totalTokens).padStart(8)} ${deltaStr.padStart(8)} ${d.model.padEnd(14)}`);
+		const deltaStr =
+			d.delta > 0 ? `+${fmtTok(d.delta)}` : d.delta < 0 ? fmtTok(d.delta) : "-";
+		lines.push(
+			`   ${d.req.padEnd(6)} ${String(d.msgCount).padStart(5)} ${fmtTok(d.totalTokens).padStart(8)} ${deltaStr.padStart(8)} ${d.model.padEnd(14)}`,
+		);
 	}
 
 	const first = dataPoints[0];
@@ -121,9 +140,13 @@ export function doGrowth(sessionId?: string): string {
 	const growth = last.totalTokens - first.totalTokens;
 	const avgDelta = Math.round(growth / Math.max(dataPoints.length - 1, 1));
 
-	lines.push(`\n   起始: ${fmtTok(first.totalTokens)} → 终止: ${fmtTok(last.totalTokens)}  |  总增长: ${growth > 0 ? "+" : ""}${fmtTok(growth)}  |  平均每请求: ${fmtTok(avgDelta)}`);
+	lines.push(
+		`\n   起始: ${fmtTok(first.totalTokens)} → 终止: ${fmtTok(last.totalTokens)}  |  总增长: ${growth > 0 ? "+" : ""}${fmtTok(growth)}  |  平均每请求: ${fmtTok(avgDelta)}`,
+	);
 
-	const bigJumps = dataPoints.filter(d => d.delta > avgDelta * 2 && d.delta > 1000);
+	const bigJumps = dataPoints.filter(
+		(d) => d.delta > avgDelta * 2 && d.delta > 1000,
+	);
 	if (bigJumps.length > 0) {
 		lines.push(`\n   ⚡ 大跳变 (>2x 平均):`);
 		for (const j of bigJumps) {

@@ -52,7 +52,7 @@ function buildMessages(
 // 手动触发 context handler（模拟 distill 逻辑）
 // 因为实际 handler 在 index.ts 的闭包中，这里直接模拟逻辑
 function triggerContext(handlers: any, messages: any[]) {
-	const ctxHandler = handlers["context"];
+	const ctxHandler = handlers.context;
 	if (!ctxHandler?.length) return;
 	ctxHandler[0]({ messages }, {});
 }

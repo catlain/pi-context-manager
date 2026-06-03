@@ -1,7 +1,7 @@
 /**
  * /distill-config 命令测试 — 显示/设置 distillThreshold 和 firstSeenCap
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockConfig: Record<string, number>;
 let lastPatch: Record<string, number> | null = null;
@@ -41,7 +41,12 @@ function createMockCtx() {
 }
 
 beforeEach(() => {
-	mockConfig = { distillThreshold: 1000, agingThreshold: 10, processorThreshold: 0, firstSeenCap: 15000 };
+	mockConfig = {
+		distillThreshold: 1000,
+		agingThreshold: 10,
+		processorThreshold: 0,
+		firstSeenCap: 15000,
+	};
 	lastPatch = null;
 });
 

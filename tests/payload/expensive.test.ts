@@ -8,7 +8,7 @@
  * - topN 截断
  * - 无效文件（readJsonFile 返回 null）
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const mockReadJsonFile = vi.fn(() => null);
 vi.mock("../../payload/core.js", () => ({
@@ -20,7 +20,10 @@ vi.mock("../../payload/core.js", () => ({
 		for (const msg of msgs) {
 			if (msg.tool_calls) {
 				for (const tc of msg.tool_calls) {
-					m.set(tc.id, { name: tc.function.name, argsStr: tc.function.arguments });
+					m.set(tc.id, {
+						name: tc.function.name,
+						argsStr: tc.function.arguments,
+					});
 				}
 			}
 		}
@@ -46,13 +49,18 @@ describe("doExpensive", () => {
 				{
 					role: "assistant",
 					tool_calls: [
-						{ id: "tc1", function: { name: "read", arguments: '{"path":"a.ts"}' } },
+						{
+							id: "tc1",
+							function: { name: "read", arguments: '{"path":"a.ts"}' },
+						},
 					],
 				},
 				{ role: "tool", tool_call_id: "tc1", content: "x".repeat(400) },
 			],
 		});
-		const result = doExpensive([{ filename: "req-0001-abc", path: "/tmp/a.json" }]);
+		const result = doExpensive([
+			{ filename: "req-0001-abc", path: "/tmp/a.json" },
+		]);
 		expect(result).toContain("read");
 		expect(result).toContain("100"); // 400/4 = 100 tokens
 		mockReadJsonFile.mockReset();
@@ -62,17 +70,23 @@ describe("doExpensive", () => {
 		mockReadJsonFile
 			.mockReturnValueOnce({
 				messages: [
-					{ role: "assistant", tool_calls: [
-						{ id: "tc1", function: { name: "read", arguments: "{}" } },
-					]},
+					{
+						role: "assistant",
+						tool_calls: [
+							{ id: "tc1", function: { name: "read", arguments: "{}" } },
+						],
+					},
 					{ role: "tool", tool_call_id: "tc1", content: "a".repeat(200) },
 				],
 			})
 			.mockReturnValueOnce({
 				messages: [
-					{ role: "assistant", tool_calls: [
-						{ id: "tc2", function: { name: "bash", arguments: "{}" } },
-					]},
+					{
+						role: "assistant",
+						tool_calls: [
+							{ id: "tc2", function: { name: "bash", arguments: "{}" } },
+						],
+					},
 					{ role: "tool", tool_call_id: "tc2", content: "b".repeat(800) },
 				],
 			});
@@ -92,11 +106,14 @@ describe("doExpensive", () => {
 			filename: `req-${String(i + 1).padStart(4, "0")}-x`,
 			path: `/tmp/${i}.json`,
 		}));
-		mockReadJsonFile.mockImplementation((p: string) => ({
+		mockReadJsonFile.mockImplementation((_p: string) => ({
 			messages: [
-				{ role: "assistant", tool_calls: [
-					{ id: "tc1", function: { name: "read", arguments: "{}" } },
-				]},
+				{
+					role: "assistant",
+					tool_calls: [
+						{ id: "tc1", function: { name: "read", arguments: "{}" } },
+					],
+				},
 				{ role: "tool", tool_call_id: "tc1", content: "x".repeat(100) },
 			],
 		}));
@@ -107,7 +124,9 @@ describe("doExpensive", () => {
 
 	it("无效文件（readJsonFile 返回 null）跳过不崩溃", () => {
 		mockReadJsonFile.mockReturnValue(null);
-		const result = doExpensive([{ filename: "req-0001-x", path: "/tmp/bad.json" }]);
+		const result = doExpensive([
+			{ filename: "req-0001-x", path: "/tmp/bad.json" },
+		]);
 		expect(result).toContain("共 0 个");
 		mockReadJsonFile.mockReset();
 	});
@@ -115,15 +134,20 @@ describe("doExpensive", () => {
 	it("按工具汇总包含聚合统计", () => {
 		mockReadJsonFile.mockReturnValue({
 			messages: [
-				{ role: "assistant", tool_calls: [
-					{ id: "tc1", function: { name: "read", arguments: "{}" } },
-					{ id: "tc2", function: { name: "read", arguments: "{}" } },
-				]},
+				{
+					role: "assistant",
+					tool_calls: [
+						{ id: "tc1", function: { name: "read", arguments: "{}" } },
+						{ id: "tc2", function: { name: "read", arguments: "{}" } },
+					],
+				},
 				{ role: "tool", tool_call_id: "tc1", content: "a".repeat(400) },
 				{ role: "tool", tool_call_id: "tc2", content: "b".repeat(200) },
 			],
 		});
-		const result = doExpensive([{ filename: "req-0001-x", path: "/tmp/a.json" }]);
+		const result = doExpensive([
+			{ filename: "req-0001-x", path: "/tmp/a.json" },
+		]);
 		expect(result).toContain("按工具汇总");
 		expect(result).toContain("read");
 		mockReadJsonFile.mockReset();

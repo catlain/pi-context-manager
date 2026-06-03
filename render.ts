@@ -1,16 +1,16 @@
-import { DynamicBorder, type Theme, type ThemeColor } from "@earendil-works/pi-coding-agent";
+import {
+	DynamicBorder,
+	type Theme,
+	type ThemeColor,
+} from "@earendil-works/pi-coding-agent";
 import { type Container, Spacer, Text } from "@earendil-works/pi-tui";
-import type {
-	CategoryItem,
-	ContextData,
-	DetailItem,
-	RecordItem,
-} from "./types.js";
+import type { CategoryItem, ContextData, RecordItem } from "./types.js";
 import { formatTokens } from "./utils.js";
 
 const bdr = (c: Container, t: Theme) =>
 	c.addChild(new DynamicBorder((s: string) => t.fg("accent", s)));
-const ln = (c: Container, t: Theme, s: string) => c.addChild(new Text(s, 1, 0));
+const ln = (c: Container, _t: Theme, s: string) =>
+	c.addChild(new Text(s, 1, 0));
 const sp = (c: Container) => c.addChild(new Spacer(1));
 const pct = (v: number, lim: number) => `${((v / lim) * 100).toFixed(1)}%`;
 
@@ -110,7 +110,7 @@ export function renderCategory(
 /** Level 2 — 记录列表 */
 export function renderRecords(
 	c: Container,
-	d: ContextData,
+	_d: ContextData,
 	t: Theme,
 	breadcrumb: string,
 	records: RecordItem[],
@@ -136,11 +136,11 @@ export function renderRecords(
 		const ptr = i === sel ? t.fg("accent", "→ ") : "  ";
 		const idx = t.fg("dim", `#${(i + 1).toString().padStart(2)} `);
 		const sum = (
-			r.summary.length > 40 ? r.summary.slice(0, 37) + "..." : r.summary
+			r.summary.length > 40 ? `${r.summary.slice(0, 37)}...` : r.summary
 		).padEnd(40);
-		const distilledTag = r.distilled ? " " + t.fg("warning", "✂") : "";
+		const distilledTag = r.distilled ? ` ${t.fg("warning", "✂")}` : "";
 		const agingTag =
-			r.agingCount != null ? " " + t.fg("muted", `⏳${r.agingCount}`) : "";
+			r.agingCount != null ? ` ${t.fg("muted", `⏳${r.agingCount}`)}` : "";
 		if (isTool) {
 			const cv =
 				r.callTokens > 0 ? formatTokens(r.callTokens).padStart(6) : "     -";
@@ -179,7 +179,8 @@ export function renderRecords(
 
 export function getViewport(tui: unknown): number {
 	const termHeight =
-		(tui as { terminal?: { rows?: number } })?.terminal?.rows || parseInt(process.env.LINES || "40");
+		(tui as { terminal?: { rows?: number } })?.terminal?.rows ||
+		parseInt(process.env.LINES || "40", 10);
 	return Math.max(10, Math.floor(termHeight * 0.8));
 }
 
@@ -216,7 +217,7 @@ export function renderContent(
 	for (let i = start; i < end; i++) {
 		const num = t.fg("dim", `${(i + 1).toString().padStart(4)} `);
 		const content =
-			lines[i].length > 200 ? lines[i].slice(0, 197) + "..." : lines[i];
+			lines[i].length > 200 ? `${lines[i].slice(0, 197)}...` : lines[i];
 		ln(c, t, `${num}${t.fg("text", content)}`);
 	}
 	sp(c);

@@ -10,7 +10,10 @@
  * 解析/格式化失败时 fallback 返回原始文本。
  */
 
-import { sniffCodeGraphJson, formatCodeGraphJson } from "./formatters-codegraph-json.js";
+import {
+	formatCodeGraphJson,
+	sniffCodeGraphJson,
+} from "./formatters-codegraph-json.js";
 
 const MAX_LINES = 200;
 
@@ -24,7 +27,9 @@ const CODE_CONTENT_TAIL = 5;
 export function sniffCodeGraph(text: string): boolean {
 	return (
 		// search: "fn name  file:line-range  ((params)) -> ret"
-		/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}\S+:\d+/.test(text) ||
+		/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}\S+:\d+/.test(
+			text,
+		) ||
 		// callgraph: 缩进箭头（← callers / → callees）
 		/^ {2}[←→]/m.test(text) ||
 		// impact: "Impact: xxx — Risk: LOW/MEDIUM/HIGH"
@@ -60,8 +65,16 @@ function sniffAstJson(text: string): boolean {
 // ── 符号类型优先级（搜索结果排序用） ──────────────
 
 const SYMBOL_ORDER: Record<string, number> = {
-	class: 0, interface: 1, struct: 2, enum: 3, type: 4,
-	fn: 5, method: 6, const: 7, var: 8, module: 9,
+	class: 0,
+	interface: 1,
+	struct: 2,
+	enum: 3,
+	type: 4,
+	fn: 5,
+	method: 6,
+	const: 7,
+	var: 8,
+	module: 9,
 };
 
 function sortSearchLines(lines: string[]): string[] {
@@ -76,7 +89,11 @@ function sortSearchLines(lines: string[]): string[] {
 
 function formatAstJson(text: string): string {
 	let obj: Record<string, unknown>;
-	try { obj = JSON.parse(text); } catch { return text; }
+	try {
+		obj = JSON.parse(text);
+	} catch {
+		return text;
+	}
 
 	const code = obj.code_content as string | undefined;
 	if (!code || typeof code !== "string") return formatAstMetadata(obj);
@@ -99,7 +116,8 @@ function formatAstMetadata(obj: Record<string, unknown>): string {
 	if (obj.name) parts.push(`name: ${obj.name}`);
 	if (obj.type) parts.push(`type: ${obj.type}`);
 	if (obj.file_path) parts.push(`file: ${obj.file_path}`);
-	if (obj.start_line) parts.push(`lines: ${obj.start_line}-${obj.end_line ?? "?"}`);
+	if (obj.start_line)
+		parts.push(`lines: ${obj.start_line}-${obj.end_line ?? "?"}`);
 	if (obj.signature) parts.push(`signature: ${obj.signature}`);
 	if (obj.node_id) parts.push(`node_id: ${obj.node_id}`);
 	if (obj.compact) parts.push(`(compact)`);
@@ -123,15 +141,27 @@ export function formatCodeGraphResult(text: string): string {
 	let lines = text.split("\n");
 
 	const isSearch =
-		lines.some((l) => /^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(l)) &&
-		lines.every((l) => !l.trim() || /^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(l));
+		lines.some((l) =>
+			/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(
+				l,
+			),
+		) &&
+		lines.every(
+			(l) =>
+				!l.trim() ||
+				/^(fn |class |struct |enum |interface |type |const |var |method )\S+\s{2,}/.test(
+					l,
+				),
+		);
 	if (isSearch) lines = sortSearchLines(lines);
 
 	let formatted = lines.join("\n").replace(/\n{3,}/g, "\n\n");
 
 	const finalLines = formatted.split("\n");
 	if (finalLines.length > MAX_LINES) {
-		formatted = finalLines.slice(0, MAX_LINES).join("\n") + `\n... (${finalLines.length - MAX_LINES} more lines)`;
+		formatted =
+			finalLines.slice(0, MAX_LINES).join("\n") +
+			`\n... (${finalLines.length - MAX_LINES} more lines)`;
 	}
 
 	return formatted;

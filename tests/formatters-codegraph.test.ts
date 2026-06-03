@@ -222,23 +222,14 @@ describe("formatCodeGraphResult — Impact 不同风险级别", () => {
 
 describe("formatCodeGraphResult — 空行压缩边缘情况", () => {
 	it("开头多个空行 → 保留内容", () => {
-		const input = [
-			"",
-			"",
-			"fn foo  src/a.ts:1-10",
-		].join("\n");
+		const input = ["", "", "fn foo  src/a.ts:1-10"].join("\n");
 		const result = formatCodeGraphResult(input);
 		// 内容保留
 		expect(result).toContain("fn foo  src/a.ts:1-10");
 	});
 
 	it("结尾多个空行 → 压缩", () => {
-		const input = [
-			"fn foo  src/a.ts:1-10",
-			"",
-			"",
-			"",
-		].join("\n");
+		const input = ["fn foo  src/a.ts:1-10", "", "", ""].join("\n");
 		const result = formatCodeGraphResult(input);
 		// 不应以多个空行结尾
 		expect(result.trimEnd()).not.toBe("");

@@ -4,12 +4,12 @@
  * 注意：AGENT_DIR 是模块级常量（import 时求值），
  * 所以在 import 之前就要设好环境变量。
  */
-import { describe, it, expect, afterAll } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 const ORIG_PI_AGENT = process.env.PI_AGENT_DIR;
 
 // 必须在 import distill-helpers 前设置 PI_AGENT_DIR
-process.env.PI_AGENT_DIR = require("path").resolve("/home/user/.pi/agent");
+process.env.PI_AGENT_DIR = require("node:path").resolve("/home/user/.pi/agent");
 
 const { isSkillFilePath } = await import("../distill-helpers.js");
 
@@ -36,7 +36,9 @@ describe("isSkillFilePath", () => {
 	});
 
 	it("npm 技能路径返回 true", () => {
-		expect(isSkillFilePath("node_modules/pkg/skills/setup/SKILL.md")).toBe(true);
+		expect(isSkillFilePath("node_modules/pkg/skills/setup/SKILL.md")).toBe(
+			true,
+		);
 	});
 
 	it("AGENT_DIR 内但非 skills 的路径返回 false", () => {
@@ -44,12 +46,18 @@ describe("isSkillFilePath", () => {
 	});
 
 	it("绝对路径匹配 skills/ 返回 true", () => {
-		const p = require("path").join(process.env.PI_AGENT_DIR!, "skills/code-graph/SKILL.md");
+		const p = require("node:path").join(
+			process.env.PI_AGENT_DIR!,
+			"skills/code-graph/SKILL.md",
+		);
 		expect(isSkillFilePath(p)).toBe(true);
 	});
 
 	it("绝对路径不匹配 skills/ 返回 false", () => {
-		const p = require("path").join(process.env.PI_AGENT_DIR!, "memory/foo.md");
+		const p = require("node:path").join(
+			process.env.PI_AGENT_DIR!,
+			"memory/foo.md",
+		);
 		expect(isSkillFilePath(p)).toBe(false);
 	});
 });

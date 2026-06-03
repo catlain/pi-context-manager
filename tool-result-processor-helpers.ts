@@ -46,7 +46,7 @@ export function buildFileHeader(
 	// 参数摘要：截断到一行
 	const argsStr = JSON.stringify(input);
 	lines.push(
-		`参数: ${argsStr.length > 200 ? argsStr.slice(0, 200) + "..." : argsStr}`,
+		`参数: ${argsStr.length > 200 ? `${argsStr.slice(0, 200)}...` : argsStr}`,
 	);
 	lines.push("");
 	return lines.join("\n");

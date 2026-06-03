@@ -43,7 +43,9 @@ describe("truncateToolCallArgs — 基本路径", () => {
 		expect(block.arguments._truncated).toBe(true);
 		expect(block.arguments.toolName).toBe("write");
 		expect(block.arguments.summary).toContain("tokens");
-		expect(block.arguments.summary).toMatch(/[\\/]\.pi[\\/]agent[\\/]distill[\\/]processor[\\/]/);
+		expect(block.arguments.summary).toMatch(
+			/[\\/]\.pi[\\/]agent[\\/]distill[\\/]processor[\\/]/,
+		);
 	});
 
 	it("同一消息多个 toolCall block：各自独立判断", () => {

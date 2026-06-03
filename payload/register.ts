@@ -6,21 +6,15 @@
  *   action: list/single/overview/chain/chain-tcid/stats/diff/budget/expensive/growth/messages
  */
 
+import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import {
-	doList,
-	doSingle,
-	doOverview,
-	doChain,
-	doDiff,
-} from "./analyze.js";
-import { doChainTcId, doStats } from "./stats.js";
-import { doBudget, doGrowth, doExpensive } from "./metrics.js";
-import { doMessages } from "./messages.js";
 import { DISTILL_DIR } from "../shared.js";
+import { doChain, doDiff, doList, doOverview, doSingle } from "./analyze.js";
 import { getRecordingFiles } from "./files.js";
-import { join } from "path";
+import { doMessages } from "./messages.js";
+import { doBudget, doExpensive, doGrowth } from "./metrics.js";
+import { doChainTcId, doStats } from "./stats.js";
 
 const LAST_PAYLOAD = join(DISTILL_DIR, "last-payload.json");
 
@@ -65,7 +59,9 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 				Type.Literal("messages"),
 			]),
 			payloadPath: Type.Optional(
-				Type.String({ description: "Payload 文件路径（single/overview/diff 用）" }),
+				Type.String({
+					description: "Payload 文件路径（single/overview/diff 用）",
+				}),
 			),
 			payloadPath2: Type.Optional(
 				Type.String({ description: "第二个 payload 路径（diff 用）" }),
@@ -81,22 +77,36 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 			),
 			// messages action 专用参数
 			msgIndex: Type.Optional(
-				Type.Number({ description: "messages action: 查看第 N 条消息（0-based）" }),
+				Type.Number({
+					description: "messages action: 查看第 N 条消息（0-based）",
+				}),
 			),
 			msgRange: Type.Optional(
-				Type.String({ description: "messages action: 消息范围，如 '5-10'、'last:5'" }),
+				Type.String({
+					description: "messages action: 消息范围，如 '5-10'、'last:5'",
+				}),
 			),
 			grep: Type.Optional(
-				Type.String({ description: "messages action: 按关键词/正则过滤消息文本" }),
+				Type.String({
+					description: "messages action: 按关键词/正则过滤消息文本",
+				}),
 			),
 			toolName: Type.Optional(
-				Type.String({ description: "messages action: 按工具名过滤（支持通配符 *、多值 | 分隔）" }),
+				Type.String({
+					description:
+						"messages action: 按工具名过滤（支持通配符 *、多值 | 分隔）",
+				}),
 			),
 			file: Type.Optional(
-				Type.String({ description: "messages action: 按文件路径过滤工具参数（支持通配符 *、多值 | 分隔）" }),
+				Type.String({
+					description:
+						"messages action: 按文件路径过滤工具参数（支持通配符 *、多值 | 分隔）",
+				}),
 			),
 			context: Type.Optional(
-				Type.Number({ description: "messages action: msgIndex 模式的上下文条数（默认 3）" }),
+				Type.Number({
+					description: "messages action: msgIndex 模式的上下文条数（默认 3）",
+				}),
 			),
 		}),
 
@@ -106,57 +116,137 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 			_signal: unknown,
 			_onUpdate: unknown,
 			_ctx: unknown,
-		): Promise<{ content: Array<{ type: string; text: string }>; details: Record<string, unknown> }> {
+		): Promise<{
+			content: Array<{ type: string; text: string }>;
+			details: Record<string, unknown>;
+		}> {
 			try {
 				const sid = params.sessionId || undefined;
 				switch (params.action) {
 					case "list":
-						return { content: [{ type: "text", text: doList(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doList(sid) }],
+							details: {},
+						};
 					case "single":
-						return { content: [{ type: "text", text: doSingle(params.payloadPath ?? LAST_PAYLOAD) }], details: {} };
+						return {
+							content: [
+								{
+									type: "text",
+									text: doSingle(params.payloadPath ?? LAST_PAYLOAD),
+								},
+							],
+							details: {},
+						};
 					case "overview":
-						return { content: [{ type: "text", text: doOverview(params.payloadPath ?? LAST_PAYLOAD, params.verbose ?? false) }], details: {} };
+						return {
+							content: [
+								{
+									type: "text",
+									text: doOverview(
+										params.payloadPath ?? LAST_PAYLOAD,
+										params.verbose ?? false,
+									),
+								},
+							],
+							details: {},
+						};
 					case "chain":
-						return { content: [{ type: "text", text: doChain(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doChain(sid) }],
+							details: {},
+						};
 					case "chain-tcid":
-						return { content: [{ type: "text", text: doChainTcId(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doChainTcId(sid) }],
+							details: {},
+						};
 					case "stats":
-						return { content: [{ type: "text", text: doStats(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doStats(sid) }],
+							details: {},
+						};
 					case "diff": {
 						if (!params.payloadPath || !params.payloadPath2) {
-							return { content: [{ type: "text", text: "❌ diff 需要 payloadPath 和 payloadPath2 两个参数" }], details: {} };
+							return {
+								content: [
+									{
+										type: "text",
+										text: "❌ diff 需要 payloadPath 和 payloadPath2 两个参数",
+									},
+								],
+								details: {},
+							};
 						}
-						return { content: [{ type: "text", text: doDiff(params.payloadPath, params.payloadPath2) }], details: {} };
+						return {
+							content: [
+								{
+									type: "text",
+									text: doDiff(params.payloadPath, params.payloadPath2),
+								},
+							],
+							details: {},
+						};
 					}
 					case "budget":
-						return { content: [{ type: "text", text: doBudget(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doBudget(sid) }],
+							details: {},
+						};
 					case "expensive": {
 						const files = getRecordingFiles(sid);
-						if (!files) return { content: [{ type: "text", text: "没有录制文件" }], details: {} };
-						return { content: [{ type: "text", text: doExpensive(files, params.topN ?? 10) }], details: {} };
+						if (!files)
+							return {
+								content: [{ type: "text", text: "没有录制文件" }],
+								details: {},
+							};
+						return {
+							content: [
+								{ type: "text", text: doExpensive(files, params.topN ?? 10) },
+							],
+							details: {},
+						};
 					}
 					case "growth":
-						return { content: [{ type: "text", text: doGrowth(sid) }], details: {} };
+						return {
+							content: [{ type: "text", text: doGrowth(sid) }],
+							details: {},
+						};
 					case "messages": {
 						const payloadPath = params.payloadPath ?? LAST_PAYLOAD;
 						return {
-							content: [{ type: "text", text: doMessages({
-								payloadPath,
-								msgIndex: params.msgIndex,
-								msgRange: params.msgRange,
-								grep: params.grep,
-								toolName: params.toolName,
-								context: params.context,
-							}) }],
+							content: [
+								{
+									type: "text",
+									text: doMessages({
+										payloadPath,
+										msgIndex: params.msgIndex,
+										msgRange: params.msgRange,
+										grep: params.grep,
+										toolName: params.toolName,
+										context: params.context,
+									}),
+								},
+							],
 							details: {},
 						};
 					}
 					default:
-						return { content: [{ type: "text", text: `未知 action: ${params.action}` }], details: {} };
+						return {
+							content: [
+								{ type: "text", text: `未知 action: ${params.action}` },
+							],
+							details: {},
+						};
 				}
 			} catch (err: unknown) {
 				return {
-					content: [{ type: "text", text: `❌ 错误: ${err instanceof Error ? err.message : String(err)}` }],
+					content: [
+						{
+							type: "text",
+							text: `❌ 错误: ${err instanceof Error ? err.message : String(err)}`,
+						},
+					],
 					details: {},
 				};
 			}

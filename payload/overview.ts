@@ -2,12 +2,17 @@
  * overview action — 详细分析 provider payload
  */
 
+import type { PayloadMessage } from "../types-payload.js";
 import {
-	estTokens, fmtTok, fmtSize, getText,
-	buildProviderToolCallIndex, classifyStatus,
-	parseDistillHeader, parseArgs, readJsonFile,
+	buildProviderToolCallIndex,
+	estTokens,
+	fmtSize,
+	fmtTok,
+	getText,
+	parseArgs,
+	parseDistillHeader,
+	readJsonFile,
 } from "./core.js";
-import type { PayloadMessage, ToolDefinition } from "../types-payload.js";
 import { formatToolStats } from "./format.js";
 
 export function doOverview(payloadPath: string, verbose = false): string {
@@ -25,28 +30,44 @@ export function doOverview(payloadPath: string, verbose = false): string {
 	];
 
 	// Tools
-	const toolTotalTok = tools.reduce((s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)), 0);
+	const toolTotalTok = tools.reduce(
+		(s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)),
+		0,
+	);
 	lines.push(`\n📦 Tools: ${tools.length} 个, ~${fmtTok(toolTotalTok)} tokens`);
 	if (verbose) {
 		for (const t of tools) {
 			const name = t.name ?? t.function?.name ?? "?";
 			const tText = JSON.stringify(t);
-			lines.push(`   ${name.padEnd(30)} ~${fmtTok(estTokens(tText)).padStart(6)}  ${fmtSize(tText.length)}`);
+			lines.push(
+				`   ${name.padEnd(30)} ~${fmtTok(estTokens(tText)).padStart(6)}  ${fmtSize(tText.length)}`,
+			);
 		}
 	}
 
 	// System prompt
-	const sysMsg = msgs.find((m: PayloadMessage) => m.role === "system" || m.role === "developer");
+	const sysMsg = msgs.find(
+		(m: PayloadMessage) => m.role === "system" || m.role === "developer",
+	);
 	if (sysMsg) {
 		const sysText = getText(sysMsg.content);
-		lines.push(`\n📝 System Prompt: ~${fmtTok(estTokens(sysText))} tokens, ${fmtSize(sysText.length)}`);
+		lines.push(
+			`\n📝 System Prompt: ~${fmtTok(estTokens(sysText))} tokens, ${fmtSize(sysText.length)}`,
+		);
 	}
 
 	// 逐消息分析
-	const perTool: Record<string, { count: number; callTokens: number; resultTokens: number }> = {};
+	const perTool: Record<
+		string,
+		{ count: number; callTokens: number; resultTokens: number }
+	> = {};
 	const distillEvents: Array<{
-		idx: number; tool: string; origTok: number; curTok: number;
-		saved: number; tmpPath: string;
+		idx: number;
+		tool: string;
+		origTok: number;
+		curTok: number;
+		saved: number;
+		tmpPath: string;
 	}> = [];
 
 	lines.push(`\n📋 消息列表 (${msgs.length} 条):`);
@@ -63,38 +84,56 @@ export function doOverview(payloadPath: string, verbose = false): string {
 				const name = tc.function?.name ?? "unknown";
 				const args = parseArgs(tc.function?.arguments ?? "{}");
 				calls.push({ name, args });
-				if (!perTool[name]) perTool[name] = { count: 0, callTokens: 0, resultTokens: 0 };
+				if (!perTool[name])
+					perTool[name] = { count: 0, callTokens: 0, resultTokens: 0 };
 				perTool[name].count++;
 				perTool[name].callTokens += estTokens(tc.function?.arguments ?? "");
 			}
 			const parts: string[] = [];
 			if (text.trim()) parts.push(`text ~${fmtTok(tokens)}`);
-			if (calls.length) parts.push(`calls: ${calls.map(c => c.name).join(", ")}`);
-			lines.push(`\n  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  ${parts.join(" | ")}`);
+			if (calls.length)
+				parts.push(`calls: ${calls.map((c) => c.name).join(", ")}`);
+			lines.push(
+				`\n  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  ${parts.join(" | ")}`,
+			);
 			for (const c of calls) {
-				lines.push(`        ↳ ${c.name}(${JSON.stringify(c.args).slice(0, 80)})`);
+				lines.push(
+					`        ↳ ${c.name}(${JSON.stringify(c.args).slice(0, 80)})`,
+				);
 			}
 		} else if (role === "tool") {
 			const tcid = m.tool_call_id ?? "";
 			const toolIdx = buildProviderToolCallIndex(msgs);
 			const info = toolIdx.get(tcid);
 			const toolName = info?.name ?? "unknown";
-			if (!perTool[toolName]) perTool[toolName] = { count: 0, callTokens: 0, resultTokens: 0 };
+			if (!perTool[toolName])
+				perTool[toolName] = { count: 0, callTokens: 0, resultTokens: 0 };
 			perTool[toolName].resultTokens += tokens;
 
 			let marker = "";
 			const distill = parseDistillHeader(text);
 			if (distill) {
 				const saved = distill.origTokens - tokens;
-				distillEvents.push({ idx: i, tool: toolName, origTok: distill.origTokens, curTok: tokens, saved, tmpPath: distill.tmpPath });
+				distillEvents.push({
+					idx: i,
+					tool: toolName,
+					origTok: distill.origTokens,
+					curTok: tokens,
+					saved,
+					tmpPath: distill.tmpPath,
+				});
 				marker = ` 🔴 DISTILLED (was ~${fmtTok(distill.origTokens)}, saved ~${fmtTok(saved)})`;
 			} else if (tokens >= 4000) {
 				marker = " 🟡 大文件 (>= 4k tokens)";
 			}
-			lines.push(`  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  [${toolName}]${marker}`);
+			lines.push(
+				`  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  [${toolName}]${marker}`,
+			);
 			lines.push(`        "${firstLine}"`);
 		} else {
-			lines.push(`\n  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  ${firstLine}`);
+			lines.push(
+				`\n  [${String(i).padStart(3)}] ${role.padEnd(12)} ~${fmtTok(tokens).padStart(6)}  ${firstLine}`,
+			);
 		}
 	}
 
@@ -106,7 +145,9 @@ export function doOverview(payloadPath: string, verbose = false): string {
 		let totalSaved = 0;
 		for (const e of distillEvents) {
 			totalSaved += e.saved;
-			lines.push(`   [${String(e.idx).padStart(3)}] ${e.tool.padEnd(20)}  ~${fmtTok(e.origTok).padStart(6)} → ~${fmtTok(e.curTok).padStart(6)}  (saved ~${fmtTok(e.saved)})  → ${e.tmpPath}`);
+			lines.push(
+				`   [${String(e.idx).padStart(3)}] ${e.tool.padEnd(20)}  ~${fmtTok(e.origTok).padStart(6)} → ~${fmtTok(e.curTok).padStart(6)}  (saved ~${fmtTok(e.saved)})  → ${e.tmpPath}`,
+			);
 		}
 		lines.push(`   总计节省: ~${fmtTok(totalSaved)} tokens`);
 	}

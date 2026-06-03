@@ -5,11 +5,11 @@
  * 写临时文件并替换为摘要对象。
  */
 
-import type { PayloadMessage } from "./types-payload.js";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "path";
+import { join } from "node:path";
 import { estimateTokens } from "./distill-helpers.js";
 import { DISTILL_DIR } from "./shared.js";
+import type { PayloadMessage } from "./types-payload.js";
 
 const TOOLCALL_PROCESSOR_DIR = join(DISTILL_DIR, "processor");
 

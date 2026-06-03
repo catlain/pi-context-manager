@@ -3,7 +3,7 @@
  *
  * 覆盖：listRecordingFiles, getRecordingFiles
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDir = vi.hoisted(() => "/fake/recordings");
 
@@ -24,10 +24,7 @@ vi.mock("../../payload/files-core.js", () => ({
 	listSessions: mockListSessions,
 }));
 
-import {
-	listRecordingFiles,
-	getRecordingFiles,
-} from "../../payload/files.js";
+import { getRecordingFiles, listRecordingFiles } from "../../payload/files.js";
 
 // ══════════════════════════════════════════════════
 // listRecordingFiles

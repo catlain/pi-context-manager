@@ -3,14 +3,21 @@
  *
  * 覆盖：listSessionData, cleanContextData
  */
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
-import { join } from "path";
+
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
-	const { join: pJoin } = require("path") as typeof import("path");
-	const os = require("os") as typeof import("os");
-	process.env.HOME = pJoin(os.tmpdir(), "pi-clean-test-" + Date.now());
+	const { join: pJoin } = require("node:path") as typeof import("path");
+	const os = require("node:os") as typeof import("os");
+	process.env.HOME = pJoin(os.tmpdir(), `pi-clean-test-${Date.now()}`);
 });
 
 vi.mock("@pi-atelier/shared-utils", () => ({
@@ -23,7 +30,7 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 	getSettingsValue: vi.fn(),
 }));
 
-import { listSessionData, cleanContextData } from "../clean.js";
+import { cleanContextData, listSessionData } from "../clean.js";
 import { DISTILL_DIR } from "../shared.js";
 
 /**

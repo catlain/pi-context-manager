@@ -1,7 +1,7 @@
 /**
  * tool-result-processor-helpers.ts 测试
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFs = vi.hoisted(() => ({
 	existsSync: vi.fn(),
@@ -16,12 +16,12 @@ vi.mock("node:fs", () => mockFs);
 vi.mock("../utils.js", () => ({ formatTokens: (n: number) => `${n}t` }));
 
 import {
+	buildFileHeader,
+	buildSummary,
 	extractBashSourcePath,
 	formatTimestamp,
-	buildFileHeader,
-	writeRawToFile,
 	handleLargeResult,
-	buildSummary,
+	writeRawToFile,
 } from "../tool-result-processor-helpers.js";
 
 beforeEach(() => {
@@ -38,10 +38,20 @@ describe("extractBashSourcePath", () => {
 		expect(extractBashSourcePath(42)).toBeNull();
 	});
 	it("truncation.truncated + fullOutputPath → 返回路径", () => {
-		expect(extractBashSourcePath({ fullOutputPath: "/p.txt", truncation: { truncated: true } })).toBe("/p.txt");
+		expect(
+			extractBashSourcePath({
+				fullOutputPath: "/p.txt",
+				truncation: { truncated: true },
+			}),
+		).toBe("/p.txt");
 	});
 	it("truncation.truncated 为 false → null", () => {
-		expect(extractBashSourcePath({ fullOutputPath: "/p.txt", truncation: { truncated: false } })).toBeNull();
+		expect(
+			extractBashSourcePath({
+				fullOutputPath: "/p.txt",
+				truncation: { truncated: false },
+			}),
+		).toBeNull();
 	});
 	it("truncation 不存在 → null", () => {
 		expect(extractBashSourcePath({ fullOutputPath: "/p.txt" })).toBeNull();
@@ -99,7 +109,9 @@ describe("writeRawToFile", () => {
 		expect(mockFs.readFileSync).toHaveBeenCalledWith("/src.txt", "utf-8");
 	});
 	it("写入异常返回 null", () => {
-		mockFs.mkdirSync.mockImplementation(() => { throw new Error("fail"); });
+		mockFs.mkdirSync.mockImplementation(() => {
+			throw new Error("fail");
+		});
 		expect(writeRawToFile("raw", "t", false)).toBeNull();
 	});
 });
@@ -122,7 +134,12 @@ describe("buildSummary", () => {
 		expect(s).not.toContain("more lines");
 	});
 	it("长结果有 more lines", () => {
-		const s = buildSummary(Array.from({ length: 30 }, (_, i) => `l${i}`).join("\n"), "big_t", 500, "/b.txt");
+		const s = buildSummary(
+			Array.from({ length: 30 }, (_, i) => `l${i}`).join("\n"),
+			"big_t",
+			500,
+			"/b.txt",
+		);
 		expect(s).toContain("more lines");
 	});
 });

@@ -10,16 +10,17 @@
  * - 组合：grep + toolName 取交集
  */
 
+import { matchFile } from "@pi-atelier/shared-utils";
+import { buildProviderToolCallIndex, readJsonFile } from "./core.js";
 import {
-	buildProviderToolCallIndex,
-	readJsonFile,
-} from "./core.js";
-import {
-	summaryLine, detailBlock, parseRange, searchableText,
-	extractFilePaths, matchesToolName,
 	DEFAULT_SUMMARY_LIMIT,
+	detailBlock,
+	extractFilePaths,
+	matchesToolName,
+	parseRange,
+	searchableText,
+	summaryLine,
 } from "./messages-helpers.js";
-import { matchToolName as matchToolNameUtil, matchFile } from "@pi-atelier/shared-utils";
 
 // ── 接口 ──
 
@@ -36,7 +37,15 @@ export interface MessagesParams {
 // ── 主函数 ──
 
 export function doMessages(params: MessagesParams): string {
-	const { payloadPath, msgIndex, msgRange, grep, toolName, file, context = 3 } = params;
+	const {
+		payloadPath,
+		msgIndex,
+		msgRange,
+		grep,
+		toolName,
+		file,
+		context = 3,
+	} = params;
 
 	const data = readJsonFile(payloadPath);
 	if (!data) return `❌ 文件不存在: ${payloadPath}`;
@@ -86,7 +95,8 @@ export function doMessages(params: MessagesParams): string {
 
 	if (msgRange) {
 		const range = parseRange(msgRange, total);
-		if (!range) return `❌ 无效 msgRange: "${msgRange}"（格式: "M-N" 或 "last:N"）`;
+		if (!range)
+			return `❌ 无效 msgRange: "${msgRange}"（格式: "M-N" 或 "last:N"）`;
 		indices = [];
 		for (let i = range.start; i <= range.end; i++) indices.push(i);
 	} else {
@@ -103,17 +113,19 @@ export function doMessages(params: MessagesParams): string {
 		} catch {
 			return `❌ 无效正则: ${grep}`;
 		}
-		indices = indices.filter(i => regex.test(searchableText(msgs[i])));
+		indices = indices.filter((i) => regex.test(searchableText(msgs[i])));
 	}
 
 	// toolName 过滤：增强匹配（精确/通配符/多值/前缀）
 	if (toolName) {
-		indices = indices.filter(i => matchesToolName(msgs[i], toolName, toolIdx));
+		indices = indices.filter((i) =>
+			matchesToolName(msgs[i], toolName, toolIdx),
+		);
 	}
 
 	// file 过滤：匹配工具参数中的路径
 	if (file) {
-		indices = indices.filter(i => matchFile(file, extractFilePaths(msgs[i])));
+		indices = indices.filter((i) => matchFile(file, extractFilePaths(msgs[i])));
 	}
 
 	if (indices.length === 0) {
@@ -125,11 +137,15 @@ export function doMessages(params: MessagesParams): string {
 	// ── 无参数全量模式：截断 ──
 	if (!msgRange && !grep && !toolName && !file) {
 		const truncated = indices.length > DEFAULT_SUMMARY_LIMIT;
-		const showIndices = truncated ? indices.slice(0, DEFAULT_SUMMARY_LIMIT) : indices;
+		const showIndices = truncated
+			? indices.slice(0, DEFAULT_SUMMARY_LIMIT)
+			: indices;
 
 		const lines: string[] = [`消息摘要: ${total} 条`];
 		if (truncated) {
-			lines.push(`（显示前 ${DEFAULT_SUMMARY_LIMIT} 条，用 msgRange="last:N" 查看末尾）\n`);
+			lines.push(
+				`（显示前 ${DEFAULT_SUMMARY_LIMIT} 条，用 msgRange="last:N" 查看末尾）\n`,
+			);
 		}
 
 		for (const i of showIndices) {
@@ -137,7 +153,9 @@ export function doMessages(params: MessagesParams): string {
 		}
 
 		if (truncated) {
-			lines.push(`\n... 还有 ${indices.length - DEFAULT_SUMMARY_LIMIT} 条未显示`);
+			lines.push(
+				`\n... 还有 ${indices.length - DEFAULT_SUMMARY_LIMIT} 条未显示`,
+			);
 		}
 
 		return lines.join("\n");

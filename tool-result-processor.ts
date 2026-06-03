@@ -4,14 +4,18 @@
  * 注册 tool_result handler，委托核心逻辑到 tool-result-processor-core。
  */
 
-import type { ExtensionAPI, ToolResultEvent, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+	ToolResultEvent,
+} from "@earendil-works/pi-coding-agent";
 import { getContextConfig } from "./shared.js";
 import {
 	type ProcessorOptions,
 	processToolResult,
 } from "./tool-result-processor-core.js";
 
-const DEFAULT_THRESHOLD = 4000;
+const _DEFAULT_THRESHOLD = 4000;
 
 /**
  * 注册 tool_result handler。

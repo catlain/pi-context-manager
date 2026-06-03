@@ -42,7 +42,7 @@ export interface ProcessorOptions {
 
 // ── 配置常量 ──────────────────────────────────────
 
-const DEFAULT_THRESHOLD = 4000;
+const _DEFAULT_THRESHOLD = 4000;
 
 // edit/write：结果极短（确认信息），无需处理
 // grep/find/ls：不再跳过——大结果需写临时文件以支持 distill 精读
@@ -53,7 +53,6 @@ const PREVIEW_LINES = 15;
 // 背景：estimateTokens 用 length/4 低估结构化文本（如 Godot MCP 的 JSON 输出），
 // 导致 8K~16K 字符的内容（估算 ~2000~4000 tokens）绕过压缩
 const CHAR_HARD_LIMIT = 8000;
-
 
 // ── 核心处理 ──────────────────────────────────────
 

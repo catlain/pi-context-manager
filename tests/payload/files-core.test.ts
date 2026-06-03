@@ -4,8 +4,9 @@
  * 覆盖：listSessions, listRecordings
  * Mock fs 函数，模拟 RECORDINGS_DIR 下的目录和文件结构。
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { join } from "path";
+
+import { join } from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockDir = vi.hoisted(() => "/fake/recordings");
 
@@ -33,7 +34,7 @@ vi.mock("../../payload/core.js", () => ({
 	readJsonFile: vi.fn(),
 }));
 
-import { listSessions, listRecordings } from "../../payload/files-core.js";
+import { listRecordings, listSessions } from "../../payload/files-core.js";
 
 // ══════════════════════════════════════════════════
 // listSessions
@@ -77,17 +78,14 @@ describe("listSessions", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		// 外层 readdirSync：列目录项
 		// 内层 readdirSync：列每个目录下的 req-* 文件
-		let callCount = 0;
+		let _callCount = 0;
 		mockFs.readdirSync.mockImplementation((p: string) => {
-			callCount++;
+			_callCount++;
 			if (p === mockDir) {
 				return ["session-a", "session-b"];
 			}
 			if (p === pj("/fake", "recordings", "session-a")) {
-				return [
-					"req-0001-100000.123.json",
-					"req-0002-100001.456.json",
-				];
+				return ["req-0001-100000.123.json", "req-0002-100001.456.json"];
 			}
 			if (p === pj("/fake", "recordings", "session-b")) {
 				return ["req-0001-100002.789.json"];
@@ -96,7 +94,9 @@ describe("listSessions", () => {
 		});
 		mockFs.statSync.mockReturnValue({ isDirectory: () => true });
 		mockFs.readFileSync.mockImplementation((p: string) => {
-			if (p === pj("/fake", "recordings", "session-a", "req-0001-100000.123.json")) {
+			if (
+				p === pj("/fake", "recordings", "session-a", "req-0001-100000.123.json")
+			) {
 				return JSON.stringify({ model: "gpt-4" });
 			}
 			return JSON.stringify({ model: "claude-3" });
@@ -122,12 +122,11 @@ describe("listSessions", () => {
 			return [];
 		});
 		mockFs.statSync.mockImplementation((p: string) => {
-			if (p === pj("/fake", "recordings", "bad-entry")) throw new Error("permission");
+			if (p === pj("/fake", "recordings", "bad-entry"))
+				throw new Error("permission");
 			return { isDirectory: () => true, size: 100 };
 		});
-		mockFs.readFileSync.mockReturnValue(
-			JSON.stringify({ model: "gpt-4" }),
-		);
+		mockFs.readFileSync.mockReturnValue(JSON.stringify({ model: "gpt-4" }));
 		const sessions = listSessions();
 		expect(sessions).toHaveLength(1);
 		expect(sessions[0].sessionId).toBe("good-session");
@@ -176,10 +175,7 @@ describe("listRecordings", () => {
 		mockFs.existsSync.mockReturnValue(true);
 		mockFs.readdirSync.mockImplementation((p: string) => {
 			if (p === pj("/fake", "recordings", "session-a")) {
-				return [
-					"req-0001-abc.json",
-					"req-0002-def.json",
-				];
+				return ["req-0001-abc.json", "req-0002-def.json"];
 			}
 			return [];
 		});

@@ -7,7 +7,7 @@
  * - /record（无参）→ toggle
  * - setRecording 返回值（之前的 void→boolean bug）
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock recording 模块
 vi.mock("../recording.js", () => ({
@@ -17,8 +17,8 @@ vi.mock("../recording.js", () => ({
 	RECORDINGS_DIR: "/tmp/test-recordings",
 }));
 
-import { setRecording, isRecording, cleanRecordings } from "../recording.js";
 import { registerRecordCommand } from "../commands.js";
+import { cleanRecordings, isRecording, setRecording } from "../recording.js";
 
 function createMockPi() {
 	const registered: { name: string; handler: Function }[] = {};
@@ -52,7 +52,7 @@ describe("/record 命令", () => {
 		(setRecording as any).mockReturnValue(true);
 		(cleanRecordings as any).mockReturnValue(0);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("on", { ui: { notify } });
 
 		expect(setRecording).toHaveBeenCalledWith(true);
@@ -66,7 +66,7 @@ describe("/record 命令", () => {
 		(setRecording as any).mockReturnValue(true);
 		(cleanRecordings as any).mockReturnValue(3);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("on", { ui: { notify } });
 
 		expect(cleanRecordings).toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe("/record 命令", () => {
 	it("/record off → setRecording(false) 并通知关闭", async () => {
 		(setRecording as any).mockReturnValue(false);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("off", { ui: { notify } });
 
 		expect(setRecording).toHaveBeenCalledWith(false);
@@ -93,7 +93,7 @@ describe("/record 命令", () => {
 		(isRecording as any).mockReturnValue(false);
 		(setRecording as any).mockReturnValue(true);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("", { ui: { notify } });
 
 		expect(isRecording).toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe("/record 命令", () => {
 		(isRecording as any).mockReturnValue(true);
 		(setRecording as any).mockReturnValue(false);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler(undefined, { ui: { notify } });
 
 		expect(setRecording).toHaveBeenCalledWith(false);
@@ -121,7 +121,7 @@ describe("/record 命令", () => {
 	it("/record ON（大写）→ 正常处理（不区分大小写）", async () => {
 		(setRecording as any).mockReturnValue(true);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("ON", { ui: { notify } });
 
 		expect(setRecording).toHaveBeenCalledWith(true);
@@ -131,7 +131,7 @@ describe("/record 命令", () => {
 		// 模拟旧的 void 返回值
 		(setRecording as any).mockReturnValue(undefined);
 
-		const handler = mockPi.handlers["record"];
+		const handler = mockPi.handlers.record;
 		await handler("on", { ui: { notify } });
 
 		// void → falsy → 走 else 分支 → 显示关闭

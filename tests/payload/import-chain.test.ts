@@ -9,12 +9,15 @@
  * 如果拆文件后改漏了 import 路径，execute 内部会 catch TypeError
  * 并返回 "❌ 错误: xxx is not a function"。
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock typebox
 vi.mock("typebox", () => ({
 	Type: {
-		Object: vi.fn((props: Record<string, unknown>) => ({ type: "object", properties: props })),
+		Object: vi.fn((props: Record<string, unknown>) => ({
+			type: "object",
+			properties: props,
+		})),
 		String: vi.fn(() => ({ type: "string" })),
 		Union: vi.fn((members: unknown[]) => ({ anyOf: members })),
 		Literal: vi.fn((val: string) => ({ const: val })),
@@ -32,9 +35,13 @@ function getResultText(result: unknown): string {
 
 describe("payload import chain smoke test", () => {
 	it("所有 11 个 action 的处理函数都可用（不返回 is not a function）", async () => {
-		const { registerPayloadAnalyzer } = await import("../../payload/register.js");
+		const { registerPayloadAnalyzer } = await import(
+			"../../payload/register.js"
+		);
 
-		let registeredTool: { execute: (...args: unknown[]) => Promise<unknown> } | null = null;
+		let registeredTool: {
+			execute: (...args: unknown[]) => Promise<unknown>;
+		} | null = null;
 		const mockPi = {
 			registerTool: vi.fn((tool: unknown) => {
 				registeredTool = tool as typeof registeredTool;
@@ -47,8 +54,17 @@ describe("payload import chain smoke test", () => {
 		expect(registeredTool).not.toBeNull();
 
 		const actions = [
-			"list", "single", "overview", "chain", "chain-tcid",
-			"stats", "diff", "budget", "expensive", "growth", "messages",
+			"list",
+			"single",
+			"overview",
+			"chain",
+			"chain-tcid",
+			"stats",
+			"diff",
+			"budget",
+			"expensive",
+			"growth",
+			"messages",
 		];
 
 		for (const action of actions) {
@@ -58,7 +74,13 @@ describe("payload import chain smoke test", () => {
 				params.payloadPath2 = "/tmp/b.json";
 			}
 
-			const result = await registeredTool!.execute("_id", params, undefined, undefined, undefined);
+			const result = await registeredTool!.execute(
+				"_id",
+				params,
+				undefined,
+				undefined,
+				undefined,
+			);
 			const text = getResultText(result);
 
 			// 关键断言：返回内容不含 "is not a function"
@@ -68,10 +90,9 @@ describe("payload import chain smoke test", () => {
 			).not.toContain("is not a function");
 
 			// 也检查未返回 "TypeError"
-			expect(
-				text,
-				`action "${action}" 不应返回 TypeError`,
-			).not.toContain("TypeError");
+			expect(text, `action "${action}" 不应返回 TypeError`).not.toContain(
+				"TypeError",
+			);
 		}
 	});
 });

@@ -1,7 +1,7 @@
 /** clean.ts — distill 数据清理工具 */
 
-import { existsSync, readdirSync, rmSync, statSync } from "fs";
-import { join } from "path";
+import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { DISTILL_DIR } from "./shared.js";
 
 /** 计算目录大小（字节） */

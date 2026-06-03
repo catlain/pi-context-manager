@@ -36,7 +36,7 @@ function createAgingConfigHandler() {
 			return;
 		}
 		const val = Number(arg);
-		if (isNaN(val) || val <= 0 || !Number.isInteger(val)) {
+		if (Number.isNaN(val) || val <= 0 || !Number.isInteger(val)) {
 			ctx.ui.notify(`❌ 无效值: ${arg}（需要正整数或 0/off）`, "error");
 			return;
 		}

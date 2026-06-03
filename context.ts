@@ -12,7 +12,6 @@ import {
 import { readCachedPayload } from "./shared.js";
 import type {
 	CategoryItem,
-	ContextData,
 	ContextStateRef,
 	DetailItem,
 	RecordItem,
@@ -99,7 +98,7 @@ export default function registerContextCommand(
 							const lines = container.render(w);
 							const termHeight =
 								(tui as any).terminal?.rows ||
-								parseInt(process.env.LINES || "40");
+								parseInt(process.env.LINES || "40", 10);
 							const target = termHeight;
 							while (lines.length < target) lines.push("");
 							return lines;
@@ -175,7 +174,7 @@ export default function registerContextCommand(
 										0,
 										(curDetail?.records?.length ?? 1) - 1,
 									);
-									const recCount = curDetail?.records?.length ?? 1;
+									const _recCount = curDetail?.records?.length ?? 1;
 									const reserved = 7;
 									const visible = Math.max(1, viewport - reserved);
 									if (rIdx < rScroll) rScroll = rIdx;

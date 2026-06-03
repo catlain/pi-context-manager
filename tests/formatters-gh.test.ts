@@ -15,7 +15,11 @@ describe("formatGhResult — gh_search_doc", () => {
 	it("results 数组 → 编号列表", () => {
 		const input = JSON.stringify({
 			results: [
-				{ title: "API 文档", url: "https://example.com/api", summary: "RESTful API" },
+				{
+					title: "API 文档",
+					url: "https://example.com/api",
+					summary: "RESTful API",
+				},
 				{ title: "CLI 指南", url: "https://example.com/cli" },
 			],
 		});
@@ -36,11 +40,7 @@ describe("formatGhResult — gh_search_doc", () => {
 
 	it("results 项缺少可选字段不崩溃", () => {
 		const input = JSON.stringify({
-			results: [
-				{ title: "Minimal" },
-				{},
-				{ url: "https://example.com" },
-			],
+			results: [{ title: "Minimal" }, {}, { url: "https://example.com" }],
 		});
 		const result = formatGhResult(input);
 		expect(result).toContain("[1]");
@@ -93,12 +93,18 @@ describe("formatGhResult — gh_repo_structure", () => {
 	it("tree → 缩进树形结构", () => {
 		const input = JSON.stringify({
 			tree: [
-				{ name: "src", type: "directory", children: [
-					{ name: "index.ts", type: "file" },
-					{ name: "utils", type: "directory", children: [
-						{ name: "helpers.ts", type: "file" },
-					]},
-				]},
+				{
+					name: "src",
+					type: "directory",
+					children: [
+						{ name: "index.ts", type: "file" },
+						{
+							name: "utils",
+							type: "directory",
+							children: [{ name: "helpers.ts", type: "file" }],
+						},
+					],
+				},
 				{ name: "README.md", type: "file" },
 			],
 		});
@@ -130,8 +136,20 @@ describe("formatGhResult — 语义验证：防止非 gh 工具的 results 被�
 		const input = JSON.stringify({
 			count: 5,
 			results: [
-				{ name: "compileRules", type: "function", file_path: "pi-shepherd/shepherd/rules.ts", start_line: 138, end_line: 157 },
-				{ name: "ruleMatches", type: "function", file_path: "pi-shepherd/shepherd/rules.ts", start_line: 261, end_line: 279 },
+				{
+					name: "compileRules",
+					type: "function",
+					file_path: "pi-shepherd/shepherd/rules.ts",
+					start_line: 138,
+					end_line: 157,
+				},
+				{
+					name: "ruleMatches",
+					type: "function",
+					file_path: "pi-shepherd/shepherd/rules.ts",
+					start_line: 261,
+					end_line: 279,
+				},
 			],
 		});
 		// 不应被 gh formatter 改变，应 fallback 返回原文
@@ -164,9 +182,7 @@ describe("formatGhResult — code-graph 误匹配防护", () => {
 			path: "pi-shepherd/shepherd",
 			files_count: 3,
 			summary: "Module 'shepherd' — Hook rule engine",
-			active_exports: [
-				{ name: "compileRules", type: "function", callers: 5 },
-			],
+			active_exports: [{ name: "compileRules", type: "function", callers: 5 }],
 			_dead_exports: [],
 		});
 		expect(formatGhResult(input)).toBe(input);

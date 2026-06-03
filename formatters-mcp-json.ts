@@ -73,7 +73,12 @@ export function sniffMcpJson(text: string): boolean {
 			return false;
 		}
 		// 必须有 Godot 场景特征：children 或 type+properties
-		return !!(obj.data.children || obj.data.root?.children || obj.data.properties || obj.data.type);
+		return !!(
+			obj.data.children ||
+			obj.data.root?.children ||
+			obj.data.properties ||
+			obj.data.type
+		);
 	} catch {
 		return false;
 	}
@@ -211,7 +216,10 @@ function isDefaultValue(value: unknown): boolean {
 		// { x: 0, y: 0, z: 0 } 是默认位置/旋转
 		const vals = Object.values(value as Record<string, unknown>);
 		return vals.every(
-			(v) => v === 0 || v === 1 || (typeof v === "number" && Math.abs(v as number) < 0.001),
+			(v) =>
+				v === 0 ||
+				v === 1 ||
+				(typeof v === "number" && Math.abs(v as number) < 0.001),
 		);
 	}
 	return false;

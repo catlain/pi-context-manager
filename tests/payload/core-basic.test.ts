@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	estTokens, fmtTok, fmtSize, getText,
-	buildProviderToolCallIndex, buildPiToolCallIndex,
+	buildPiToolCallIndex,
+	buildProviderToolCallIndex,
 	classifyStatus,
+	estTokens,
+	fmtSize,
+	fmtTok,
+	getText,
 } from "../../payload/core.js";
 
 describe("estTokens", () => {
@@ -41,27 +45,46 @@ describe("getText", () => {
 describe("buildProviderToolCallIndex", () => {
 	it("从 provider 格式构建 tool_call 索引", () => {
 		const msgs = [
-			{ role: "assistant", tool_calls: [
-				{ id: "tc1", function: { name: "read", arguments: '{"path":"a.ts"}' } },
-				{ id: "tc2", function: { name: "bash", arguments: '{"cmd":"ls"}' } },
-			]},
+			{
+				role: "assistant",
+				tool_calls: [
+					{
+						id: "tc1",
+						function: { name: "read", arguments: '{"path":"a.ts"}' },
+					},
+					{ id: "tc2", function: { name: "bash", arguments: '{"cmd":"ls"}' } },
+				],
+			},
 		];
 		const idx = buildProviderToolCallIndex(msgs);
 		expect(idx.size).toBe(2);
-		expect(idx.get("tc1")).toEqual({ name: "read", argsStr: '{"path":"a.ts"}' });
+		expect(idx.get("tc1")).toEqual({
+			name: "read",
+			argsStr: '{"path":"a.ts"}',
+		});
 		expect(idx.get("tc2")).toEqual({ name: "bash", argsStr: '{"cmd":"ls"}' });
 	});
 	it("无 tool_calls 返回空 map", () => {
-		expect(buildProviderToolCallIndex([{ role: "user", content: "hi" }]).size).toBe(0);
+		expect(
+			buildProviderToolCallIndex([{ role: "user", content: "hi" }]).size,
+		).toBe(0);
 	});
 });
 
 describe("buildPiToolCallIndex", () => {
 	it("从 pi 内部格式构建索引", () => {
 		const msgs = [
-			{ role: "assistant", content: [
-				{ type: "toolCall", id: "tc1", name: "read", arguments: { path: "a.ts" } },
-			]},
+			{
+				role: "assistant",
+				content: [
+					{
+						type: "toolCall",
+						id: "tc1",
+						name: "read",
+						arguments: { path: "a.ts" },
+					},
+				],
+			},
 		];
 		const idx = buildPiToolCallIndex(msgs);
 		expect(idx.size).toBe(1);
@@ -69,9 +92,17 @@ describe("buildPiToolCallIndex", () => {
 	});
 	it("arguments 字符串直接使用", () => {
 		const msgs = [
-			{ role: "assistant", content: [
-				{ type: "toolCall", id: "tc1", name: "bash", arguments: '{"cmd":"ls"}' },
-			]},
+			{
+				role: "assistant",
+				content: [
+					{
+						type: "toolCall",
+						id: "tc1",
+						name: "bash",
+						arguments: '{"cmd":"ls"}',
+					},
+				],
+			},
 		];
 		expect(buildPiToolCallIndex(msgs).get("tc1")!.argsStr).toBe('{"cmd":"ls"}');
 	});

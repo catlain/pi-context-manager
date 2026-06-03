@@ -3,7 +3,7 @@
  *
  * 覆盖：collectTimeline, collectTimelineByTcId
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockReadJsonFile = vi.hoisted(() => vi.fn());
 
@@ -13,7 +13,8 @@ vi.mock("../../payload/core.js", () => ({
 		typeof c === "string"
 			? c
 			: Array.isArray(c)
-				? c.filter((p: any) => p.type === "text")
+				? c
+						.filter((p: any) => p.type === "text")
 						.map((p: any) => p.text ?? "")
 						.join("\n")
 				: "",
@@ -94,7 +95,9 @@ describe("collectTimeline", () => {
 
 	it("tool_call_id 查询不到 → 使用 tcId 作为 argsStr", () => {
 		mockReadJsonFile.mockReturnValue({
-			messages: [{ role: "tool", tool_call_id: "orphan-tcid", content: "result" }],
+			messages: [
+				{ role: "tool", tool_call_id: "orphan-tcid", content: "result" },
+			],
 		});
 		const map = collectTimeline(files);
 		expect(map.size).toBe(1);
@@ -117,7 +120,9 @@ describe("collectTimelineByTcId", () => {
 			messages: [
 				{
 					role: "assistant",
-					tool_calls: [{ id: "tc1", function: { name: "read", arguments: "{}" } }],
+					tool_calls: [
+						{ id: "tc1", function: { name: "read", arguments: "{}" } },
+					],
 				},
 				{ role: "tool", tool_call_id: "tc1", content: "data" },
 			],

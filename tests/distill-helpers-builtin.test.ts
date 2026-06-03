@@ -1,12 +1,12 @@
 /**
  * distill-helpers 工具函数测试：buildArgsSignature, buildTmpPath, formatTmpContent, buildSummary
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	buildArgsSignature,
+	buildSummary,
 	buildTmpPath,
 	formatTmpContent,
-	buildSummary,
 } from "../distill-helpers.js";
 
 // ── buildArgsSignature ──
@@ -29,7 +29,9 @@ describe("buildArgsSignature", () => {
 	});
 
 	it("bash: 返回 command 首行截取 80 字符", () => {
-		expect(buildArgsSignature("bash", { command: "ls -la\necho hi" })).toBe("ls -la");
+		expect(buildArgsSignature("bash", { command: "ls -la\necho hi" })).toBe(
+			"ls -la",
+		);
 	});
 
 	it("bash: 无 command 时返回空字符串", () => {
@@ -37,7 +39,9 @@ describe("buildArgsSignature", () => {
 	});
 
 	it("grep: 返回 pattern in path", () => {
-		expect(buildArgsSignature("grep", { pattern: "foo", path: "src/" })).toBe("foo in src/");
+		expect(buildArgsSignature("grep", { pattern: "foo", path: "src/" })).toBe(
+			"foo in src/",
+		);
 	});
 
 	it("find: 返回 pattern", () => {
@@ -96,11 +100,7 @@ describe("formatTmpContent", () => {
 	});
 
 	it("无 meta.meta 时生成通用 header", () => {
-		const result = formatTmpContent(
-			{ name: "bash", meta: "" },
-			["output"],
-			50,
-		);
+		const result = formatTmpContent({ name: "bash", meta: "" }, ["output"], 50);
 		expect(result).toContain("[distilled bash]");
 	});
 });
@@ -134,7 +134,9 @@ describe("buildSummary", () => {
 			5,
 			5,
 		);
-		expect(result).toBe("[distilled bash]\nOriginal: 5 tokens (~5), 1 lines\nFull content: /tmp/x.txt\n\n  1 output");
+		expect(result).toBe(
+			"[distilled bash]\nOriginal: 5 tokens (~5), 1 lines\nFull content: /tmp/x.txt\n\n  1 output",
+		);
 	});
 
 	it("预览行数 >= 总行数时不显示 more", () => {

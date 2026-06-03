@@ -9,10 +9,10 @@ import {
 } from "./commands.js";
 import registerContextCommand from "./context.js";
 import { type ContextState, handleContextEvent } from "./handle-context.js";
-import { isRecording, RECORDINGS_DIR } from "./recording.js";
-import { DISTILL_DIR, loadManifest, PAYLOAD_CACHE } from "./shared.js";
-import { registerToolResultProcessor } from "./tool-result-processor.js";
 import { registerPayloadAnalyzer } from "./payload/register.js";
+import { isRecording, RECORDINGS_DIR } from "./recording.js";
+import { DISTILL_DIR, PAYLOAD_CACHE } from "./shared.js";
+import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 export default function (pi: ExtensionAPI) {
 	// ── 闭包状态 ──
@@ -53,10 +53,10 @@ export default function (pi: ExtensionAPI) {
 		getLastContextMessages: () => lastMessages,
 		getLastProviderPayload: () => {
 			try {
-				const fs = require("fs");
-				const path = require("path");
+				const fs = require("node:fs");
+				const path = require("node:path");
 				const cachePath = path.join(
-					require("os").homedir(),
+					require("node:os").homedir(),
 					".pi/agent/distill",
 					"last-payload.json",
 				);
@@ -78,10 +78,13 @@ export default function (pi: ExtensionAPI) {
 	};
 
 	// ── 注册事件 ──
-	pi.on("context", async (event: { messages: PayloadMessage[] }, _ctx: unknown) => {
-		handleContextEvent(event, _ctx, state, pi);
-		return { messages: event.messages };
-	});
+	pi.on(
+		"context",
+		async (event: { messages: PayloadMessage[] }, _ctx: unknown) => {
+			handleContextEvent(event, _ctx, state, pi);
+			return { messages: event.messages };
+		},
+	);
 
 	// ── before_provider_request：写 last-payload + recordings ──
 	pi.on("before_provider_request", async (event, ctx) => {
@@ -89,8 +92,8 @@ export default function (pi: ExtensionAPI) {
 		if (!payload) return;
 
 		try {
-			const { mkdirSync, writeFileSync, readdirSync } = require("fs");
-			const { join } = require("path");
+			const { mkdirSync, writeFileSync, readdirSync } = require("node:fs");
+			const { join } = require("node:path");
 
 			mkdirSync(DISTILL_DIR, { recursive: true });
 			writeFileSync(PAYLOAD_CACHE, JSON.stringify(payload));
@@ -98,14 +101,20 @@ export default function (pi: ExtensionAPI) {
 			// recordings（按 /record on 启用）
 			if (isRecording()) {
 				// 优先从 ctx.sessionManager 获取 sessionId（闭包变量可能在 context 事件前为空）
-				const sid = ctx?.sessionManager?.getSessionId?.() || sessionId || "unknown";
+				const sid =
+					ctx?.sessionManager?.getSessionId?.() || sessionId || "unknown";
 				const sessionDir = join(RECORDINGS_DIR, sid);
 				mkdirSync(sessionDir, { recursive: true });
-				const files = readdirSync(sessionDir).filter((f: string) => f.endsWith(".json"));
+				const files = readdirSync(sessionDir).filter((f: string) =>
+					f.endsWith(".json"),
+				);
 				const nextIdx = files.length + 1;
 				const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 				writeFileSync(
-					join(sessionDir, `req-${String(nextIdx).padStart(4, "0")}-${ts}.json`),
+					join(
+						sessionDir,
+						`req-${String(nextIdx).padStart(4, "0")}-${ts}.json`,
+					),
 					JSON.stringify(payload),
 					{ mode: 0o600 },
 				);

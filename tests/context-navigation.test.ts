@@ -1,12 +1,17 @@
 /**
  * context.ts — 基本层级导航测试（overview → category → records → content, esc 返回）
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-coding-agent", () => ({
 	DynamicBorder: vi.fn(() => ({})),
 }));
-const mockContainer = vi.hoisted(() => ({ addChild: vi.fn(), clear: vi.fn(), render: vi.fn(() => []), invalidate: vi.fn() }));
+const mockContainer = vi.hoisted(() => ({
+	addChild: vi.fn(),
+	clear: vi.fn(),
+	render: vi.fn(() => []),
+	invalidate: vi.fn(),
+}));
 vi.mock("@earendil-works/pi-tui", () => ({
 	Container: vi.fn(() => mockContainer),
 	Spacer: vi.fn(() => ({})),
@@ -23,8 +28,13 @@ vi.mock("../render.js", () => ({
 }));
 
 import { collectData } from "../collect.js";
-import { renderOverview, renderCategory, renderRecords, renderContent } from "../render.js";
 import registerContextCommand from "../context.js";
+import {
+	renderCategory,
+	renderContent,
+	renderOverview,
+	renderRecords,
+} from "../render.js";
 
 function makeData() {
 	return {
@@ -40,7 +50,11 @@ function makeData() {
 						value: 50,
 						enterable: true,
 						records: [
-							{ summary: "file.ts", lines: ["line1", "line2"], toolCallId: "tc1" },
+							{
+								summary: "file.ts",
+								lines: ["line1", "line2"],
+								toolCallId: "tc1",
+							},
 						],
 					},
 				],
@@ -51,11 +65,19 @@ function makeData() {
 
 function mkTheme() {
 	return {
-		fg: "white", bg: "black", border: "gray", accent: "cyan", muted: "dim",
-		bold: vi.fn((s: string) => s), dim: vi.fn((s: string) => s),
-		green: vi.fn((s: string) => s), red: vi.fn((s: string) => s),
-		yellow: vi.fn((s: string) => s), blue: vi.fn((s: string) => s),
-		cyan: vi.fn((s: string) => s), magenta: vi.fn((s: string) => s),
+		fg: "white",
+		bg: "black",
+		border: "gray",
+		accent: "cyan",
+		muted: "dim",
+		bold: vi.fn((s: string) => s),
+		dim: vi.fn((s: string) => s),
+		green: vi.fn((s: string) => s),
+		red: vi.fn((s: string) => s),
+		yellow: vi.fn((s: string) => s),
+		blue: vi.fn((s: string) => s),
+		cyan: vi.fn((s: string) => s),
+		magenta: vi.fn((s: string) => s),
 	};
 }
 
@@ -84,13 +106,30 @@ function setup(customData?: any) {
 	const ctx: any = {
 		ui: {
 			notify: vi.fn(),
-			custom: vi.fn((cb) => { capturedCb = cb; }),
+			custom: vi.fn((cb) => {
+				capturedCb = cb;
+			}),
 		},
 	};
-	const pi: any = { registerCommand: vi.fn((_, def) => { (def as any).handler({}, ctx); }) };
-	const stateRef: any = { getLastContextMessages: vi.fn(() => []), agingSnapshot: null, manuallyDeletedIds: new Set(), markManuallyDeleted: vi.fn() };
+	const pi: any = {
+		registerCommand: vi.fn((_, def) => {
+			(def as any).handler({}, ctx);
+		}),
+	};
+	const stateRef: any = {
+		getLastContextMessages: vi.fn(() => []),
+		agingSnapshot: null,
+		manuallyDeletedIds: new Set(),
+		markManuallyDeleted: vi.fn(),
+	};
 	registerContextCommand(pi, stateRef);
-	return { handler: (pi.registerCommand as any).mock.calls[0][1].handler, ctx, capturedCb: () => capturedCb, stateRef, data };
+	return {
+		handler: (pi.registerCommand as any).mock.calls[0][1].handler,
+		ctx,
+		capturedCb: () => capturedCb,
+		stateRef,
+		data,
+	};
 }
 
 describe("层级导航 — overview → category → records → content", () => {
@@ -107,7 +146,12 @@ describe("层级导航 — overview → category → records → content", () =>
 	it("初始渲染 overview", async () => {
 		const s = setup();
 		await s.handler({}, s.ctx);
-		s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, vi.fn());
+		s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			vi.fn(),
+		);
 		expect(renderOverview).toHaveBeenCalled();
 	});
 
@@ -115,7 +159,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		renderOverview.mockClear();
 		ctrl.handleInput("down");
 		expect(renderOverview).toHaveBeenCalled();
@@ -125,7 +174,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down"); // to System Tools (index 1, enterable)
 		ctrl.handleInput("enter"); // confirm → category
 		expect(renderCategory).toHaveBeenCalled();
@@ -135,7 +189,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("enter"); // System Prompt — not enterable
 		expect(renderCategory).not.toHaveBeenCalled();
 	});
@@ -144,7 +203,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down"); // to System Tools
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records (read)
@@ -157,7 +221,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup(d);
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down"); // to System Tools
 		ctrl.handleInput("enter"); // → category (read has empty records)
 		renderRecords.mockClear();
@@ -169,7 +238,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down"); // to System Tools
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records
@@ -183,7 +257,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup(d);
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down");
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records
@@ -196,7 +275,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("down");
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records
@@ -218,7 +302,12 @@ describe("层级导航 — overview → category → records → content", () =>
 		const s = setup();
 		await s.handler({}, s.ctx);
 		const done = vi.fn();
-		const ctrl = s.capturedCb()({ requestRender: vi.fn(), terminal: { rows: 40 } }, t, kb, done);
+		const ctrl = s.capturedCb()(
+			{ requestRender: vi.fn(), terminal: { rows: 40 } },
+			t,
+			kb,
+			done,
+		);
 		ctrl.handleInput("up"); // up at index 0 → still 0 (clamped)
 		renderOverview.mockClear();
 		ctrl.handleInput("down"); // down to index 1

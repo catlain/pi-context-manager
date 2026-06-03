@@ -11,7 +11,6 @@
 import { describe, expect, it } from "vitest";
 import {
 	bigStr,
-	makeAssistantMsg,
 	makeMessages,
 	truncateToolCallArgs,
 } from "./toolcall-args-helpers.js";

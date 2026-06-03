@@ -7,12 +7,10 @@ import {
 	toolMeta,
 } from "./distill-helpers.js";
 import {
-	distilledMap,
 	fillTemplate,
 	getContextConfig,
 	hintsConfig,
 	loadManifest,
-	readCachedMessages,
 	saveManifest,
 	writeCachedMessages,
 } from "./shared.js";
@@ -57,8 +55,7 @@ export function handleContextEvent(
 
 	const messages = event.messages as any[];
 	const toolCallMap = buildToolCallMap(messages);
-	const { distillThreshold, agingThreshold, firstSeenCap } =
-		getContextConfig();
+	const { distillThreshold, agingThreshold, firstSeenCap } = getContextConfig();
 	// 有效 cap：不低于 distillThreshold，避免架空 distill 机制
 	const effectiveCap = Math.max(firstSeenCap, distillThreshold);
 
@@ -97,9 +94,12 @@ export function handleContextEvent(
 		}
 
 		const toolName = msg.toolName || "unknown";
-		const textParts = (Array.isArray(msg.content) ? msg.content : [])
-			.filter((p: PayloadContentBlock) => p.type === "text");
-		const origText = textParts.map((p: PayloadContentBlock) => p.text ?? "").join("");
+		const textParts = (Array.isArray(msg.content) ? msg.content : []).filter(
+			(p: PayloadContentBlock) => p.type === "text",
+		);
+		const origText = textParts
+			.map((p: PayloadContentBlock) => p.text ?? "")
+			.join("");
 		const origTokens = estimateTokens(origText);
 
 		// 计算该 tcId 的实际阈值
@@ -136,10 +136,9 @@ export function handleContextEvent(
 							tokens: String(origTokens),
 							cap: String(effectiveCap),
 						}),
-						short: fillTemplate(
-							hintsConfig.distillOverCapWarningShort,
-							{ label },
-						),
+						short: fillTemplate(hintsConfig.distillOverCapWarningShort, {
+							label,
+						}),
 					});
 				}
 			} else if (!seenArgs.has(tcId)) {

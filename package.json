@@ -1,58 +1,58 @@
 {
-  "name": "pi-context-manager",
-  "version": "0.1.2",
-  "description": "Tool result processing, distillation, and context management for pi-coding-agent",
-  "main": "index.ts",
-  "types": "index.ts",
-  "scripts": {
-    "test": "vitest run",
-    "lint": "biome check lib tests index.ts shared.ts",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@pi-atelier/shared-utils": "^1.0.0",
-    "@sinclair/typebox": "^0.34.49"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
-    "@vitest/coverage-v8": "^3.2.4",
-    "vitest": "^3.0.0"
-  },
-  "pi": {
-    "extensions": [
-      "."
-    ]
-  },
-  "keywords": [
-    "pi-package"
-  ],
-  "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=1.0.0",
-    "@earendil-works/pi-tui": ">=1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@earendil-works/pi-coding-agent": {
-      "optional": true
-    },
-    "@earendil-works/pi-tui": {
-      "optional": true
-    }
-  },
-  "files": [
-    "*.ts",
-    "tests/",
-    "README.md",
-    "tsconfig.json",
-    "vitest.config.ts",
-    "package.json"
-  ],
-  "homepage": "https://catlain.github.io/pi-atelier/",
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com:catlain/pi-context-manager.git"
-  },
-  "bugs": {
-    "url": "https://github.com/catlain/pi-context-manager/issues"
-  },
-  "license": "MIT"
+	"name": "pi-context-manager",
+	"version": "0.1.2",
+	"description": "Tool result processing, distillation, and context management for pi-coding-agent",
+	"main": "index.ts",
+	"types": "index.ts",
+	"scripts": {
+		"test": "vitest run",
+		"lint": "biome check lib tests index.ts shared.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@pi-atelier/shared-utils": "^1.0.0",
+		"@sinclair/typebox": "^0.34.49"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.15",
+		"@vitest/coverage-v8": "^3.2.4",
+		"vitest": "^3.0.0"
+	},
+	"pi": {
+		"extensions": [
+			"."
+		]
+	},
+	"keywords": [
+		"pi-package"
+	],
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": ">=1.0.0",
+		"@earendil-works/pi-tui": ">=1.0.0"
+	},
+	"peerDependenciesMeta": {
+		"@earendil-works/pi-coding-agent": {
+			"optional": true
+		},
+		"@earendil-works/pi-tui": {
+			"optional": true
+		}
+	},
+	"files": [
+		"*.ts",
+		"tests/",
+		"README.md",
+		"tsconfig.json",
+		"vitest.config.ts",
+		"package.json"
+	],
+	"homepage": "https://catlain.github.io/pi-atelier/",
+	"repository": {
+		"type": "git",
+		"url": "git+ssh://git@github.com:catlain/pi-context-manager.git"
+	},
+	"bugs": {
+		"url": "https://github.com/catlain/pi-context-manager/issues"
+	},
+	"license": "MIT"
 }

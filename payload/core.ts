@@ -6,10 +6,10 @@
  * - pi 内部格式:   role="toolResult", toolCallId, content=[{type,text}]
  */
 
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
-import type { PayloadContentBlock, PayloadMessage } from "../types-payload.js";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { DISTILL_DIR } from "../shared.js";
+import type { PayloadContentBlock, PayloadMessage } from "../types-payload.js";
 
 export const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");
 
@@ -31,12 +31,17 @@ export function fmtSize(bytes: number): string {
 
 // ── 文本提取 ──
 
-export function getText(content: string | PayloadContentBlock[] | null | undefined): string {
+export function getText(
+	content: string | PayloadContentBlock[] | null | undefined,
+): string {
 	if (content == null) return "";
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
 		return content
-			.filter((p): p is PayloadContentBlock & { type: "text" } => typeof p === "object" && p.type === "text")
+			.filter(
+				(p): p is PayloadContentBlock & { type: "text" } =>
+					typeof p === "object" && p.type === "text",
+			)
 			.map((p) => p.text ?? "")
 			.join("\n");
 	}
@@ -45,13 +50,21 @@ export function getText(content: string | PayloadContentBlock[] | null | undefin
 
 // ── Provider 格式 tool_call 索引 ──
 
-export interface ToolCallInfo { name: string; argsStr: string }
+export interface ToolCallInfo {
+	name: string;
+	argsStr: string;
+}
 
-export function buildProviderToolCallIndex(messages: PayloadMessage[]): Map<string, ToolCallInfo> {
+export function buildProviderToolCallIndex(
+	messages: PayloadMessage[],
+): Map<string, ToolCallInfo> {
 	const idx = new Map<string, ToolCallInfo>();
 	for (const m of messages) {
 		if (m.role !== "assistant") continue;
-		for (const tc of (m as Record<string, unknown>).tool_calls as Array<{ id?: string; function?: { name?: string; arguments?: string } }> ?? []) {
+		for (const tc of ((m as Record<string, unknown>).tool_calls as Array<{
+			id?: string;
+			function?: { name?: string; arguments?: string };
+		}>) ?? []) {
 			idx.set(tc.id ?? "", {
 				name: tc.function?.name ?? "unknown",
 				argsStr: tc.function?.arguments ?? "",
@@ -61,7 +74,9 @@ export function buildProviderToolCallIndex(messages: PayloadMessage[]): Map<stri
 	return idx;
 }
 
-export function buildPiToolCallIndex(messages: PayloadMessage[]): Map<string, ToolCallInfo> {
+export function buildPiToolCallIndex(
+	messages: PayloadMessage[],
+): Map<string, ToolCallInfo> {
 	const idx = new Map<string, ToolCallInfo>();
 	for (const m of messages) {
 		if (m.role !== "assistant") continue;
@@ -71,9 +86,10 @@ export function buildPiToolCallIndex(messages: PayloadMessage[]): Map<string, To
 				const b = block as PayloadContentBlock;
 				idx.set(b.id ?? "", {
 					name: b.name ?? "unknown",
-					argsStr: typeof b.arguments === "string"
-						? b.arguments
-						: JSON.stringify(b.arguments ?? {}),
+					argsStr:
+						typeof b.arguments === "string"
+							? b.arguments
+							: JSON.stringify(b.arguments ?? {}),
 				});
 			}
 		}
@@ -108,8 +124,11 @@ export function parseDistillHeader(text: string): DistillHeader | null {
 	const m1 = text.match(RE_DISTILL_HEADER);
 	if (!m1) return null;
 	const result: DistillHeader = {
-		tool: m1[1], meta: m1[2].trim(),
-		origTokens: 0, origLines: 0, tmpPath: "",
+		tool: m1[1],
+		meta: m1[2].trim(),
+		origTokens: 0,
+		origLines: 0,
+		tmpPath: "",
 	};
 	for (const line of text.split("\n").slice(1, 5)) {
 		const mt = line.match(RE_ORIG_TOKENS);
@@ -125,8 +144,11 @@ export function parseDistillHeader(text: string): DistillHeader | null {
 // ── 参数解析 ──
 
 export function parseArgs(argsStr: string): Record<string, unknown> {
-	try { return JSON.parse(argsStr); }
-	catch { return {}; }
+	try {
+		return JSON.parse(argsStr);
+	} catch {
+		return {};
+	}
 }
 
 export function extractReadPath(argsStr: string): string {
@@ -135,10 +157,15 @@ export function extractReadPath(argsStr: string): string {
 
 // ── 文件 I/O ──
 
-export function readJsonFile<T = Record<string, unknown>>(filepath: string): T | null {
+export function readJsonFile<T = Record<string, unknown>>(
+	filepath: string,
+): T | null {
 	if (!existsSync(filepath)) return null;
-	try { return JSON.parse(readFileSync(filepath, "utf-8")); }
-	catch { return null; }
+	try {
+		return JSON.parse(readFileSync(filepath, "utf-8"));
+	} catch {
+		return null;
+	}
 }
 
 // ── 追踪链折叠输出 ──

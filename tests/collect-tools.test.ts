@@ -1,14 +1,18 @@
 /**
  * collect.ts — 工具相关场景测试
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-coding-agent", () => ({}));
 
 import { collectData } from "../collect.js";
 
-function makePi(opts?: { tools: { name: string }[]; active: string[] }): ExtensionAPI {
+function makePi(opts?: {
+	tools: { name: string }[];
+	active: string[];
+}): ExtensionAPI {
 	return {
 		getAllTools: vi.fn(() => opts?.tools ?? []),
 		getActiveTools: vi.fn(() => opts?.active ?? []),
@@ -17,7 +21,11 @@ function makePi(opts?: { tools: { name: string }[]; active: string[] }): Extensi
 
 function makeCtx() {
 	return {
-		getContextUsage: vi.fn(() => ({ tokens: 2000, contextWindow: 8000, percent: 25 })),
+		getContextUsage: vi.fn(() => ({
+			tokens: 2000,
+			contextWindow: 8000,
+			percent: 25,
+		})),
 		getSystemPrompt: vi.fn(() => ""),
 	};
 }
@@ -43,11 +51,7 @@ describe("collectData — 工具场景", () => {
 
 	it("无 payload tools 时回退到 active tools", () => {
 		const pi = makePi({
-			tools: [
-				{ name: "active_a" },
-				{ name: "active_b" },
-				{ name: "inactive" },
-			],
+			tools: [{ name: "active_a" }, { name: "active_b" }, { name: "inactive" }],
 			active: ["active_a", "active_b"],
 		});
 		const result = collectData(pi, makeCtx(), {
@@ -237,10 +241,7 @@ describe("collectData — 工具场景", () => {
 
 	it("fallbackTools 过滤 inactive tools", () => {
 		const pi = makePi({
-			tools: [
-				{ function: { name: "fn_a" } },
-				{ function: { name: "fn_b" } },
-			],
+			tools: [{ function: { name: "fn_a" } }, { function: { name: "fn_b" } }],
 			active: ["fn_a"],
 		});
 		const result = collectData(pi, makeCtx(), {

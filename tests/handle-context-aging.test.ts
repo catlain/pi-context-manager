@@ -1,7 +1,7 @@
 /**
  * handleContextEvent 集成测试 — aging 删除、distill+aging 统一流程、提示文案
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { type ContextState, handleContextEvent } from "../handle-context.js";
 
 // ── mocks ──

@@ -3,7 +3,7 @@
  *
  * 共用 shared.js mock（getContextConfig / setContextConfig），各自独立 describe 块。
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockConfig: Record<string, number>;
 let lastPatch: Record<string, number> | null = null;

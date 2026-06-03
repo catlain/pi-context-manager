@@ -2,12 +2,13 @@
  * 真实工具输出样本 — formatter 误判防护测试
  * 样本来源：~/.pi/agent/distill/processor/ 历史记录（47 个真实样本）
  */
-import { describe, it, expect } from "vitest";
+
 import fs from "node:fs";
 import path from "node:path";
-import { formatWebSearchResult } from "../formatters-web.js";
+import { describe, expect, it } from "vitest";
 import { formatCodeGraphResult } from "../formatters-codegraph.js";
 import { formatMcpJsonResult } from "../formatters-mcp-json.js";
+import { formatWebSearchResult } from "../formatters-web.js";
 import { processToolResult } from "../tool-result-processor-core.js";
 
 const samplesPath = path.join(__dirname, "fixtures", "real-samples.json");
@@ -16,7 +17,7 @@ const rawSamples: Record<string, string> = JSON.parse(
 );
 
 /** 去掉 processor 元信息头，提取纯结果 */
-function extractResult(raw: string): string {
+function _extractResult(raw: string): string {
 	const parts = raw.split("\n\n");
 	if (parts.length >= 3) return parts.slice(2).join("\n\n").trim();
 	if (parts.length >= 2) return parts.slice(1).join("\n\n").trim();
@@ -44,7 +45,7 @@ describe("formatter 误判防护 — formatWebSearchResult", () => {
 
 	it("正确处理真实 glm_web_search 输出", () => {
 		const result = formatWebSearchResult(
-			rawSamples["glm_web_search_web_search_prime"],
+			rawSamples.glm_web_search_web_search_prime,
 			4000,
 		);
 		expect(typeof result).toBe("string");
@@ -53,10 +54,10 @@ describe("formatter 误判防护 — formatWebSearchResult", () => {
 
 	it("不误判 settings.json packages (String.prototype.link bug)", () => {
 		const result = formatWebSearchResult(
-			rawSamples["settings_json_packages"],
+			rawSamples.settings_json_packages,
 			4000,
 		);
-		expect(result).toBe(rawSamples["settings_json_packages"]);
+		expect(result).toBe(rawSamples.settings_json_packages);
 	});
 
 	// markdown 格式工具输出不应被搜索 formatter 误判
@@ -115,10 +116,18 @@ describe("大输出处理", () => {
 
 describe("小输出不误截", () => {
 	const smallTools = [
-		"bash", "read", "grep", "ls", "find",
-		"godot_game_query", "godot_validate_scripts",
-		"roadmap_done", "roadmap_update",
-		"session_analyze", "memory_update", "memory_index",
+		"bash",
+		"read",
+		"grep",
+		"ls",
+		"find",
+		"godot_game_query",
+		"godot_validate_scripts",
+		"roadmap_done",
+		"roadmap_update",
+		"session_analyze",
+		"memory_update",
+		"memory_index",
 		"setup_codegraph",
 	];
 

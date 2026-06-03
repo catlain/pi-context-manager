@@ -2,13 +2,15 @@
  * 录制文件列表和内部工具函数
  */
 
-import { existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import {
-	estTokens, getText,
 	buildProviderToolCallIndex,
 	classifyStatus,
-	readJsonFile, RECORDINGS_DIR,
+	estTokens,
+	getText,
+	RECORDINGS_DIR,
+	readJsonFile,
 } from "./core.js";
 import { listSessions } from "./files-core.js";
 
@@ -16,15 +18,18 @@ import { listSessions } from "./files-core.js";
 // 文件列表
 // ════════════════════════════════════════════════════════════
 
-export interface RecordingEntry { filename: string; path: string }
+export interface RecordingEntry {
+	filename: string;
+	path: string;
+}
 
 /** 列出指定目录下的 req-*.json 文件 */
 export function listRecordingFiles(dir: string): RecordingEntry[] | null {
 	if (!existsSync(dir)) return null;
 	const entries = readdirSync(dir)
-		.filter(f => f.startsWith("req-") && f.endsWith(".json"))
+		.filter((f) => f.startsWith("req-") && f.endsWith(".json"))
 		.sort()
-		.map(f => ({ filename: f, path: join(dir, f) }));
+		.map((f) => ({ filename: f, path: join(dir, f) }));
 	return entries.length ? entries : null;
 }
 
@@ -51,12 +56,17 @@ export function getRecordingFiles(sessionId?: string): RecordingEntry[] | null {
 // ════════════════════════════════════════════════════════════
 
 export interface TimelineEntry {
-	req: string; idx: number; status: string; tokens: number;
+	req: string;
+	idx: number;
+	status: string;
+	tokens: number;
 	preview: string;
 }
 
 /** 按 argsSig 跨 payload 追踪 */
-export function collectTimeline(files: RecordingEntry[]): Map<string, TimelineEntry[]> {
+export function collectTimeline(
+	files: RecordingEntry[],
+): Map<string, TimelineEntry[]> {
 	const timeline = new Map<string, TimelineEntry[]>();
 	for (const { path, filename } of files) {
 		const reqNum = filename.split("-")[1];
@@ -73,8 +83,11 @@ export function collectTimeline(files: RecordingEntry[]): Map<string, TimelineEn
 			const sig = `${info.name}:${info.argsStr}`;
 			if (!timeline.has(sig)) timeline.set(sig, []);
 			timeline.get(sig)!.push({
-				req: reqNum, idx: i, status: classifyStatus(text),
-				tokens: estTokens(text), preview: text.slice(0, 80).replace(/\n/g, "\\n"),
+				req: reqNum,
+				idx: i,
+				status: classifyStatus(text),
+				tokens: estTokens(text),
+				preview: text.slice(0, 80).replace(/\n/g, "\\n"),
 			});
 		}
 	}
@@ -82,7 +95,9 @@ export function collectTimeline(files: RecordingEntry[]): Map<string, TimelineEn
 }
 
 /** 按 toolCallId 追踪：同一个 tcId 在多个 req 中的出现情况 */
-export function collectTimelineByTcId(files: RecordingEntry[]): Map<string, TimelineEntry[]> {
+export function collectTimelineByTcId(
+	files: RecordingEntry[],
+): Map<string, TimelineEntry[]> {
 	const timeline = new Map<string, TimelineEntry[]>();
 	for (const { path, filename } of files) {
 		const reqNum = filename.split("-")[1];
@@ -95,12 +110,15 @@ export function collectTimelineByTcId(files: RecordingEntry[]): Map<string, Time
 			if (m.role !== "tool") continue;
 			const tcid = m.tool_call_id ?? "";
 			if (!tcid) continue;
-			const info = toolIdx.get(tcid) ?? { name: "unknown", argsStr: tcid };
+			const _info = toolIdx.get(tcid) ?? { name: "unknown", argsStr: tcid };
 			const text = getText(m.content);
 			if (!timeline.has(tcid)) timeline.set(tcid, []);
 			timeline.get(tcid)!.push({
-				req: reqNum, idx: i, status: classifyStatus(text),
-				tokens: estTokens(text), preview: text.slice(0, 80).replace(/\n/g, "\\n"),
+				req: reqNum,
+				idx: i,
+				status: classifyStatus(text),
+				tokens: estTokens(text),
+				preview: text.slice(0, 80).replace(/\n/g, "\\n"),
 			});
 		}
 	}

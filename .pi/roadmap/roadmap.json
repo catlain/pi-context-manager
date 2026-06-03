@@ -1,272 +1,272 @@
 {
-  "source": "tooling-guardrails",
-  "syncedAt": "2026-05-28",
-  "stories": [
-    {
-      "id": "E5.S1",
-      "title": "MCP 工具输出 formatter 扩展 + 内容管理策略",
-      "description": "扩展 tool-result-processor 的 formatter 体系，覆盖 Godot MCP 和 code-graph 的大输出场景：\n\n1. **Godot MCP formatter**：识别场景树（scene_tree）、节点属性（inspect_node）、方法返回值（call_method）等输出，实现：\n   - 场景树：层级压缩（只保留前 N 个子节点 + \"...N more\"）\n   - 节点属性：按属性类型分组摘要\n   - 方法返回值：截断长输出\n\n2. **code-graph formatter 增强**：现有 formatCodeGraphResult 只处理 search/callgraph/references/impact/module 模式，需要增加：\n   - get_ast_node 完整源码输出：默认压缩为签名 + 关键行，源码存临时文件\n   - module_overview 大目录输出：排序后截断\n\n3. **通用 MCP 内容管理**：\n   - 分析 MCP 工具输出格式特征，建立嗅探规则\n   - 按工具类型设定不同的 preview 行数和压缩策略\n   - 确保 MCP 工具结果走 tool_result 事件链（验证 mcp-lite registerTool 路径）\n\n4. **验证**：在 fuse-bead-puzzle 项目中实测 Godot MCP 输出压缩效果",
-      "status": "done",
-      "createdDate": "2026-05-26",
-      "tasks": [
-        {
-          "id": "E5.S1.T1",
-          "title": "验证 MCP 工具结果走 tool_result 事件链",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-26",
-          "doneDate": "2026-05-26",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "验证确认：MCP 工具输出确实走 tool_result 事件链（pi afterToolCall 统一触发）。问题在 estimateTokens 低估 + formatter 不识别 MCP JSON 格式。"
-        },
-        {
-          "id": "E5.S1.T2",
-          "title": "修复 estimateTokens 低估问题 + 实现 Godot MCP formatter",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-26",
-          "doingDate": "2026-05-26",
-          "doneDate": "2026-05-26",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "tool-result-processor-core.ts: 加 CHAR_HARD_LIMIT=8000 字符数硬限制，charHardLimit = max(8000, threshold*2) 随阈值放大。formatters-mcp-json.ts: 新增 MCP JSON formatter，嗅探 JSON.stringify(result,null,2) 格式，智能压缩场景树和一般 JSON。formatters-codegraph.ts: 增加 AST JSON 嗅探（get_ast_node JSON 输出），保留 signature + 前 20 行源码。45+ 新测试全绿。"
-        },
-        {
-          "id": "E5.S1.T3",
-          "title": "增强 code-graph formatter：覆盖 get_ast_node 和 module_overview 大输出",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-26",
-          "doneDate": "2026-05-26",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "code-graph formatter 增加 AST JSON 嗅探：检测含 code_content 字段的 JSON → 保留 signature + 元数据 + 前 20 行源码。formatters-codegraph-ast.test.ts: 45 测试覆盖。"
-        },
-        {
-          "id": "E5.S1.T4",
-          "title": "实现通用 MCP 输出嗅探规则和按工具类型的压缩策略",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-26",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "实测验证：bash 9.9K 截断✅、web reader 67K→摘要✅、code-graph 小结果放行✅。Godot MCP 需 Godot 运行实测（历史记录 146KB 必命中）。"
-        },
-        {
-          "id": "E5.S1.T5",
-          "title": "在 fuse-bead-puzzle 项目实测 Godot MCP + code-graph 输出压缩效果",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-26",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T13-31-29-117Z_019e69a2-0fdd-7616-8088-cb0e4ad702de",
-          "note": "已在 fuse-bead-puzzle 项目中实际使用 Godot MCP + 后处理压缩，验证通过"
-        }
-      ],
-      "doingDate": "2026-05-27",
-      "doneDate": "2026-05-27"
-    },
-    {
-      "id": "E5.S2",
-      "title": "工具输出自治理 — 各工具自身控制输出质量，processor 退为兜底",
-      "description": "## 架构分析\n\n```\nMCP Server (第三方)  →  mcp-lite (execute 透传)  →  processor (tool_result 截断)\n                           ↑                              ↑\n                        应该在这里做                    只做兜底\n                        输出后处理\n```\n\n**当前问题**：mcp-lite `execute` 纯透传 MCP server 返回值，没有任何后处理。processor 在下游 tool_result 阶段只能做粗暴截断。\n\n**正确架构**：mcp-lite 知道每个工具的 server 来源（godot / glm-web / code-graph），应该在 execute 返回前做精准后处理：\n- Godot：过滤默认值属性、限制场景树递归深度\n- GLM web reader：截断过长网页内容\n- code-graph：已有自身截断，OK\n\nprocessor 退为纯阈值兜底（字符数/token 超限才截断），不做格式嗅探。\n\n## 改动位置\n\n| Task | 改动位置 | 说明 |\n|------|---------|------|\n| T1 | mcp-lite `execute` 后处理 | Godot server 输出过滤 |\n| T2 | mcp-lite `execute` 后处理 | GLM web 输出截断 |\n| T3 | pi-session-analyzer | 自有工具输出控制 |\n| T4 | pi-context-manager processor | 移除 formatter，只保留阈值兜底 |\n| T5 | pi-shepherd | jiti 缓存清理 |",
-      "status": "done",
-      "createdDate": "2026-05-27",
-      "tasks": [
-        {
-          "id": "E5.S2.T1",
-          "title": "Godot MCP 输出自治理：get_tree 过滤默认值 + 递归深度限制",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "mcp-lite godot-postprocess.ts: 过滤默认值(position=0,0,0等) + 递归深度4层 + 空属性移除。commit 0efb57c"
-        },
-        {
-          "id": "E5.S2.T2",
-          "title": "GLM web tools (reader/search) 输出长度限制 — MCP 侧控制",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "mcp-lite mcp-postprocess.ts: GLM web reader 超过 15K 字符截断。commit b35da76"
-        },
-        {
-          "id": "E5.S2.T3",
-          "title": "session_analyze 输出控制 — 工具侧限制输出行数/详情深度",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "验证确认：session_analyze 已有完整的输出自治理 — truncatedResult(500行/20KB) + 每条entry截断100字符。无需改动。"
-        },
-        {
-          "id": "E5.S2.T4",
-          "title": "processor 瘦身 — 移除格式嗅探 formatter，只保留阈值兜底截断",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "note": "分析确认：processor formatter 作为兜底保留，只移除 formatters-mcp-json.ts（已被 mcp-lite 后处理覆盖）",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966"
-        },
-        {
-          "id": "E5.S2.T5",
-          "title": "jiti 缓存自动清理 — shepherd session_start 时清 /tmp/jiti/",
-          "status": "done",
-          "priority": "low",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
-          "note": "shepherd session_start 中加 rmSync(/tmp/jiti/)，commit cf34aa0"
-        },
-        {
-          "id": "E5.S2.T6",
-          "title": "精简 payload-analyzer 10 个 action 的输出，去除冗余",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "已合并到 E5.S4.T3 完成审查：expensive topN 20→10，overview 冗余由 messages action 解决，其余无需改"
-        }
-      ],
-      "doneDate": "2026-05-27"
-    },
-    {
-      "id": "E5.S3",
-      "title": "payload-analyzer 新增 messages action — 按消息索引精确定位",
-      "description": "AI 在调试上下文问题时，经常需要查看 payload 中特定的几条消息（最后几条、第 N 条附近、按关键词过滤），但当前只有 overview（全量输出）和 single（统计），无法精确定位。导致 AI 先 overview（被 distill 截断）→ 再 read processor 输出文件 → 绕了一大圈。\n\n新增 `messages` action，支持：\n1. `msgIndex` — 查看第 N 条消息的完整详情 + 前后文\n2. `msgRange` — 查看范围（如 \"137-145\"、\"last:5\"）\n3. `grep` — 按关键词搜索消息\n4. `toolName` — 按工具名过滤\n\nTDD 流程，测试全覆盖边缘情况。",
-      "status": "done",
-      "createdDate": "2026-05-27",
-      "tasks": [
-        {
-          "id": "E5.S3.T1",
-          "title": "编写 messages action 完整测试用例（TDD Red Phase）",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doingDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "41 测试用例已通过（basic 25 + filter 16），测试文件拆分为 messages-basic.test.ts + messages-filter.test.ts + helpers/mock-core.ts"
-        },
-        {
-          "id": "E5.S3.T2",
-          "title": "实现 doMessages 函数（TDD Green Phase）",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "doMessages 实现 + messages-helpers.ts 拆分，96 tests passed"
-        },
-        {
-          "id": "E5.S3.T3",
-          "title": "注册 messages action 到 index.ts 入口",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "Union Literal + 5 Optional 参数 + case 路由 + description 更新"
-        },
-        {
-          "id": "E5.S3.T4",
-          "title": "全量测试验证 + 边缘情况覆盖",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "96 tests passed，AGENTS.md 已创建，registerTool action 三处同步漏洞已修"
-        }
-      ],
-      "doneDate": "2026-05-27"
-    },
-    {
-      "id": "E5.S4",
-      "title": "全面审查并精简所有自定义工具输出",
-      "description": "全面审查所有自定义工具的输出格式，逐个优化冗余列、过长预览、重复信息。\n\n## 审查结果\n\n| 工具 | 问题 | 优先级 |\n|------|------|--------|\n| session_analyze entries | type列99%冗余、role列12字符浪费、preview 100字符太长、行号padStart(4)浪费 | P0 |\n| session_analyze timeline | 合理，暂不改 | - |\n| session_analyze chain/digest | 合理，暂不改 | - |\n| session_search grep | 每个匹配完整摘要太长 | P1 |\n| roadmap_list/show/next | 格式良好 | OK |\n| memory_index | 表格清晰 | OK |\n| schedule | 极简 | OK |\n| code-graph 系列 | 外部工具控制 | 不可改 |\n\n## 改动计划\n\n按工具逐个 Task，每个 Task 包含：分析 → 改代码 → 测试验证。\n\n### entries 紧凑模式（P0）\n当前输出：`   2 | message  | toolResult   | 05-27 11:42:17 | errors=$(echo...`\n目标输出：`[2]  toolRes  11:42  errors=$(echo...`\n\n改动：\n- 去掉 `type` 列（99% 都是 message）\n- role 缩写：assistant→asst, toolResult→toolRes, user→user\n- 时间只保留 HH:MM（去掉日期秒数）\n- 预览缩到 60 字符\n- 行号用 `[N]` 格式\n- 加 `compact` 参数默认 true，旧格式用 compact=false 兜底\n\n### session_search grep（P1）\n- 每个匹配摘要缩到 80 字符\n- 会话 ID 用短格式（最后两段 UUID）",
-      "status": "done",
-      "createdDate": "2026-05-27",
-      "tasks": [
-        {
-          "id": "E5.S4.T1",
-          "title": "精简 session_analyze entries 输出 — compact 模式",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doingDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "session_analyze entries compact 紧凑格式。commit 92efb7c6。153 passed ✅"
-        },
-        {
-          "id": "E5.S4.T2",
-          "title": "精简 session_search grep 输出 — 摘要缩短 + 短会话 ID",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "grep 匹配上下文 ±40→±25、摘要截断 200→80、firstMsg 60→40、换行符清理、分隔符简化"
-        },
-        {
-          "id": "E5.S4.T3",
-          "title": "审查 payload_analyze 10 个 action 输出冗余（E5.S2.T6 复活）",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "审查全部 10 action：overview 冗余已由 messages action 解决，expensive topN 20→10，其余无需改动"
-        },
-        {
-          "id": "E5.S4.T4",
-          "title": "审查 roadmap/memory/schedule 工具输出 — 确认无需优化",
-          "status": "done",
-          "priority": "low",
-          "createdDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
-          "note": "roadmap_list（已折叠）、memory_index（表格清晰）、schedule（极简）均无需优化"
-        },
-        {
-          "id": "E5.S4.T5",
-          "title": "payload_analyze chain/chain-tcid/single 追踪链输出折叠",
-          "status": "done",
-          "priority": "medium",
-          "createdDate": "2026-05-27",
-          "doingDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T13-31-29-117Z_019e69a2-0fdd-7616-8088-cb0e4ad702de",
-          "note": "commit 9008ee0 — foldChainEntries 折叠 chain/chain-tcid/single 追踪链连续重复条目。97 tests passed。上一会话 b9dd 实战验证通过。"
-        }
-      ],
-      "doneDate": "2026-05-27"
-    },
-    {
-      "id": "E5.S5",
-      "title": "aging 豁免技能文件 — read 技能内容不遗忘",
-      "description": "当 AI 用 read 工具读取技能文件（SKILL.md 及 references 目录下的参考文件）时，aging 不应淘汰这些 toolResult。\n\n**原因**：技能文件通常 1-5K tokens，占用小但对 AI 行为至关重要。AI 读一次技能文件后，该内容应该一直留在上下文里。\n\n**方案**：在 handle-context.ts 的 aging 循环中，通过 toolCallMap 反查 read 调用的 path 参数，如果路径匹配技能目录模式则跳过 aging。\n\n**路径模式**：\n- ~/.pi/agent/skills/{name}/**（内联技能）\n- ~/.pi/agent/npm/node_modules/{pkg}/skills/{name}/**（npm 技能）\n\n**改动**：约 10 行代码 + 测试。无需配置开关（用户明确\"读到就留\"）。",
-      "status": "done",
-      "createdDate": "2026-05-27",
-      "tasks": [
-        {
-          "id": "E5.S5.T1",
-          "title": "实现技能文件 aging 豁免逻辑 + 完整测试覆盖",
-          "status": "done",
-          "priority": "high",
-          "createdDate": "2026-05-27",
-          "doingDate": "2026-05-27",
-          "doneDate": "2026-05-27",
-          "doneBySessionId": "2026-05-27T02-23-17-424Z_019e673e-4fb0-72b9-b6c8-8fe3d2648f90",
-          "note": "commit 6af19d7 — isSkillFilePath() 辅助函数 + aging 循环 continue 跳过，7 个新测试全部通过，全量 472/473"
-        }
-      ],
-      "doneDate": "2026-05-27"
-    }
-  ]
+	"source": "tooling-guardrails",
+	"syncedAt": "2026-05-28",
+	"stories": [
+		{
+			"id": "E5.S1",
+			"title": "MCP 工具输出 formatter 扩展 + 内容管理策略",
+			"description": "扩展 tool-result-processor 的 formatter 体系，覆盖 Godot MCP 和 code-graph 的大输出场景：\n\n1. **Godot MCP formatter**：识别场景树（scene_tree）、节点属性（inspect_node）、方法返回值（call_method）等输出，实现：\n   - 场景树：层级压缩（只保留前 N 个子节点 + \"...N more\"）\n   - 节点属性：按属性类型分组摘要\n   - 方法返回值：截断长输出\n\n2. **code-graph formatter 增强**：现有 formatCodeGraphResult 只处理 search/callgraph/references/impact/module 模式，需要增加：\n   - get_ast_node 完整源码输出：默认压缩为签名 + 关键行，源码存临时文件\n   - module_overview 大目录输出：排序后截断\n\n3. **通用 MCP 内容管理**：\n   - 分析 MCP 工具输出格式特征，建立嗅探规则\n   - 按工具类型设定不同的 preview 行数和压缩策略\n   - 确保 MCP 工具结果走 tool_result 事件链（验证 mcp-lite registerTool 路径）\n\n4. **验证**：在 fuse-bead-puzzle 项目中实测 Godot MCP 输出压缩效果",
+			"status": "done",
+			"createdDate": "2026-05-26",
+			"tasks": [
+				{
+					"id": "E5.S1.T1",
+					"title": "验证 MCP 工具结果走 tool_result 事件链",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-26",
+					"doneDate": "2026-05-26",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "验证确认：MCP 工具输出确实走 tool_result 事件链（pi afterToolCall 统一触发）。问题在 estimateTokens 低估 + formatter 不识别 MCP JSON 格式。"
+				},
+				{
+					"id": "E5.S1.T2",
+					"title": "修复 estimateTokens 低估问题 + 实现 Godot MCP formatter",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-26",
+					"doingDate": "2026-05-26",
+					"doneDate": "2026-05-26",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "tool-result-processor-core.ts: 加 CHAR_HARD_LIMIT=8000 字符数硬限制，charHardLimit = max(8000, threshold*2) 随阈值放大。formatters-mcp-json.ts: 新增 MCP JSON formatter，嗅探 JSON.stringify(result,null,2) 格式，智能压缩场景树和一般 JSON。formatters-codegraph.ts: 增加 AST JSON 嗅探（get_ast_node JSON 输出），保留 signature + 前 20 行源码。45+ 新测试全绿。"
+				},
+				{
+					"id": "E5.S1.T3",
+					"title": "增强 code-graph formatter：覆盖 get_ast_node 和 module_overview 大输出",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-26",
+					"doneDate": "2026-05-26",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "code-graph formatter 增加 AST JSON 嗅探：检测含 code_content 字段的 JSON → 保留 signature + 元数据 + 前 20 行源码。formatters-codegraph-ast.test.ts: 45 测试覆盖。"
+				},
+				{
+					"id": "E5.S1.T4",
+					"title": "实现通用 MCP 输出嗅探规则和按工具类型的压缩策略",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-26",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "实测验证：bash 9.9K 截断✅、web reader 67K→摘要✅、code-graph 小结果放行✅。Godot MCP 需 Godot 运行实测（历史记录 146KB 必命中）。"
+				},
+				{
+					"id": "E5.S1.T5",
+					"title": "在 fuse-bead-puzzle 项目实测 Godot MCP + code-graph 输出压缩效果",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-26",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T13-31-29-117Z_019e69a2-0fdd-7616-8088-cb0e4ad702de",
+					"note": "已在 fuse-bead-puzzle 项目中实际使用 Godot MCP + 后处理压缩，验证通过"
+				}
+			],
+			"doingDate": "2026-05-27",
+			"doneDate": "2026-05-27"
+		},
+		{
+			"id": "E5.S2",
+			"title": "工具输出自治理 — 各工具自身控制输出质量，processor 退为兜底",
+			"description": "## 架构分析\n\n```\nMCP Server (第三方)  →  mcp-lite (execute 透传)  →  processor (tool_result 截断)\n                           ↑                              ↑\n                        应该在这里做                    只做兜底\n                        输出后处理\n```\n\n**当前问题**：mcp-lite `execute` 纯透传 MCP server 返回值，没有任何后处理。processor 在下游 tool_result 阶段只能做粗暴截断。\n\n**正确架构**：mcp-lite 知道每个工具的 server 来源（godot / glm-web / code-graph），应该在 execute 返回前做精准后处理：\n- Godot：过滤默认值属性、限制场景树递归深度\n- GLM web reader：截断过长网页内容\n- code-graph：已有自身截断，OK\n\nprocessor 退为纯阈值兜底（字符数/token 超限才截断），不做格式嗅探。\n\n## 改动位置\n\n| Task | 改动位置 | 说明 |\n|------|---------|------|\n| T1 | mcp-lite `execute` 后处理 | Godot server 输出过滤 |\n| T2 | mcp-lite `execute` 后处理 | GLM web 输出截断 |\n| T3 | pi-session-analyzer | 自有工具输出控制 |\n| T4 | pi-context-manager processor | 移除 formatter，只保留阈值兜底 |\n| T5 | pi-shepherd | jiti 缓存清理 |",
+			"status": "done",
+			"createdDate": "2026-05-27",
+			"tasks": [
+				{
+					"id": "E5.S2.T1",
+					"title": "Godot MCP 输出自治理：get_tree 过滤默认值 + 递归深度限制",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "mcp-lite godot-postprocess.ts: 过滤默认值(position=0,0,0等) + 递归深度4层 + 空属性移除。commit 0efb57c"
+				},
+				{
+					"id": "E5.S2.T2",
+					"title": "GLM web tools (reader/search) 输出长度限制 — MCP 侧控制",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "mcp-lite mcp-postprocess.ts: GLM web reader 超过 15K 字符截断。commit b35da76"
+				},
+				{
+					"id": "E5.S2.T3",
+					"title": "session_analyze 输出控制 — 工具侧限制输出行数/详情深度",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "验证确认：session_analyze 已有完整的输出自治理 — truncatedResult(500行/20KB) + 每条entry截断100字符。无需改动。"
+				},
+				{
+					"id": "E5.S2.T4",
+					"title": "processor 瘦身 — 移除格式嗅探 formatter，只保留阈值兜底截断",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"note": "分析确认：processor formatter 作为兜底保留，只移除 formatters-mcp-json.ts（已被 mcp-lite 后处理覆盖）",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966"
+				},
+				{
+					"id": "E5.S2.T5",
+					"title": "jiti 缓存自动清理 — shepherd session_start 时清 /tmp/jiti/",
+					"status": "done",
+					"priority": "low",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-26T14-27-50-937Z_019e64af-4e19-78ef-bd74-b81143e53966",
+					"note": "shepherd session_start 中加 rmSync(/tmp/jiti/)，commit cf34aa0"
+				},
+				{
+					"id": "E5.S2.T6",
+					"title": "精简 payload-analyzer 10 个 action 的输出，去除冗余",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "已合并到 E5.S4.T3 完成审查：expensive topN 20→10，overview 冗余由 messages action 解决，其余无需改"
+				}
+			],
+			"doneDate": "2026-05-27"
+		},
+		{
+			"id": "E5.S3",
+			"title": "payload-analyzer 新增 messages action — 按消息索引精确定位",
+			"description": "AI 在调试上下文问题时，经常需要查看 payload 中特定的几条消息（最后几条、第 N 条附近、按关键词过滤），但当前只有 overview（全量输出）和 single（统计），无法精确定位。导致 AI 先 overview（被 distill 截断）→ 再 read processor 输出文件 → 绕了一大圈。\n\n新增 `messages` action，支持：\n1. `msgIndex` — 查看第 N 条消息的完整详情 + 前后文\n2. `msgRange` — 查看范围（如 \"137-145\"、\"last:5\"）\n3. `grep` — 按关键词搜索消息\n4. `toolName` — 按工具名过滤\n\nTDD 流程，测试全覆盖边缘情况。",
+			"status": "done",
+			"createdDate": "2026-05-27",
+			"tasks": [
+				{
+					"id": "E5.S3.T1",
+					"title": "编写 messages action 完整测试用例（TDD Red Phase）",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doingDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "41 测试用例已通过（basic 25 + filter 16），测试文件拆分为 messages-basic.test.ts + messages-filter.test.ts + helpers/mock-core.ts"
+				},
+				{
+					"id": "E5.S3.T2",
+					"title": "实现 doMessages 函数（TDD Green Phase）",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "doMessages 实现 + messages-helpers.ts 拆分，96 tests passed"
+				},
+				{
+					"id": "E5.S3.T3",
+					"title": "注册 messages action 到 index.ts 入口",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "Union Literal + 5 Optional 参数 + case 路由 + description 更新"
+				},
+				{
+					"id": "E5.S3.T4",
+					"title": "全量测试验证 + 边缘情况覆盖",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "96 tests passed，AGENTS.md 已创建，registerTool action 三处同步漏洞已修"
+				}
+			],
+			"doneDate": "2026-05-27"
+		},
+		{
+			"id": "E5.S4",
+			"title": "全面审查并精简所有自定义工具输出",
+			"description": "全面审查所有自定义工具的输出格式，逐个优化冗余列、过长预览、重复信息。\n\n## 审查结果\n\n| 工具 | 问题 | 优先级 |\n|------|------|--------|\n| session_analyze entries | type列99%冗余、role列12字符浪费、preview 100字符太长、行号padStart(4)浪费 | P0 |\n| session_analyze timeline | 合理，暂不改 | - |\n| session_analyze chain/digest | 合理，暂不改 | - |\n| session_search grep | 每个匹配完整摘要太长 | P1 |\n| roadmap_list/show/next | 格式良好 | OK |\n| memory_index | 表格清晰 | OK |\n| schedule | 极简 | OK |\n| code-graph 系列 | 外部工具控制 | 不可改 |\n\n## 改动计划\n\n按工具逐个 Task，每个 Task 包含：分析 → 改代码 → 测试验证。\n\n### entries 紧凑模式（P0）\n当前输出：`   2 | message  | toolResult   | 05-27 11:42:17 | errors=$(echo...`\n目标输出：`[2]  toolRes  11:42  errors=$(echo...`\n\n改动：\n- 去掉 `type` 列（99% 都是 message）\n- role 缩写：assistant→asst, toolResult→toolRes, user→user\n- 时间只保留 HH:MM（去掉日期秒数）\n- 预览缩到 60 字符\n- 行号用 `[N]` 格式\n- 加 `compact` 参数默认 true，旧格式用 compact=false 兜底\n\n### session_search grep（P1）\n- 每个匹配摘要缩到 80 字符\n- 会话 ID 用短格式（最后两段 UUID）",
+			"status": "done",
+			"createdDate": "2026-05-27",
+			"tasks": [
+				{
+					"id": "E5.S4.T1",
+					"title": "精简 session_analyze entries 输出 — compact 模式",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doingDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "session_analyze entries compact 紧凑格式。commit 92efb7c6。153 passed ✅"
+				},
+				{
+					"id": "E5.S4.T2",
+					"title": "精简 session_search grep 输出 — 摘要缩短 + 短会话 ID",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "grep 匹配上下文 ±40→±25、摘要截断 200→80、firstMsg 60→40、换行符清理、分隔符简化"
+				},
+				{
+					"id": "E5.S4.T3",
+					"title": "审查 payload_analyze 10 个 action 输出冗余（E5.S2.T6 复活）",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "审查全部 10 action：overview 冗余已由 messages action 解决，expensive topN 20→10，其余无需改动"
+				},
+				{
+					"id": "E5.S4.T4",
+					"title": "审查 roadmap/memory/schedule 工具输出 — 确认无需优化",
+					"status": "done",
+					"priority": "low",
+					"createdDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T03-07-27-126Z_019e6766-be16-73e6-b9dd-f49fd5a28fd1",
+					"note": "roadmap_list（已折叠）、memory_index（表格清晰）、schedule（极简）均无需优化"
+				},
+				{
+					"id": "E5.S4.T5",
+					"title": "payload_analyze chain/chain-tcid/single 追踪链输出折叠",
+					"status": "done",
+					"priority": "medium",
+					"createdDate": "2026-05-27",
+					"doingDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T13-31-29-117Z_019e69a2-0fdd-7616-8088-cb0e4ad702de",
+					"note": "commit 9008ee0 — foldChainEntries 折叠 chain/chain-tcid/single 追踪链连续重复条目。97 tests passed。上一会话 b9dd 实战验证通过。"
+				}
+			],
+			"doneDate": "2026-05-27"
+		},
+		{
+			"id": "E5.S5",
+			"title": "aging 豁免技能文件 — read 技能内容不遗忘",
+			"description": "当 AI 用 read 工具读取技能文件（SKILL.md 及 references 目录下的参考文件）时，aging 不应淘汰这些 toolResult。\n\n**原因**：技能文件通常 1-5K tokens，占用小但对 AI 行为至关重要。AI 读一次技能文件后，该内容应该一直留在上下文里。\n\n**方案**：在 handle-context.ts 的 aging 循环中，通过 toolCallMap 反查 read 调用的 path 参数，如果路径匹配技能目录模式则跳过 aging。\n\n**路径模式**：\n- ~/.pi/agent/skills/{name}/**（内联技能）\n- ~/.pi/agent/npm/node_modules/{pkg}/skills/{name}/**（npm 技能）\n\n**改动**：约 10 行代码 + 测试。无需配置开关（用户明确\"读到就留\"）。",
+			"status": "done",
+			"createdDate": "2026-05-27",
+			"tasks": [
+				{
+					"id": "E5.S5.T1",
+					"title": "实现技能文件 aging 豁免逻辑 + 完整测试覆盖",
+					"status": "done",
+					"priority": "high",
+					"createdDate": "2026-05-27",
+					"doingDate": "2026-05-27",
+					"doneDate": "2026-05-27",
+					"doneBySessionId": "2026-05-27T02-23-17-424Z_019e673e-4fb0-72b9-b6c8-8fe3d2648f90",
+					"note": "commit 6af19d7 — isSkillFilePath() 辅助函数 + aging 循环 continue 跳过，7 个新测试全部通过，全量 472/473"
+				}
+			],
+			"doneDate": "2026-05-27"
+		}
+	]
 }

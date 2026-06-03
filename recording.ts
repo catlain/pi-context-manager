@@ -1,6 +1,6 @@
 /** recording.ts — payload 录制状态管理 */
-import { existsSync, readdirSync, rmSync } from "fs";
-import { join } from "path";
+import { existsSync, readdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { DISTILL_DIR } from "./shared.js";
 
 export const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");

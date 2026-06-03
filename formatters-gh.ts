@@ -74,7 +74,7 @@ function formatGhTree(entries: GhTreeEntry[], indent: string = ""): string[] {
 		if (entry.type === "directory") {
 			lines.push(`${indent}${entry.name ?? "?"}/`);
 			if (entry.children) {
-				lines.push(...formatGhTree(entry.children, indent + "  "));
+				lines.push(...formatGhTree(entry.children, `${indent}  `));
 			}
 		} else {
 			lines.push(`${indent}${entry.name ?? "?"}`);

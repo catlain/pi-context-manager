@@ -1,7 +1,7 @@
 /**
  * render.ts — renderContent 测试
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-tui", () => ({
 	Container: vi.fn(() => ({
@@ -102,45 +102,21 @@ describe("renderContent", () => {
 	it("行数超出可视区域时显示滚动", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderContent(
-			c as any,
-			t as any,
-			"file",
-			manyLinesRecord,
-			10,
-			20,
-			false,
-		);
+		renderContent(c as any, t as any, "file", manyLinesRecord, 10, 20, false);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
 	it("行数未超出可视区域简洁显示", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderContent(
-			c as any,
-			t as any,
-			"small",
-			basicRecord,
-			0,
-			50,
-			false,
-		);
+		renderContent(c as any, t as any, "small", basicRecord, 0, 50, false);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
 	it("超出 200 字符的行截断", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderContent(
-			c as any,
-			t as any,
-			"long",
-			longLineRecord,
-			0,
-			50,
-			false,
-		);
+		renderContent(c as any, t as any, "long", longLineRecord, 0, 50, false);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
@@ -160,15 +136,7 @@ describe("renderContent", () => {
 	it("toolCallId 记录超出 viewport 显示滚动导航", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderContent(
-			c as any,
-			t as any,
-			"tool",
-			recordWithTcId,
-			0,
-			50,
-			false,
-		);
+		renderContent(c as any, t as any, "tool", recordWithTcId, 0, 50, false);
 		expect(c.clear).toHaveBeenCalled();
 	});
 });

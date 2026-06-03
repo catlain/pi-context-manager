@@ -4,10 +4,7 @@
  * 覆盖：sniffMcpJson, formatMcpJsonResult, 场景树, 节点属性, truncateLargeJson
  */
 import { describe, expect, it } from "vitest";
-import {
-	sniffMcpJson,
-	formatMcpJsonResult,
-} from "../formatters-mcp-json.js";
+import { formatMcpJsonResult, sniffMcpJson } from "../formatters-mcp-json.js";
 
 // ── sniff: 嗅探 ─────────────────────────────────────────────
 
@@ -83,10 +80,14 @@ describe("formatMcpJsonResult — 短 JSON", () => {
 describe("formatMcpJsonResult — 大场景树压缩", () => {
 	it("深嵌套场景树 → 只保留前 2 层", () => {
 		const root = buildTree(5, 3);
-		const json = JSON.stringify({
-			status: "success",
-			data: root,
-		}, null, 2);
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: root,
+			},
+			null,
+			2,
+		);
 
 		expect(json.length).toBeGreaterThan(2000);
 		const result = formatMcpJsonResult(json);
@@ -97,10 +98,14 @@ describe("formatMcpJsonResult — 大场景树压缩", () => {
 
 	it("children 在 data 直接（非 root）→ 也压缩", () => {
 		const root = buildTree(4, 3);
-		const json = JSON.stringify({
-			status: "success",
-			data: root,
-		}, null, 2);
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: root,
+			},
+			null,
+			2,
+		);
 
 		expect(json.length).toBeGreaterThan(2000);
 		const result = formatMcpJsonResult(json);
@@ -110,9 +115,7 @@ describe("formatMcpJsonResult — 大场景树压缩", () => {
 	it("节点无 name 字段 → 用 ? 占位", () => {
 		const data = {
 			type: "Node3D",
-			children: [
-				{ type: "Camera3D", children: [] },
-			],
+			children: [{ type: "Camera3D", children: [] }],
 		};
 		const json = JSON.stringify({ status: "success", data }, null, 2);
 		expect(formatMcpJsonResult(json)).toBe(json);
@@ -213,16 +216,18 @@ function buildTree(depth: number, width: number): any {
 }
 
 /** 构造 > 2000 字符的 properties MCP JSON */
-function makeLargePropertiesJson(
-	properties: Record<string, unknown>,
-): string {
-	return JSON.stringify({
-		status: "success",
-		data: {
-			type: "Node3D",
-			name: "Empty",
-			padding: "x".repeat(2500),
-			properties,
+function makeLargePropertiesJson(properties: Record<string, unknown>): string {
+	return JSON.stringify(
+		{
+			status: "success",
+			data: {
+				type: "Node3D",
+				name: "Empty",
+				padding: "x".repeat(2500),
+				properties,
+			},
 		},
-	}, null, 2);
+		null,
+		2,
+	);
 }

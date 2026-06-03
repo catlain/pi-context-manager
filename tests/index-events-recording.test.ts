@@ -8,10 +8,11 @@
  * - 异常不影响主流程
  * - sessionId 从 ctx.sessionManager 获取
  */
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { writeFileSync, readdirSync, rmSync, existsSync } from "fs";
-import { join } from "path";
-import os from "os";
+
+import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock recording 模块
 const mockIsRecording = vi.fn(() => false);
@@ -46,9 +47,9 @@ vi.mock("../clean.js", () => ({
 	listSessionData: vi.fn(() => []),
 }));
 
+import indexModule from "../index.js";
 import { RECORDINGS_DIR } from "../recording.js";
 import { DISTILL_DIR, PAYLOAD_CACHE } from "../shared.js";
-import indexModule from "../index.js";
 
 function createMockPi() {
 	const events: Record<string, Function> = {};
@@ -90,7 +91,7 @@ describe("before_provider_request 录制", () => {
 	it("录制关闭时不写 recordings 文件", async () => {
 		mockIsRecording.mockReturnValue(false);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
 		expect(existsSync(RECORDINGS_DIR)).toBe(false);
 	});
@@ -98,7 +99,7 @@ describe("before_provider_request 录制", () => {
 	it("录制开启时写 payload 到会话目录", async () => {
 		mockIsRecording.mockReturnValue(true);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
 		const unknownDir = join(RECORDINGS_DIR, "unknown");
 		expect(existsSync(unknownDir)).toBe(true);
@@ -110,7 +111,7 @@ describe("before_provider_request 录制", () => {
 	it("连续录制时序号递增", async () => {
 		mockIsRecording.mockReturnValue(true);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		const payload = { messages: [{ role: "user", content: "hi" }] };
 		await handler({ payload });
 		await handler({ payload });
@@ -124,14 +125,14 @@ describe("before_provider_request 录制", () => {
 	it("总是写 last-payload.json（不受录制开关影响）", async () => {
 		mockIsRecording.mockReturnValue(false);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
 		expect(existsSync(PAYLOAD_CACHE)).toBe(true);
 	});
 
 	it("无 payload 时不崩溃", async () => {
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({});
 	});
 
@@ -139,7 +140,7 @@ describe("before_provider_request 录制", () => {
 		mockIsRecording.mockReturnValue(true);
 		const origWrite = writeFileSync;
 		vi.doMock("fs", () => ({
-			...require("fs"),
+			...require("node:fs"),
 			writeFileSync: (...args: any[]) => {
 				if (args[0]?.toString().includes("recordings")) {
 					throw new Error("disk full");
@@ -148,14 +149,14 @@ describe("before_provider_request 录制", () => {
 			},
 		}));
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({ payload: { messages: [] } });
 	});
 
 	it("优先从 ctx.sessionManager 获取 sessionId", async () => {
 		mockIsRecording.mockReturnValue(true);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		const payload = { messages: [{ role: "user", content: "hi" }] };
 		const ctx = {
 			sessionManager: { getSessionId: () => "ctx-session-123" },
@@ -163,8 +164,8 @@ describe("before_provider_request 录制", () => {
 		await handler({ payload }, ctx);
 		const sessionDir = join(RECORDINGS_DIR, "ctx-session-123");
 		expect(existsSync(sessionDir)).toBe(true);
-		const files = readdirSync(sessionDir).filter(
-			(f: string) => f.endsWith(".json"),
+		const files = readdirSync(sessionDir).filter((f: string) =>
+			f.endsWith(".json"),
 		);
 		expect(files.length).toBe(1);
 	});
@@ -172,7 +173,7 @@ describe("before_provider_request 录制", () => {
 	it("ctx 无 sessionManager 时 fallback 到闭包 sessionId", async () => {
 		mockIsRecording.mockReturnValue(true);
 		indexModule(mockPi as any);
-		const handler = mockPi.events["before_provider_request"];
+		const handler = mockPi.events.before_provider_request;
 		await handler({
 			payload: { messages: [{ role: "user", content: "hi" }] },
 		});

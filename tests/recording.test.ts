@@ -3,14 +3,23 @@
  *
  * 覆盖：isRecording, setRecording, cleanRecordings
  */
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
-import { join } from "path";
+
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 
 vi.hoisted(() => {
-	const { join: pJoin } = require("path") as typeof import("path");
-	const os = require("os") as typeof import("os");
-	process.env.HOME = pJoin(os.tmpdir(), "pi-recording-test-" + Date.now());
+	const { join: pJoin } = require("node:path") as typeof import("path");
+	const os = require("node:os") as typeof import("os");
+	process.env.HOME = pJoin(os.tmpdir(), `pi-recording-test-${Date.now()}`);
 });
 
 vi.mock("@pi-atelier/shared-utils", () => ({
@@ -23,8 +32,12 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 	getSettingsValue: vi.fn(),
 }));
 
-import { isRecording, setRecording, cleanRecordings, RECORDINGS_DIR } from "../recording.js";
-import { DISTILL_DIR } from "../shared.js";
+import {
+	cleanRecordings,
+	isRecording,
+	RECORDINGS_DIR,
+	setRecording,
+} from "../recording.js";
 
 beforeAll(() => {
 	mkdirSync(RECORDINGS_DIR, { recursive: true });

@@ -1,7 +1,7 @@
 /**
  * render.ts 基础测试 — getViewport, renderOverview
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockContainerClear = vi.fn();
 const mockContainerAddChild = vi.fn(() => ({}));

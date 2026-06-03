@@ -1,8 +1,7 @@
 /** shared.ts — 配置、常量、持久化工具函数。不持有运行时可变状态。 */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { PayloadMessage } from "./collect-payload-types";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
@@ -73,9 +72,7 @@ export const distilledMap = new Map<string, DistillEntry>();
 
 import {
 	getSettingsSection,
-	getSettingsValue,
 	patchSettingsSection,
-	setSettingsValue,
 } from "@pi-atelier/shared-utils";
 
 // ── 配置（持久化到 settings.json → context） ──

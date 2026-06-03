@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
-import os from "os";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 
 // recording.ts 用的是模块级变量，需要动态导入来隔离
 describe("recording", () => {
@@ -28,7 +27,8 @@ describe("recording", () => {
 				"./recording.js"
 			);
 			// 确保目录不存在
-			if (existsSync(RECORDINGS_DIR)) rmSync(RECORDINGS_DIR, { recursive: true });
+			if (existsSync(RECORDINGS_DIR))
+				rmSync(RECORDINGS_DIR, { recursive: true });
 			const count = cleanRecordings();
 			expect(count).toBe(0);
 		});

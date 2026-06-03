@@ -1,7 +1,7 @@
 /**
  * index.ts 事件注册完整性测试
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../recording.js", () => ({
 	isRecording: vi.fn(() => false),
@@ -60,9 +60,7 @@ describe("事件注册完整性", () => {
 
 	it("注册了所有命令", () => {
 		indexModule(mockPi as any);
-		const commands = mockPi.registerCommand.mock.calls.map(
-			(c: any[]) => c[0],
-		);
+		const commands = mockPi.registerCommand.mock.calls.map((c: any[]) => c[0]);
 		expect(commands).toContain("record");
 		expect(commands).toContain("distill-config");
 		expect(commands).toContain("aging-config");

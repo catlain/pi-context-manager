@@ -4,8 +4,8 @@
  * 从 payload-analyzer core.ts 拆出，减少单文件体积。
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from "fs";
-import { join } from "path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { RECORDINGS_DIR } from "./core.js";
 
 // ── 类型 ──
@@ -40,10 +40,12 @@ export function listSessions(): SessionInfo[] {
 		const full = join(RECORDINGS_DIR, entry);
 		try {
 			if (!statSync(full).isDirectory()) continue;
-		} catch { continue; }
+		} catch {
+			continue;
+		}
 
 		const files = readdirSync(full)
-			.filter(f => f.startsWith("req-") && f.endsWith(".json"))
+			.filter((f) => f.startsWith("req-") && f.endsWith(".json"))
 			.sort();
 		if (files.length === 0) continue;
 
@@ -60,8 +62,17 @@ export function listSessions(): SessionInfo[] {
 		}
 
 		const firstTs = files[0].replace(/^req-\d{4}-/, "").replace(/\.json$/, "");
-		const lastTs = files[files.length - 1].replace(/^req-\d{4}-/, "").replace(/\.json$/, "");
-		sessions.push({ sessionId: entry, fileCount: files.length, totalSize, firstTs, lastTs, model });
+		const lastTs = files[files.length - 1]
+			.replace(/^req-\d{4}-/, "")
+			.replace(/\.json$/, "");
+		sessions.push({
+			sessionId: entry,
+			fileCount: files.length,
+			totalSize,
+			firstTs,
+			lastTs,
+			model,
+		});
 	}
 
 	return sessions.sort((a, b) => a.lastTs.localeCompare(b.lastTs));
@@ -69,25 +80,39 @@ export function listSessions(): SessionInfo[] {
 
 // ── 录制文件枚举 ──
 
-function collectRecordingFiles(dir: string, sessionId: string): RecordingFile[] {
+function collectRecordingFiles(
+	dir: string,
+	sessionId: string,
+): RecordingFile[] {
 	if (!existsSync(dir)) return [];
 	return readdirSync(dir)
-		.filter(f => f.startsWith("req-") && f.endsWith(".json"))
+		.filter((f) => f.startsWith("req-") && f.endsWith(".json"))
 		.sort()
-		.map(filename => {
+		.map((filename) => {
 			const filepath = join(dir, filename);
 			const reqNum = filename.split("-")[1];
 			try {
 				const stat = statSync(filepath);
 				const data = JSON.parse(readFileSync(filepath, "utf-8"));
 				return {
-					filename, path: filepath, reqNum, size: stat.size,
+					filename,
+					path: filepath,
+					reqNum,
+					size: stat.size,
 					msgCount: data.messages?.length ?? 0,
 					model: data.model ?? "?",
 					sessionId,
 				};
 			} catch {
-				return { filename, path: filepath, reqNum, size: 0, msgCount: 0, model: "?", sessionId };
+				return {
+					filename,
+					path: filepath,
+					reqNum,
+					size: 0,
+					msgCount: 0,
+					model: "?",
+					sessionId,
+				};
 			}
 		});
 }
@@ -113,8 +138,11 @@ export function listRecordings(sessionId?: string): RecordingFile[] {
 		} catch {}
 	}
 	if (hasFlatFiles) {
-		all.push(...collectRecordingFiles(RECORDINGS_DIR, "legacy")
-			.filter(f => f.sessionId === "legacy"));
+		all.push(
+			...collectRecordingFiles(RECORDINGS_DIR, "legacy").filter(
+				(f) => f.sessionId === "legacy",
+			),
+		);
 	}
 	return all.sort((a, b) => a.path.localeCompare(b.path));
 }

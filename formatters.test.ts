@@ -48,7 +48,7 @@ describe("truncateAtParagraph", () => {
 	});
 
 	it("在段落边界截断", () => {
-		const text = "A".repeat(8000) + "\n\n" + "B".repeat(8000);
+		const text = `${"A".repeat(8000)}\n\n${"B".repeat(8000)}`;
 		const result = truncateAtParagraph(text, 10000);
 		expect(result.endsWith(`...(内容已截断，共 ${text.length} 字符)`)).toBe(
 			true,
@@ -68,7 +68,7 @@ describe("truncateAtParagraph", () => {
 	});
 
 	it("段落边界在限制的前半段时仍正确截断", () => {
-		const text = "short first\n\n" + "B".repeat(10000);
+		const text = `short first\n\n${"B".repeat(10000)}`;
 		const result = truncateAtParagraph(text, 8000);
 		expect(result.includes("...(内容已截断")).toBe(true);
 		expect(result.includes("short first")).toBe(true);
@@ -77,7 +77,7 @@ describe("truncateAtParagraph", () => {
 
 	it("段落边界恰好在限制位置时完整保留", () => {
 		const part1 = "A".repeat(5000);
-		const text = part1 + "\n\n" + "B".repeat(500);
+		const text = `${part1}\n\n${"B".repeat(500)}`;
 		const result = truncateAtParagraph(text, 5100);
 		expect(result).toBe(text);
 	});

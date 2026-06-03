@@ -3,7 +3,7 @@
  *
  * 覆盖 toolMeta 所有 switch 分支：read, write, edit, bash, grep, find, ls, default
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { toolMeta } from "../distill-helpers.js";
 
 function makeToolCallMap(entries: [string, string, unknown][]) {
@@ -52,7 +52,9 @@ describe("toolMeta", () => {
 	});
 
 	it("bash: 返回 command 首行截取 80 字符", () => {
-		const map = makeToolCallMap([["tc1", "bash", { command: "ls -la\necho hi" }]]);
+		const map = makeToolCallMap([
+			["tc1", "bash", { command: "ls -la\necho hi" }],
+		]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "bash", content: [] },
 			map,
@@ -70,7 +72,9 @@ describe("toolMeta", () => {
 	});
 
 	it("grep: 返回 pattern in path", () => {
-		const map = makeToolCallMap([["tc1", "grep", { pattern: "foo", path: "src/" }]]);
+		const map = makeToolCallMap([
+			["tc1", "grep", { pattern: "foo", path: "src/" }],
+		]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "grep", content: [] },
 			map,
@@ -126,7 +130,12 @@ describe("toolMeta", () => {
 	it("默认（未知工具名）: 返回空字符串", () => {
 		const map = makeToolCallMap([["tc1", "custom-tool", { path: "x" }]]);
 		const result = toolMeta(
-			{ role: "toolResult", toolCallId: "tc1", toolName: "custom-tool", content: [] },
+			{
+				role: "toolResult",
+				toolCallId: "tc1",
+				toolName: "custom-tool",
+				content: [],
+			},
 			map,
 		);
 		expect(result).toEqual({ name: "custom-tool", meta: "" });

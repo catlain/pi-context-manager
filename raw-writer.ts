@@ -40,7 +40,7 @@ function buildFileHeader(
 	if (toolCallId) lines.push(`调用ID: ${toolCallId}`);
 	const argsStr = JSON.stringify(input);
 	lines.push(
-		`参数: ${argsStr.length > 200 ? argsStr.slice(0, 200) + "..." : argsStr}`,
+		`参数: ${argsStr.length > 200 ? `${argsStr.slice(0, 200)}...` : argsStr}`,
 	);
 	lines.push("");
 	return lines.join("\n");
@@ -70,7 +70,7 @@ export function writeRawToFile(
 		const body =
 			sourcePath && existsSync(sourcePath)
 				? (() => {
-						const f = require("fs");
+						const f = require("node:fs");
 						return f.readFileSync(sourcePath, "utf-8");
 					})()
 				: rawText;

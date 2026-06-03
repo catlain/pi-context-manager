@@ -58,7 +58,7 @@ export function triggerContext(
 	handlers: Record<string, Array<(event: any, ctx: any) => any>>,
 	messages: any[],
 ) {
-	const ctxHandler = handlers["context"];
+	const ctxHandler = handlers.context;
 	if (!ctxHandler?.length) return;
 	ctxHandler[0]({ messages }, {});
 }
@@ -79,7 +79,7 @@ export function setupAgingHandler(
 	agingTracker: Map<string, number>,
 	agingHinted: Set<string>,
 	agingThreshold: number,
-	distillThreshold: number,
+	_distillThreshold: number,
 ) {
 	pi.on("context", (event: any) => {
 		const messages = event.messages as any[];

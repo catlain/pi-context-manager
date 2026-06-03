@@ -1,11 +1,7 @@
 /** 命令注册：/record、/distill-config、/processor-config、/context-clean */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { cleanContextData, listSessionData } from "./clean.js";
-import {
-	cleanRecordings,
-	isRecording,
-	setRecording,
-} from "./recording.js";
+import { cleanRecordings, isRecording, setRecording } from "./recording.js";
 import { getContextConfig, setContextConfig } from "./shared.js";
 
 export function registerRecordCommand(pi: ExtensionAPI) {
@@ -13,17 +9,17 @@ export function registerRecordCommand(pi: ExtensionAPI) {
 		description: "Toggle provider payload recording (on/off).",
 		handler: async (_args, ctx) => {
 			const arg = _args?.trim()?.toLowerCase() ?? "";
-		if (arg === "help" || arg === "-h") {
-			ctx.ui.notify(
-				`[record] 切换 provider payload 录制\n\n用法:\n  /record        # 切换开关\n  /record on     # 开启录制\n  /record off    # 关闭录制`,
-				"info",
-			);
+			if (arg === "help" || arg === "-h") {
+				ctx.ui.notify(
+					`[record] 切换 provider payload 录制\n\n用法:\n  /record        # 切换开关\n  /record on     # 开启录制\n  /record off    # 关闭录制`,
+					"info",
+				);
 				return;
 			}
-		let on: boolean;
-		if (arg === "on") on = setRecording(true);
-		else if (arg === "off") on = setRecording(false);
-		else on = setRecording(!isRecording());
+			let on: boolean;
+			if (arg === "on") on = setRecording(true);
+			else if (arg === "off") on = setRecording(false);
+			else on = setRecording(!isRecording());
 			if (on) {
 				const cleaned = cleanRecordings();
 				const extra = cleaned > 0 ? `（已清理 ${cleaned} 个旧文件）` : "";
@@ -88,7 +84,7 @@ export function registerDistillConfigCommand(pi: ExtensionAPI) {
 					"info",
 				);
 				return;
-				}
+			}
 			// --cap 子命令
 			const capMatch = arg.match(/^--cap\s+(\d+)$/);
 			if (capMatch) {
@@ -99,13 +95,13 @@ export function registerDistillConfigCommand(pi: ExtensionAPI) {
 					"info",
 				);
 				return;
-				}
+			}
 			// 设置 distillThreshold
 			const val = Number(arg);
-			if (isNaN(val) || val <= 0) {
+			if (Number.isNaN(val) || val <= 0) {
 				ctx.ui.notify(`❌ 无效值: ${arg}（需要正整数）`, "error");
 				return;
-				}
+			}
 			const updated = setContextConfig({ distillThreshold: val });
 			ctx.ui.notify(
 				`✅ distillThreshold = ${updated.distillThreshold}`,
@@ -130,12 +126,12 @@ export function registerAgingConfigCommand(pi: ExtensionAPI) {
 				return;
 			}
 			if (arg === "off") {
-				const updated = setContextConfig({ agingThreshold: 0 });
+				const _updated = setContextConfig({ agingThreshold: 0 });
 				ctx.ui.notify(`✅ agingThreshold = 0（aging 禁用）`, "info");
 				return;
 			}
 			const val = Number(arg);
-			if (isNaN(val) || val < 0 || !Number.isInteger(val)) {
+			if (Number.isNaN(val) || val < 0 || !Number.isInteger(val)) {
 				ctx.ui.notify(`❌ 无效值: ${arg}（需要非负整数或 off）`, "error");
 				return;
 			}
@@ -163,12 +159,12 @@ export function registerProcessorConfigCommand(pi: ExtensionAPI) {
 				return;
 			}
 			if (arg === "off" || arg === "0") {
-				const updated = setContextConfig({ processorThreshold: 0 });
+				const _updated = setContextConfig({ processorThreshold: 0 });
 				ctx.ui.notify(`✅ processorThreshold = 0（后处理器禁用）`, "info");
 				return;
 			}
 			const val = Number(arg);
-			if (isNaN(val) || val <= 0) {
+			if (Number.isNaN(val) || val <= 0) {
 				ctx.ui.notify(`❌ 无效值: ${arg}（需要正整数或 off）`, "error");
 				return;
 			}

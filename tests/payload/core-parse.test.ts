@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { parseDistillHeader, parseArgs, extractReadPath } from "../../payload/core.js";
+import { describe, expect, it } from "vitest";
+import {
+	extractReadPath,
+	parseArgs,
+	parseDistillHeader,
+} from "../../payload/core.js";
 import { formatToolStats } from "../../payload/format.js";
 
 describe("parseDistillHeader", () => {

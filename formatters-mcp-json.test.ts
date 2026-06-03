@@ -9,10 +9,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-	formatMcpJsonResult,
-	sniffMcpJson,
-} from "./formatters-mcp-json.js";
+import { formatMcpJsonResult, sniffMcpJson } from "./formatters-mcp-json.js";
 
 // ── 嗅探 ────────────────────────────────────────
 
@@ -24,9 +21,7 @@ describe("sniffMcpJson", () => {
 				root: {
 					type: "Node3D",
 					name: "Root",
-					children: [
-						{ type: "Camera3D", name: "Camera", path: "Root/Camera" },
-					],
+					children: [{ type: "Camera3D", name: "Camera", path: "Root/Camera" }],
 				},
 			},
 		});
@@ -49,7 +44,9 @@ describe("sniffMcpJson", () => {
 	});
 
 	it("不误判普通 JSON", () => {
-		expect(sniffMcpJson('{"title":"hello","url":"https://example.com"}')).toBe(false);
+		expect(sniffMcpJson('{"title":"hello","url":"https://example.com"}')).toBe(
+			false,
+		);
 	});
 
 	it("不误判 code-graph AST JSON", () => {
@@ -96,19 +93,23 @@ describe("formatMcpJsonResult", () => {
 	});
 
 	it("含 type + properties 的 JSON 保留非默认属性", () => {
-		const json = JSON.stringify({
-			status: "success",
-			data: {
-				type: "Node3D",
-				name: "Player",
-				properties: {
-					position: { x: 1, y: 2, z: 3 },
-					rotation: { x: 0, y: 0, z: 0 },  // 默认值
-					scale: { x: 1, y: 1, z: 1 },      // 默认值
-					visible: true,                      // 默认值
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: {
+					type: "Node3D",
+					name: "Player",
+					properties: {
+						position: { x: 1, y: 2, z: 3 },
+						rotation: { x: 0, y: 0, z: 0 }, // 默认值
+						scale: { x: 1, y: 1, z: 1 }, // 默认值
+						visible: true, // 默认值
+					},
 				},
 			},
-		}, null, 2);
+			null,
+			2,
+		);
 
 		const result = formatMcpJsonResult(json);
 		// 非默认值应保留
@@ -131,14 +132,18 @@ describe("formatMcpJsonResult — 通用大 JSON 截断", () => {
 			{ length: 150 },
 			(_, i) => `"line_${i}": "${longField}"`,
 		);
-		const json = JSON.stringify({
-			status: "success",
-			data: {
-				type: "Node3D",
-				name: "BigNode",
-				...(Object.fromEntries(lines.map((l, i) => [`f${i}`, longField]))),
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: {
+					type: "Node3D",
+					name: "BigNode",
+					...Object.fromEntries(lines.map((_l, i) => [`f${i}`, longField])),
+				},
 			},
-		}, null, 1);
+			null,
+			1,
+		);
 
 		// 确认输入格式正确、长度触发了截断
 		expect(json.length).toBeGreaterThan(2000);
@@ -152,7 +157,10 @@ describe("formatMcpJsonResult — 通用大 JSON 截断", () => {
 	});
 
 	it("JSON 刚好 ≤ 80 行 → 不触发截断", () => {
-		const fields = Array.from({ length: 50 }, (_, i) => `"k${i}": "v${i}"`).join(",\n");
+		const fields = Array.from(
+			{ length: 50 },
+			(_, i) => `"k${i}": "v${i}"`,
+		).join(",\n");
 		const json = `{\n${fields}\n}`;
 		// 不满足 sniff 条件会被原样返回
 		expect(formatMcpJsonResult(json)).toBe(json);
@@ -191,21 +199,25 @@ describe("sniffMcpJson 补充", () => {
 
 describe("formatMcpJsonResult — 节点属性补充", () => {
 	it("多种默认值和非默认值混合 → 正确分离", () => {
-		const json = JSON.stringify({
-			status: "success",
-			data: {
-				type: "CharacterBody3D",
-				name: "Player",
-				properties: {
-					visible: true,              // 默认
-					position: { x: 0, y: 0, z: 0 },  // 默认
-					velocity: { x: 5, y: 0, z: 0 },  // 非默认
-					scale: { x: 1, y: 1, z: 1 },     // 默认
-					custom_prop: "hello",            // 非默认
-					null_prop: null,                  // 默认
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: {
+					type: "CharacterBody3D",
+					name: "Player",
+					properties: {
+						visible: true, // 默认
+						position: { x: 0, y: 0, z: 0 }, // 默认
+						velocity: { x: 5, y: 0, z: 0 }, // 非默认
+						scale: { x: 1, y: 1, z: 1 }, // 默认
+						custom_prop: "hello", // 非默认
+						null_prop: null, // 默认
+					},
 				},
 			},
-		}, null, 2);
+			null,
+			2,
+		);
 
 		const result = formatMcpJsonResult(json);
 		expect(result).toContain("velocity");
@@ -235,14 +247,23 @@ describe("formatMcpJsonResult — 节点属性补充", () => {
 
 	it("data.children 的大场景树触发场景树压缩", () => {
 		// 构造 data 下直接有 children 的大场景树
-		const makeDeep = (depth: number): any => depth <= 0
-			? { type: "MeshInstance3D", name: "Leaf", path: "R/L" }
-			: { type: "Node3D", name: `L${depth}`, children: Array.from({ length: 4 }, () => makeDeep(depth - 1)) };
+		const makeDeep = (depth: number): any =>
+			depth <= 0
+				? { type: "MeshInstance3D", name: "Leaf", path: "R/L" }
+				: {
+						type: "Node3D",
+						name: `L${depth}`,
+						children: Array.from({ length: 4 }, () => makeDeep(depth - 1)),
+					};
 
-		const json = JSON.stringify({
-			status: "success",
-			data: makeDeep(4),
-		}, null, 2);
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: makeDeep(4),
+			},
+			null,
+			2,
+		);
 
 		expect(json.length).toBeGreaterThan(2000);
 		const result = formatMcpJsonResult(json);
@@ -251,10 +272,14 @@ describe("formatMcpJsonResult — 节点属性补充", () => {
 	});
 
 	it("空 properties → 格式化为空 JSON 对象", () => {
-		const json = JSON.stringify({
-			status: "success",
-			data: { type: "Node3D", name: "Empty", properties: {} },
-		}, null, 2);
+		const json = JSON.stringify(
+			{
+				status: "success",
+				data: { type: "Node3D", name: "Empty", properties: {} },
+			},
+			null,
+			2,
+		);
 
 		const result = formatMcpJsonResult(json);
 		expect(result).toContain("Node: Empty");
@@ -292,7 +317,7 @@ function buildLargeSceneTree(
 		type: "Node3D",
 		name: `Branch_L${depth}`,
 		path: `Root/.../Branch_L${depth}`,
-		children: Array.from({ length: width }, (_, i) =>
+		children: Array.from({ length: width }, (_, _i) =>
 			buildLargeSceneTree(branches, depth - 1, Math.max(2, width - 1)),
 		),
 	};

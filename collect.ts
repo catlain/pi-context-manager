@@ -14,12 +14,13 @@ import type {
 	ProviderPayload,
 	ToolDefinition,
 } from "./types-payload.js";
-import { formatTokens } from "./utils.js";
 
 const est = (s: string) => Math.ceil(s.length / 4);
 
 /** 从 provider payload 中提取 system prompt 文本 */
-function extractSystemFromPayload(payload: ProviderPayload | undefined): string {
+function extractSystemFromPayload(
+	payload: ProviderPayload | undefined,
+): string {
 	if (!payload) return "";
 	if (payload.system != null) {
 		if (typeof payload.system === "string") return payload.system;
@@ -49,14 +50,19 @@ function extractSystemFromPayload(payload: ProviderPayload | undefined): string 
 }
 
 /** 从 provider payload 中提取 tools 定义 */
-function extractToolsFromPayload(payload: ProviderPayload | undefined): ToolDefinition[] {
+function extractToolsFromPayload(
+	payload: ProviderPayload | undefined,
+): ToolDefinition[] {
 	if (!payload?.tools) return [];
 	return payload.tools;
 }
 
 export function collectData(
 	pi: ExtensionAPI,
-	ctx: { getContextUsage(): ContextUsage | undefined; getSystemPrompt(): string },
+	ctx: {
+		getContextUsage(): ContextUsage | undefined;
+		getSystemPrompt(): string;
+	},
 	opts: CollectOpts,
 ): ContextData | null {
 	const usage = ctx.getContextUsage();
@@ -70,7 +76,9 @@ export function collectData(
 	const payloadTools = extractToolsFromPayload(payload);
 	const fallbackTools = pi
 		.getAllTools()
-		.filter((t: ToolDefinition) => pi.getActiveTools().includes(t.name ?? t.function?.name ?? ""));
+		.filter((t: ToolDefinition) =>
+			pi.getActiveTools().includes(t.name ?? t.function?.name ?? ""),
+		);
 	const toolsSource = payloadTools.length > 0 ? payloadTools : fallbackTools;
 
 	// System Prompt
@@ -165,7 +173,7 @@ export function collectData(
 						b.callT += cs;
 						const args = (p as any).arguments || {};
 						const summary = Object.entries(args)
-							.map(([k, v]) => (typeof v === "string" ? v : JSON.stringify(v)))
+							.map(([_k, v]) => (typeof v === "string" ? v : JSON.stringify(v)))
 							.join(" ")
 							.slice(0, 60);
 						const rec: RecordItem = {

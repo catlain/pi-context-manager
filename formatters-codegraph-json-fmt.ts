@@ -25,26 +25,49 @@ interface ReferencesResult {
 	total_references: number;
 	symbol: string;
 	by_relation?: Record<string, number>;
-	references?: Array<{ relation?: string; name: string; file_path?: string; start_line?: number }>;
+	references?: Array<{
+		relation?: string;
+		name: string;
+		file_path?: string;
+		start_line?: number;
+	}>;
 }
 
 interface ModuleOverviewResult {
 	path: string;
 	files_count?: number;
 	summary?: string;
-	active_exports?: Array<{ type?: string; name: string; file?: string; start_line?: number; caller_count?: number; signature?: string }>;
+	active_exports?: Array<{
+		type?: string;
+		name: string;
+		file?: string;
+		start_line?: number;
+		caller_count?: number;
+		signature?: string;
+	}>;
 	inactive_summary?: Array<{ type?: string; count: number; names?: string[] }>;
 }
 
 interface ProjectMapResult {
-	modules?: Array<{ path: string; files?: number; functions?: number; key_symbols?: string[] }>;
+	modules?: Array<{
+		path: string;
+		files?: number;
+		functions?: number;
+		key_symbols?: string[];
+	}>;
 	module_dependencies?: Array<{ from: string; to: string }>;
 	hot_functions?: Array<{ name: string; file?: string; caller_count?: number }>;
 }
 
 interface AstSearchResult {
 	count?: number;
-	results?: Array<{ type?: string; name: string; file_path?: string; start_line?: number; signature?: string }>;
+	results?: Array<{
+		type?: string;
+		name: string;
+		file_path?: string;
+		start_line?: number;
+		signature?: string;
+	}>;
 }
 
 // ── semantic_code_search ─────────────────────────
@@ -68,12 +91,16 @@ export function formatCallGraphJson(obj: CallGraphNode): string {
 	if (obj.callers?.length > 0) {
 		lines.push("CALLERS:");
 		for (const c of obj.callers)
-			lines.push(`  ← ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`);
+			lines.push(
+				`  ← ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`,
+			);
 	}
 	if (obj.callees?.length > 0) {
 		lines.push("CALLEES:");
 		for (const c of obj.callees)
-			lines.push(`  → ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`);
+			lines.push(
+				`  → ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`,
+			);
 	}
 	if (obj.test_callers_filtered)
 		lines.push(`(${obj.test_callers_filtered} test callers filtered)`);
@@ -83,13 +110,19 @@ export function formatCallGraphJson(obj: CallGraphNode): string {
 // ── find_references ──────────────────────────────
 
 export function formatReferencesJson(obj: ReferencesResult): string {
-	const lines: string[] = [`${obj.total_references} references to '${obj.symbol}'`];
+	const lines: string[] = [
+		`${obj.total_references} references to '${obj.symbol}'`,
+	];
 	if (obj.by_relation && typeof obj.by_relation === "object") {
-		const stats = Object.entries(obj.by_relation).map(([k, v]) => `${k}: ${v}`).join(", ");
+		const stats = Object.entries(obj.by_relation)
+			.map(([k, v]) => `${k}: ${v}`)
+			.join(", ");
 		lines.push(`  (${stats})`);
 	}
 	for (const ref of obj.references ?? [])
-		lines.push(`  [${ref.relation ?? "?"}] ${ref.name} (${ref.file_path ?? "?"})${ref.start_line ? `:${ref.start_line}` : ""}`);
+		lines.push(
+			`  [${ref.relation ?? "?"}] ${ref.name} (${ref.file_path ?? "?"})${ref.start_line ? `:${ref.start_line}` : ""}`,
+		);
 	return lines.join("\n");
 }
 
@@ -104,9 +137,12 @@ export function formatModuleOverviewJson(obj: ModuleOverviewResult): string {
 	if (exports.length > 0) {
 		lines.push("", `ACTIVE (${exports.length}):`);
 		for (const exp of exports) {
-			const caller = exp.caller_count != null ? ` callers:${exp.caller_count}` : "";
+			const caller =
+				exp.caller_count != null ? ` callers:${exp.caller_count}` : "";
 			const sig = exp.signature ? ` ${exp.signature}` : "";
-			lines.push(`  ${exp.type ?? "?"} ${exp.name}  ${exp.file ?? "?"}${exp.start_line ? `:${exp.start_line}` : ""}${caller}${sig}`);
+			lines.push(
+				`  ${exp.type ?? "?"} ${exp.name}  ${exp.file ?? "?"}${exp.start_line ? `:${exp.start_line}` : ""}${caller}${sig}`,
+			);
 		}
 	}
 
@@ -114,7 +150,9 @@ export function formatModuleOverviewJson(obj: ModuleOverviewResult): string {
 	if (inactive.length > 0) {
 		lines.push("", "INACTIVE:");
 		for (const cat of inactive)
-			lines.push(`  ${cat.type ?? "?"} (${cat.count}): ${cat.names?.join(", ") ?? ""}`);
+			lines.push(
+				`  ${cat.type ?? "?"} (${cat.count}): ${cat.names?.join(", ") ?? ""}`,
+			);
 	}
 	return lines.join("\n");
 }
@@ -126,8 +164,12 @@ export function formatProjectMapJson(obj: ProjectMapResult): string {
 	const modules = obj.modules ?? [];
 	if (modules.length > 0) {
 		for (const m of modules) {
-			const syms = m.key_symbols?.length ? ` | ${m.key_symbols.join(", ")}` : "";
-			lines.push(`${m.path} (${m.files ?? "?"} files, ${m.functions ?? "?"} fns${syms})`);
+			const syms = m.key_symbols?.length
+				? ` | ${m.key_symbols.join(", ")}`
+				: "";
+			lines.push(
+				`${m.path} (${m.files ?? "?"} files, ${m.functions ?? "?"} fns${syms})`,
+			);
 		}
 	}
 	const deps = obj.module_dependencies ?? [];
@@ -138,7 +180,10 @@ export function formatProjectMapJson(obj: ProjectMapResult): string {
 	const hot = obj.hot_functions ?? [];
 	if (hot.length > 0) {
 		lines.push("", "HOT:");
-		for (const h of hot) lines.push(`  ${h.name} (${h.file ?? "?"}) callers:${h.caller_count ?? "?"}`);
+		for (const h of hot)
+			lines.push(
+				`  ${h.name} (${h.file ?? "?"}) callers:${h.caller_count ?? "?"}`,
+			);
 	}
 	return lines.join("\n");
 }
@@ -151,7 +196,9 @@ export function formatAstSearchJson(obj: AstSearchResult): string {
 	const lines: string[] = [`${obj.count ?? results.length} results:`];
 	for (const r of results) {
 		const sig = r.signature ? `  ${r.signature}` : "";
-		lines.push(`  ${r.type ?? "?"} ${r.name}  ${r.file_path ?? "?"}${r.start_line ? `:${r.start_line}` : ""}${sig}`);
+		lines.push(
+			`  ${r.type ?? "?"} ${r.name}  ${r.file_path ?? "?"}${r.start_line ? `:${r.start_line}` : ""}${sig}`,
+		);
 	}
 	return lines.join("\n");
 }

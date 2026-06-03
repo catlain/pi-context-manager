@@ -1,7 +1,7 @@
-import { createHash } from "crypto";
-import { tmpdir } from "os";
-import { join } from "path";
-import type { PayloadMessage, PayloadContentBlock } from "./types-payload.js";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { PayloadContentBlock, PayloadMessage } from "./types-payload.js";
 import { formatTokens } from "./utils.js";
 
 // ── toolCall 映射 ──
@@ -80,9 +80,11 @@ export function removeOrphanedToolCalls(messages: PayloadMessage[]): void {
 	// 2. 从 assistant 消息中移除没有对应 toolResult 的 toolCall block
 	for (const msg of messages) {
 		if (msg.role === "assistant" && Array.isArray(msg.content)) {
-			if (!msg.content.some((b: PayloadContentBlock) => b.type === "toolCall")) continue;
+			if (!msg.content.some((b: PayloadContentBlock) => b.type === "toolCall"))
+				continue;
 			msg.content = msg.content.filter(
-				(b: PayloadContentBlock) => b.type !== "toolCall" || activeToolCallIds.has(b.id ?? ""),
+				(b: PayloadContentBlock) =>
+					b.type !== "toolCall" || activeToolCallIds.has(b.id ?? ""),
 			);
 		}
 	}
@@ -178,12 +180,16 @@ export function buildSummary(
 
 // ── 技能文件豁免 ──
 
-const AGENT_DIR = process.env.PI_AGENT_DIR || join(process.env.HOME || "/root", ".pi", "agent");
+const AGENT_DIR =
+	process.env.PI_AGENT_DIR || join(process.env.HOME || "/root", ".pi", "agent");
 
 /** 判断路径是否属于技能文件（内联技能或 npm 技能） */
 export function isSkillFilePath(path: string | undefined): boolean {
 	if (!path) return false;
-	const resolved = path.startsWith("/") || path.startsWith("C:") ? path : join(AGENT_DIR, path);
+	const resolved =
+		path.startsWith("/") || path.startsWith("C:")
+			? path
+			: join(AGENT_DIR, path);
 	if (!resolved.startsWith(AGENT_DIR)) return false;
 	// 匹配 skills/{name}/ 或 node_modules/{pkg}/skills/{name}/
 	return /[\\/]skills[\\/][^\\/]+[\\/]/.test(resolved);

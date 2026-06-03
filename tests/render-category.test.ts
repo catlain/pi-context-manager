@@ -1,7 +1,7 @@
 /**
  * render.ts — renderCategory, renderRecords 测试
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-tui", () => ({
 	Container: vi.fn(() => ({
@@ -17,7 +17,7 @@ vi.mock("@earendil-works/pi-coding-agent", () => ({
 }));
 
 import { renderCategory, renderRecords } from "../render.js";
-import type { ContextData, CategoryItem, RecordItem } from "../types.js";
+import type { CategoryItem, ContextData, RecordItem } from "../types.js";
 
 function createTheme() {
 	return {
@@ -131,14 +131,34 @@ describe("renderRecords", () => {
 	it("渲染记录列表（非工具模式）", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderRecords(c as any, sampleData, t as any, "User", records, 0, false, 0, 40);
+		renderRecords(
+			c as any,
+			sampleData,
+			t as any,
+			"User",
+			records,
+			0,
+			false,
+			0,
+			40,
+		);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
 	it("工具模式显示 call/result token 列", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderRecords(c as any, sampleData, t as any, "Tools > read", records, 0, true, 0, 40);
+		renderRecords(
+			c as any,
+			sampleData,
+			t as any,
+			"Tools > read",
+			records,
+			0,
+			true,
+			0,
+			40,
+		);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
@@ -153,7 +173,17 @@ describe("renderRecords", () => {
 				resultTokens: 0,
 				lines: [],
 			}));
-		renderRecords(c as any, sampleData, t as any, "Tools", many, 0, false, 5, 40);
+		renderRecords(
+			c as any,
+			sampleData,
+			t as any,
+			"Tools",
+			many,
+			0,
+			false,
+			5,
+			40,
+		);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
@@ -163,7 +193,17 @@ describe("renderRecords", () => {
 		const plainRecords: RecordItem[] = [
 			{ summary: "plain", callTokens: 10, resultTokens: 5, lines: [] },
 		];
-		renderRecords(c as any, sampleData, t as any, "Tools", plainRecords, 0, true, 0, 40);
+		renderRecords(
+			c as any,
+			sampleData,
+			t as any,
+			"Tools",
+			plainRecords,
+			0,
+			true,
+			0,
+			40,
+		);
 		expect(c.clear).toHaveBeenCalled();
 	});
 
@@ -180,7 +220,17 @@ describe("renderRecords", () => {
 				agingCount: 3,
 			},
 		];
-		renderRecords(c as any, sampleData, t as any, "Tools", markedRecs, 0, true, 0, 40);
+		renderRecords(
+			c as any,
+			sampleData,
+			t as any,
+			"Tools",
+			markedRecs,
+			0,
+			true,
+			0,
+			40,
+		);
 		expect(c.clear).toHaveBeenCalled();
 	});
 });

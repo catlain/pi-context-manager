@@ -3,14 +3,29 @@
  *
  * 覆盖：saveManifest, loadManifest
  */
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "fs";
-import { join } from "path";
+
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 
 vi.hoisted(() => {
-	const { join: pJoin } = require("path") as typeof import("path");
-	const os = require("os") as typeof import("os");
-	process.env.HOME = pJoin(os.tmpdir(), "pi-context-manifest-" + Date.now());
+	const { join: pJoin } = require("node:path") as typeof import("path");
+	const os = require("node:os") as typeof import("os");
+	process.env.HOME = pJoin(os.tmpdir(), `pi-context-manifest-${Date.now()}`);
 });
 
 vi.mock("@pi-atelier/shared-utils", () => ({
@@ -24,10 +39,10 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 }));
 
 import {
-	saveManifest,
-	loadManifest,
-	distilledMap,
 	DISTILL_DIR,
+	distilledMap,
+	loadManifest,
+	saveManifest,
 } from "../shared.js";
 
 beforeAll(() => {
@@ -105,7 +120,11 @@ describe("loadManifest", () => {
 		const md = new Set<string>();
 		const ad = new Set<string>();
 		const at = new Map<string, number>();
-		loadManifest(sid, { manuallyDeleted: md, agingDeleted: ad, agingTracker: at });
+		loadManifest(sid, {
+			manuallyDeleted: md,
+			agingDeleted: ad,
+			agingTracker: at,
+		});
 
 		expect(distilledMap.get("sig1")!.toolName).toBe("grep");
 		expect(md.has("m1")).toBe(true);
@@ -114,9 +133,17 @@ describe("loadManifest", () => {
 	});
 
 	it("文件不存在时不报错", () => {
-		distilledMap.set("keep", { toolName: "x", meta: "x", tokens: 0, distilledAt: 0 });
+		distilledMap.set("keep", {
+			toolName: "x",
+			meta: "x",
+			tokens: 0,
+			distilledAt: 0,
+		});
 		expect(() =>
-			loadManifest("nonexistent", { manuallyDeleted: new Set(), agingDeleted: new Set() }),
+			loadManifest("nonexistent", {
+				manuallyDeleted: new Set(),
+				agingDeleted: new Set(),
+			}),
 		).not.toThrow();
 		expect(distilledMap.has("keep")).toBe(true);
 	});
@@ -130,13 +157,20 @@ describe("loadManifest", () => {
 				distilled: [],
 				manuallyDeleted: [],
 				agingDeleted: [],
-				agingCounts: [["s1", 3], ["s2", 7]],
+				agingCounts: [
+					["s1", 3],
+					["s2", 7],
+				],
 			}),
 			"utf-8",
 		);
 
 		const at = new Map<string, number>();
-		loadManifest(sid, { manuallyDeleted: new Set(), agingDeleted: new Set(), agingTracker: at });
+		loadManifest(sid, {
+			manuallyDeleted: new Set(),
+			agingDeleted: new Set(),
+			agingTracker: at,
+		});
 		expect(at.get("s1")).toBe(3);
 		expect(at.get("s2")).toBe(7);
 		expect(at.size).toBe(2);

@@ -3,10 +3,11 @@
  *
  * 依赖 clean.js 的 cleanContextData / listSessionData，使用 vi.mock 隔离。
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockClean = vi.hoisted(() => ({
-	cleanContextData: vi.fn<(sessionId?: string) => { cleaned: number; freedMB: number }>(),
+	cleanContextData:
+		vi.fn<(sessionId?: string) => { cleaned: number; freedMB: number }>(),
 	listSessionData: vi.fn<() => { sessionId: string; sizeMB: number }[]>(),
 }));
 

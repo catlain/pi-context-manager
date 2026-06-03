@@ -1,8 +1,9 @@
 /**
  * collect.ts — 基础场景测试
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-coding-agent", () => ({}));
 

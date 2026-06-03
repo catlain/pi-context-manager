@@ -8,7 +8,6 @@
 
 import { formatGhResult } from "./formatters-gh.js";
 import {
-	extractJsonPrefix,
 	truncateAtParagraph,
 	unwrapDoubleEncodedJson,
 } from "./formatters-utils.js";

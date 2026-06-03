@@ -13,8 +13,10 @@ export default createConfig({
 		),
 		"@pi-atelier/shared-utils": path.resolve(__dirname, "../pi-shared-utils"),
 		"@pi-atelier/context-manager": path.resolve(__dirname, "./lib"),
-	"typebox": path.resolve(__dirname, "node_modules/@sinclair/typebox/build/esm/index.mjs"),
-
+		typebox: path.resolve(
+			__dirname,
+			"node_modules/@sinclair/typebox/build/esm/index.mjs",
+		),
 	},
 	fileParallelism: false,
 	include: ["tests/**/*.test.ts"],
