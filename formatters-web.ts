@@ -37,13 +37,15 @@ export function formatWebReadResult(text: string): string {
 		return text;
 	}
 
-	const title = parsed.title ?? "";
-	const url = parsed.url ?? "";
-	const content = parsed.content ?? "";
-
-	if (!title && !url && !content) {
+	// GLM web reader 真实输出一定有 url 字段（https://...），
+	// 必须严格检查 url 存在且为非空 string，防止 JSON Schema 等只有 title 的 JSON 被误判。
+	if (typeof parsed.url !== "string" || !parsed.url) {
 		return text;
 	}
+
+	const title = parsed.title ?? "";
+	const url = parsed.url;
+	const content = parsed.content ?? "";
 
 	const truncated = truncateAtParagraph(content, MAX_CONTENT_CHARS);
 
@@ -81,16 +83,11 @@ export function formatWebSearchResult(text: string): string {
 		return "搜索结果（共 0 条）";
 	}
 
-	// 语义验证：至少一个条目必须有 link 或 title（web_search 特征字段）
-	// 防止其他工具返回的 JSON 数组被误匹配
+	// 语义验证：至少一个条目必须有 link（web_search 特征字段）。
+	// GLM web search 真实输出每条都有 link 字段。
 	// 注意：必须用 typeof 检查，因为 String.prototype.link 是已废弃的 HTML 方法，
 	// 会导致 { source: "git:..." } 等普通对象误判
-	if (
-		!results.some(
-			(r) => typeof r.link === "string" || typeof r.title === "string",
-		)
-	)
-		return text;
+	if (!results.some((r) => typeof r.link === "string")) return text;
 
 	const total = results.length;
 	const limited = results.slice(0, MAX_SEARCH_RESULTS);
