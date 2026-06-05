@@ -31,6 +31,7 @@ vi.mock("../distill-helpers.js", () => ({
 	buildToolCallMap: () => new Map(),
 	estimateTokens: (t: string) => Math.ceil(t.length / 4),
 	isSkillFilePath: () => false,
+	isPlansFilePath: () => false,
 	toolMeta: () => ({ meta: "" }),
 	removeOrphanedToolCalls: (msgs: any[]) => {
 		const active = new Set<string>();

@@ -2,6 +2,7 @@
 import {
 	buildToolCallMap,
 	estimateTokens,
+	isPlansFilePath,
 	isSkillFilePath,
 	removeOrphanedToolCalls,
 	toolMeta,
@@ -107,9 +108,10 @@ export function handleContextEvent(
 			origTokens >= distillThreshold ? 2 : agingThreshold;
 		if (effectiveThreshold <= 0) continue; // aging 关闭时跳过普通结果
 
-		// 技能文件豁免：read 调用技能路径时永不 aging
+		// 技能文件 / plans 目录豁免：read 调用这些路径时永不 aging
 		const callInfo = toolCallMap.get(tcId);
-		if (toolName === "read" && isSkillFilePath(callInfo?.arguments?.path))
+		const filePath = callInfo?.arguments?.path;
+		if (toolName === "read" && (isSkillFilePath(filePath) || isPlansFilePath(filePath)))
 			continue;
 
 		activeTcIds.add(tcId);

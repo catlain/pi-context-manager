@@ -194,3 +194,10 @@ export function isSkillFilePath(path: string | undefined): boolean {
 	// 匹配 skills/{name}/ 或 node_modules/{pkg}/skills/{name}/
 	return /[\\/]skills[\\/][^\\/]+[\\/]/.test(resolved);
 }
+
+/** 判断路径是否属于项目 plans 目录（.pi/plans/）— 路线图计划文档永不 aging */
+export function isPlansFilePath(path: string | undefined): boolean {
+	if (!path) return false;
+	// 匹配 .pi/plans/ 路径（项目级计划文档）— 支持相对路径和绝对路径
+	return /(^|[\\/])\.pi[\\/]plans[\\/]/.test(path);
+}
