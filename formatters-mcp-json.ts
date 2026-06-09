@@ -15,6 +15,8 @@
  * 4. 大型 JSON → 行数截断 + 标注
  */
 
+import { tryParseJson } from "./formatters-utils.js";
+
 const MAX_JSON_LINES = 80;
 const SCENE_TREE_MAX_DEPTH = 2;
 const PREVIEW_HEAD = 30;
@@ -90,12 +92,8 @@ export function formatMcpJsonResult(text: string): string {
 	if (!text) return text;
 	if (!sniffMcpJson(text)) return text;
 
-	let obj: GodotMcpResponse;
-	try {
-		obj = JSON.parse(text) as GodotMcpResponse;
-	} catch {
-		return text;
-	}
+	const obj = tryParseJson<GodotMcpResponse>(text);
+	if (!obj) return text;
 
 	// 短 JSON 直接返回
 	if (text.length <= 2000) return text;

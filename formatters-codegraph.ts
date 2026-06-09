@@ -14,6 +14,7 @@ import {
 	formatCodeGraphJson,
 	sniffCodeGraphJson,
 } from "./formatters-codegraph-json.js";
+import { tryParseJson } from "./formatters-utils.js";
 
 const MAX_LINES = 200;
 
@@ -88,12 +89,8 @@ function sortSearchLines(lines: string[]): string[] {
 // ── AST JSON 格式化 ────────────────────────────
 
 function formatAstJson(text: string): string {
-	let obj: Record<string, unknown>;
-	try {
-		obj = JSON.parse(text);
-	} catch {
-		return text;
-	}
+	const obj = tryParseJson<Record<string, unknown>>(text);
+	if (!obj) return text;
 
 	const code = obj.code_content as string | undefined;
 	if (!code || typeof code !== "string") return formatAstMetadata(obj);

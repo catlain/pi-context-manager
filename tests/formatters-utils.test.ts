@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
 	extractJsonPrefix,
 	truncateAtParagraph,
+	tryParseJson,
 	unwrapDoubleEncodedJson,
 } from "../formatters-utils.js";
 
@@ -171,5 +172,57 @@ describe("unwrapDoubleEncodedJson", () => {
 	it("JSON 对象不处理（不以双引号开头）", () => {
 		const json = '{"a":1}';
 		expect(unwrapDoubleEncodedJson(json)).toBe(json);
+	});
+});
+
+// ═══════════════════════════════════════════════════════════════
+// tryParseJson
+// ═══════════════════════════════════════════════════════════════
+
+describe("tryParseJson", () => {
+	it("正常 JSON 对象 → 返回解析结果", () => {
+		const result = tryParseJson<{ name: string }>("{\"name\":\"test\"}");
+		expect(result).toEqual({ name: "test" });
+	});
+
+	it("正常 JSON 数组 → 返回解析结果", () => {
+		const result = tryParseJson<number[]>("[1,2,3]");
+		expect(result).toEqual([1, 2, 3]);
+	});
+
+	it("非法 JSON → 返回 null", () => {
+		const result = tryParseJson("not json");
+		expect(result).toBeNull();
+	});
+
+	it("空字符串 → 返回 null", () => {
+		const result = tryParseJson("");
+		expect(result).toBeNull();
+	});
+
+	it("JSON 原始类型（数字）→ 返回 null（requireObject=true）", () => {
+		const result = tryParseJson("42");
+		expect(result).toBeNull();
+	});
+
+	it("JSON 原始类型（字符串）→ 返回 null（requireObject=true）", () => {
+		const result = tryParseJson('"hello"');
+		expect(result).toBeNull();
+	});
+
+	it("JSON null → 返回 null", () => {
+		const result = tryParseJson("null");
+		expect(result).toBeNull();
+	});
+
+	it("allowPrimitive=true 时接受原始类型", () => {
+		const num = tryParseJson<number>("42", { allowPrimitive: true });
+		expect(num).toBe(42);
+
+		const str = tryParseJson<string>('"hello"', { allowPrimitive: true });
+		expect(str).toBe("hello");
+
+		const arr = tryParseJson<number[]>("[1,2]", { allowPrimitive: true });
+		expect(arr).toEqual([1, 2]);
 	});
 });

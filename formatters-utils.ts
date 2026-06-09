@@ -45,6 +45,28 @@ export function extractJsonPrefix(text: string): string {
 }
 
 /**
+ * 安全 JSON.parse：解析失败或返回非对象时返回 null。
+ *
+ * 用于消除 formatter 中重复的 `try { parsed = JSON.parse(text) } catch { ... }` 模式。
+ *
+ * @param text 待解析的 JSON 字符串
+ * @param options.allowPrimitive 是否允许原始类型（string/number/boolean）。默认 false（只允许对象/数组）
+ */
+export function tryParseJson<T = unknown>(
+	text: string,
+	options?: { allowPrimitive?: boolean },
+): T | null {
+	try {
+		const parsed: unknown = JSON.parse(text);
+		if (options?.allowPrimitive) return parsed as T;
+		if (typeof parsed === "object" && parsed !== null) return parsed as T;
+		return null;
+	} catch {
+		return null;
+	}
+}
+
+/**
  * 解包双重编码的 JSON。
  *
  * GLM MCP 工具返回的 text 是 JSON-encoded string：

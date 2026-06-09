@@ -6,6 +6,7 @@
 
 import {
 	truncateAtParagraph,
+	tryParseJson,
 	unwrapDoubleEncodedJson,
 } from "./formatters-utils.js";
 
@@ -30,12 +31,8 @@ interface WebReaderResult {
  */
 export function formatWebReadResult(text: string): string {
 	const unwrapped = unwrapDoubleEncodedJson(text);
-	let parsed: WebReaderResult;
-	try {
-		parsed = JSON.parse(unwrapped);
-	} catch {
-		return text;
-	}
+	const parsed = tryParseJson<WebReaderResult>(unwrapped);
+	if (!parsed) return text;
 
 	// GLM web reader 真实输出一定有 url 字段（https://...），
 	// 必须严格检查 url 存在且为非空 string，防止 JSON Schema 等只有 title 的 JSON 被误判。
@@ -72,12 +69,7 @@ interface SearchResult {
  */
 export function formatWebSearchResult(text: string): string {
 	const unwrapped = unwrapDoubleEncodedJson(text);
-	let results: SearchResult[];
-	try {
-		results = JSON.parse(unwrapped);
-	} catch {
-		return text;
-	}
+	const results = tryParseJson<SearchResult[]>(unwrapped);
 	if (!Array.isArray(results)) return text;
 	if (results.length === 0) {
 		return "搜索结果（共 0 条）";

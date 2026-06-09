@@ -8,6 +8,8 @@
  * 未知结构 fallback 返回原始文本。
  */
 
+import { tryParseJson } from "./formatters-utils.js";
+
 // ── 内部类型 ──────────────────────────────────────
 
 interface GhSearchDocResult {
@@ -94,16 +96,8 @@ function formatGhRepoStructure(data: GhRepoStructureResult): string | null {
  * 格式化 gh_ 系列工具结果。
  */
 export function formatGhResult(text: string): string {
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(text);
-	} catch {
-		return text;
-	}
-
-	// JSON.parse 可能返回字符串/数字等原始类型（如双重编码 JSON），需要检查
-	if (typeof parsed !== "object" || parsed === null) return text;
-	const obj = parsed as Record<string, unknown>;
+	const obj = tryParseJson<Record<string, unknown>>(text);
+	if (!obj) return text;
 
 	// gh_read_file：必须含有 path 字段（gh 特征字段）
 	// 不使用 "content" in obj——content 太通用，web_read 等工具也有 content 字段
