@@ -126,8 +126,8 @@ export function writeCachedMessages(msgs: PayloadMessage[]) {
 	try {
 		mkdirSync(DISTILL_DIR, { recursive: true });
 		writeFileSync(MSG_CACHE, JSON.stringify(msgs));
-	} catch {
-		/* ignore */
+	} catch (err) {
+		console.warn("[context] writeCachedMessages failed:", err);
 	}
 }
 
@@ -175,8 +175,8 @@ export function saveManifest(
 			agingCounts: opts.agingCounts ? [...opts.agingCounts] : [],
 		};
 		writeFileSync(getManifestPath(sessionId), JSON.stringify(data));
-	} catch {
-		/* ignore */
+	} catch (err) {
+		console.warn("[context] saveManifest failed:", err);
 	}
 }
 

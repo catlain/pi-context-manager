@@ -119,8 +119,8 @@ export default function (pi: ExtensionAPI) {
 					{ mode: 0o600 },
 				);
 			}
-		} catch {
-			/* ignore — 录制不应影响主流程 */
+		} catch (err) {
+			console.warn("[context] before_provider_request recording failed:", err);
 		}
 	});
 
