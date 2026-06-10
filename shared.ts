@@ -1,12 +1,13 @@
 /** shared.ts — 配置、常量、持久化工具函数。不持有运行时可变状态。 */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import { join } from "node:path";
 import type { PayloadMessage } from "./collect-payload-types";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(
-	process.env.HOME || "/root",
+	os.homedir(),
 	".pi/agent/distill",
 );
 
@@ -33,7 +34,7 @@ const DEFAULT_HINTS: HintsConfig = {
 };
 
 const USER_HINTS_PATH = join(
-	process.env.HOME || "/root",
+	os.homedir(),
 	".pi/agent/extensions/context/hints.json",
 );
 
