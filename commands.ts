@@ -120,7 +120,7 @@ export function registerAgingConfigCommand(pi: ExtensionAPI) {
 			const cfg = getContextConfig();
 			if (!arg) {
 				ctx.ui.notify(
-					`[aging-config]\n  agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）\n\n用法:\n  /aging-config 10   # 设置 aging 轮数\n  /aging-config off  # 禁用 aging`,
+					`[aging-config]\n  agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）\n  errorAgingThreshold = ${cfg.errorAgingThreshold} 次请求（错误结果，0 = 禁用加速）\n\n用法:\n  /aging-config 10   # 设置 aging 轮数\n  /aging-config off  # 禁用 aging`,
 					"info",
 				);
 				return;

@@ -80,6 +80,8 @@ import {
 export interface ContextConfig {
 	distillThreshold: number;
 	agingThreshold: number;
+	/** 错误结果（isError=true）的 aging 轮数。默认 3。设 0 禁用错误加速淘汰。 */
+	errorAgingThreshold: number;
 	processorThreshold: number;
 	/** 首次给全文的 token 上限。超大结果首次也直接删除。默认 15000。设 0 禁用首次保留。 */
 	firstSeenCap: number;
@@ -88,6 +90,7 @@ export interface ContextConfig {
 const DEFAULT_CONFIG: ContextConfig = {
 	distillThreshold: 5000,
 	agingThreshold: 10,
+	errorAgingThreshold: 3,
 	processorThreshold: 500,
 	firstSeenCap: 15000,
 };
