@@ -112,36 +112,81 @@ export function registerDistillConfigCommand(pi: ExtensionAPI) {
 }
 
 export function registerAgingConfigCommand(pi: ExtensionAPI) {
-	pi.registerCommand("aging-config", {
-		description:
-			"View or set aging threshold (rounds before removal). Usage: /aging-config | /aging-config 10 | /aging-config off",
-		handler: async (args, ctx) => {
-			const arg = args?.trim() ?? "";
-			const cfg = getContextConfig();
-			if (!arg) {
-				ctx.ui.notify(
-					`[aging-config]\n  agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）\n  errorAgingThreshold = ${cfg.errorAgingThreshold} 次请求（错误结果，0 = 禁用加速）\n\n用法:\n  /aging-config 10   # 设置 aging 轮数\n  /aging-config off  # 禁用 aging`,
-					"info",
-				);
-				return;
-			}
-			if (arg === "off") {
-				const _updated = setContextConfig({ agingThreshold: 0 });
-				ctx.ui.notify(`✅ agingThreshold = 0（aging 禁用）`, "info");
-				return;
-			}
-			const val = Number(arg);
-			if (Number.isNaN(val) || val < 0 || !Number.isInteger(val)) {
-				ctx.ui.notify(`❌ 无效值: ${arg}（需要非负整数或 off）`, "error");
-				return;
-			}
-			const updated = setContextConfig({ agingThreshold: val });
-			ctx.ui.notify(
-				`✅ agingThreshold = ${updated.agingThreshold} 次请求${updated.agingThreshold === 0 ? "（禁用）" : ""}`,
-				"info",
-			);
-		},
-	});
+	const USAGE = `[aging-config]
+用法:
+  /aging-config                                    # 查看当前配置
+  /aging-config 10                                 # 设置普通结果 aging 轮数
+  /aging-config off                                # 禁用 aging
+  /aging-config error 3                            # 设置错误结果 aging 轮数（0 = 禁用加速）
+  /aging-config large 2                            # 设置大结果 aging 轮数（0 = 禁用加速）`;
+
+	const parseSet = (arg: string): { key: keyof ContextConfig; val: number } | null => {
+		const parts = arg.split(/\s+/);
+		if (parts.length === 2) {
+			const [subCmd, numStr] = parts;
+			const val = Number(numStr);
+			if (Number.isNaN(val) || val < 0 || !Number.isInteger(val)) return null;
+			if (subCmd === "error") return { key: "errorAgingThreshold", val };
+			if (subCmd === "large") return { key: "largeResultAging", val };
+			return null;
+		}
+		if (parts.length === 1 && parts[0]) {
+			if (parts[0] === "off") return { key: "agingThreshold", val: 0 };
+			const val = Number(parts[0]);
+			if (Number.isNaN(val) || val < 0 || !Number.isInteger(val)) return null;
+			return { key: "agingThreshold", val };
+		}
+		return null;
+	};
+
+	const LABELS: Record<string, string> = {
+		errorAgingThreshold: "错误结果 aging",
+		largeResultAging: "大结果 aging",
+		agingThreshold: "普通结果 aging",
+	};
+
+	const notify = (ctx: any, msg: string, type: string) => ctx.ui.notify(msg, type as any);
+
+	const STATE_SUFFIX: Record<string, string> = {
+		errorAgingThreshold: "（错误加速淘汰禁用）",
+		largeResultAging: "（大结果加速淘汰禁用）",
+		agingThreshold: "（aging 禁用）",
+	};
+
+	const registerCommand = (pi: any) => {
+		pi.registerCommand("aging-config", {
+			description: "View or set aging config. Usage: /aging-config | /aging-config 10 | /aging-config error 3 | /aging-config large 2 | /aging-config off",
+			handler: async (args: string, ctx: any) => {
+				const arg = args?.trim() ?? "";
+				const cfg = getContextConfig();
+				if (!arg) {
+					notify(ctx,
+						`[aging-config]
+  agingThreshold = ${cfg.agingThreshold} 次请求（0 = 禁用）
+  errorAgingThreshold = ${cfg.errorAgingThreshold} 次请求（错误结果，0 = 禁用加速）
+  largeResultAging = ${cfg.largeResultAging} 次请求（大结果，0 = 禁用加速）
+
+用法:
+  /aging-config 10          # 设置普通结果 aging 轮数
+  /aging-config error 3     # 设置错误结果 aging 轮数
+  /aging-config large 2     # 设置大结果 aging 轮数
+  /aging-config off         # 禁用 aging`,
+						"info");
+					return;
+				}
+				const parsed = parseSet(arg);
+				if (!parsed) {
+					notify(ctx, `❌ 无效参数: ${arg}\n${USAGE}`, "error");
+					return;
+				}
+				const updated = setContextConfig({ [parsed.key]: parsed.val } as Partial<ContextConfig>);
+				const label = LABELS[parsed.key] ?? parsed.key;
+				const suffix = parsed.val === 0 ? (STATE_SUFFIX[parsed.key] ?? "") : "";
+				notify(ctx, `✅ ${label} = ${parsed.val} 次请求${suffix}`, "info");
+			},
+		});
+	};
+	registerCommand(pi);
 }
 
 export function registerProcessorConfigCommand(pi: ExtensionAPI) {

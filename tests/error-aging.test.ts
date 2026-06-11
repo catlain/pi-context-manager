@@ -10,6 +10,7 @@ vi.mock("../shared.js", () => ({
 		distillThreshold: 100,
 		agingThreshold: 10,
 		errorAgingThreshold: 3,
+		largeResultAging: 2,
 		processorThreshold: 0,
 		firstSeenCap: 15000,
 	}),

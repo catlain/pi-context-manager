@@ -56,7 +56,7 @@ export function handleContextEvent(
 
 	const messages = event.messages as any[];
 	const toolCallMap = buildToolCallMap(messages);
-	const { distillThreshold, agingThreshold, errorAgingThreshold, firstSeenCap } = getContextConfig();
+	const { distillThreshold, agingThreshold, errorAgingThreshold, largeResultAging, firstSeenCap } = getContextConfig();
 	// 有效 cap：不低于 distillThreshold，避免架空 distill 机制
 	const effectiveCap = Math.max(firstSeenCap, distillThreshold);
 
@@ -106,7 +106,7 @@ export function handleContextEvent(
 		// 计算该 tcId 的实际阈值（优先级：大结果 > 错误结果 > 普通结果）
 		const isError = !!(msg as any).isError;
 		const effectiveThreshold =
-			origTokens >= distillThreshold ? 2
+			origTokens >= distillThreshold && largeResultAging > 0 ? largeResultAging
 			: isError && errorAgingThreshold > 0 ? errorAgingThreshold
 			: agingThreshold;
 		if (effectiveThreshold <= 0) continue; // aging 关闭时跳过普通结果

@@ -9,6 +9,8 @@ vi.mock("../shared.js", () => ({
 	getContextConfig: () => ({
 		distillThreshold: 100,
 		agingThreshold: 3,
+		errorAgingThreshold: 3,
+		largeResultAging: 2,
 		processorThreshold: 0,
 	}),
 	distilledMap: new Map(),
