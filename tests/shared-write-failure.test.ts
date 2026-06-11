@@ -13,10 +13,12 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 vi.hoisted(() => {
 	const { join: pJoin } = require("node:path") as typeof import("path");
 	const os = require("node:os") as typeof import("os");
-	process.env.HOME = pJoin(
+	const tmpHome = pJoin(
 		os.tmpdir(),
 		`pi-context-write-fail-${Date.now()}`,
 	);
+	process.env.HOME = tmpHome;
+	process.env.USERPROFILE = tmpHome; // Windows: os.homedir() 优先读 USERPROFILE
 });
 
 vi.mock("@pi-atelier/shared-utils", () => ({

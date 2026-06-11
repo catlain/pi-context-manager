@@ -225,12 +225,13 @@ describe("firstSeenCap: 小结果 + 多轮混合", () => {
 	});
 
 	it("正常→删除→超大新出现直接删除", async () => {
+		mockConfig = cfg({ agingThreshold: 2 }); // 轮1保留，轮2删除
 		const s = mkState(),
 			pi = mkPi();
-		// 轮1: 正常大结果 200 tokens ∈ [100, 500]
+		// 轮1: 正常大结果 200 tokens ∈ [100, 500]，首次保留
 		await trigger(s, [...mkMsg("tc-n", "x".repeat(800))], pi);
 		expect(s.seenArgs.has("tc-n")).toBe(true);
-		// 轮2: 删除
+		// 轮2: count=2 ≥ agingThreshold=2 → 删除
 		await trigger(s, [...mkMsg("tc-n", "x".repeat(800))], pi);
 		expect(s.agingDeletedIds.has("tc-n")).toBe(true);
 		// 轮3: 超大 → 直接删除
