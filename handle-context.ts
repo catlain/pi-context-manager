@@ -1,7 +1,4 @@
 /** handle-context.ts — context 事件处理逻辑（纯操作，从 index.ts 闭包获取状态引用） */
-import { appendFileSync } from "fs";
-import { homedir } from "os";
-import { join } from "path";
 import {
 	buildToolCallMap,
 	estimateTokens,
@@ -19,12 +16,6 @@ import {
 	writeCachedMessages,
 } from "./shared.js";
 import { truncateToolCallArgs } from "./toolcall-args-truncator.js";
-
-// [DEBUG] 写文件日志，便于事后查看 resume 时刻状态
-const _DEBUG_LOG = join(homedir(), ".pi", "agent", "context-debug.log");
-function _dbg(msg: string) {
-	appendFileSync(_DEBUG_LOG, `${new Date().toISOString()} ${msg}\n`);
-}
 
 export interface ContextState {
 	agingTracker: Map<string, number>;
@@ -53,16 +44,18 @@ export function handleContextEvent(
 	} = state;
 
 	// 设置 sessionId 并加载对应的 manifest
-	const sid = _ctx?.sessionManager?.getSessionId?.();
+	// resume 冷启动后扩展重新加载，state.sessionId=""。
+	// 第一次 context 事件时 getSessionId() 可能返回 undefined（扩展加载早期），
+	// 此时用 PI_SESSION_ID 环境变量作为 fallback，确保 manifest 正确恢复。
+	// 否则 agingDeletedIds 为空 → 被删除的大结果全部恢复进上下文 → 爆炸。
+	const sid = _ctx?.sessionManager?.getSessionId?.() || process.env.PI_SESSION_ID || "";
 	if (sid && sid !== state.sessionId) {
-		_dbg(`=== sessionId changed: prev=${state.sessionId}, new=${sid} — loading manifest ===`);
 		state.sessionId = sid;
 		loadManifest(sid, {
 			manuallyDeleted: manuallyDeletedIds,
 			agingDeleted: agingDeletedIds,
 			agingTracker,
 		});
-		_dbg(`manifest loaded: agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, manuallyDeletedIds=${manuallyDeletedIds.size}`);
 	}
 
 	const messages = event.messages as any[];
@@ -70,10 +63,6 @@ export function handleContextEvent(
 	const { distillThreshold, agingThreshold, errorAgingThreshold, largeResultAging, firstSeenCap } = getContextConfig();
 	// 有效 cap：不低于 distillThreshold，避免架空 distill 机制
 	const effectiveCap = Math.max(firstSeenCap, distillThreshold);
-
-	// [DEBUG] 每次 context 事件输出状态摘要
-	const _toolResultCount = messages.filter((m: any) => m.role === "toolResult").length;
-	_dbg(`context event: toolResults=${_toolResultCount}, agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, seenArgs=${seenArgs.size}, config={aging=${agingThreshold}, large=${largeResultAging}, error=${errorAgingThreshold}, distill=${distillThreshold}}`);
 
 	// ── warmup ──
 	if (seenArgs.size === 0) {
@@ -137,11 +126,6 @@ export function handleContextEvent(
 		const count = prevCount + 1;
 		agingTracker.set(tcId, count);
 
-		// [DEBUG] 采样：前 5 个 + 达到阈值的 + count>=threshold 但仍在 tracker 的
-		if (activeTcIds.size <= 5 || count >= effectiveThreshold) {
-			_dbg(`  tcId=${tcId.slice(0, 20)} tokens=${origTokens} isErr=${isError} threshold=${effectiveThreshold} prevCount=${prevCount} count=${count} willRemove=${count >= effectiveThreshold}`);
-		}
-
 		if (count >= effectiveThreshold) {
 			// 达到阈值 → 静默删除（distill 和 aging 统一行为）
 			toRemove.push(i);
@@ -191,13 +175,6 @@ export function handleContextEvent(
 		}
 	}
 
-	// [DEBUG] 输出本轮 aging 决策统计
-	const _countByThreshold = { large: 0, error: 0, normal: 0 };
-	for (const [tcId, count] of agingTracker) {
-		// 无法精确回溯分类，只输出总量
-	}
-	_dbg(`aging decision: removed=${removedTcIds.size}, trackerRemaining=${agingTracker.size}, deletedTotal=${agingDeletedIds.size}`);
-
 	for (const tcId of agingTracker.keys()) {
 		if (!activeTcIds.has(tcId)) agingTracker.delete(tcId);
 	}
@@ -207,9 +184,6 @@ export function handleContextEvent(
 		agingDeleted: agingDeletedIds,
 		agingCounts: agingTracker,
 	});
-
-	// [DEBUG] manifest 保存后校验
-	_dbg(`manifest saved: agingCounts=${agingTracker.size}, agingDeleted=${agingDeletedIds.size}`);
 
 	// 更新 aging 快照
 	agingSnapshot.clear();
