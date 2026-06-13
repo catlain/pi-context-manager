@@ -1,4 +1,7 @@
 /** handle-context.ts — context 事件处理逻辑（纯操作，从 index.ts 闭包获取状态引用） */
+import { appendFileSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 import {
 	buildToolCallMap,
 	estimateTokens,
@@ -16,6 +19,12 @@ import {
 	writeCachedMessages,
 } from "./shared.js";
 import { truncateToolCallArgs } from "./toolcall-args-truncator.js";
+
+// [DEBUG] 写文件日志，便于事后查看 resume 时刻状态
+const _DEBUG_LOG = join(homedir(), ".pi", "agent", "context-debug.log");
+function _dbg(msg: string) {
+	appendFileSync(_DEBUG_LOG, `${new Date().toISOString()} ${msg}\n`);
+}
 
 export interface ContextState {
 	agingTracker: Map<string, number>;
@@ -46,12 +55,14 @@ export function handleContextEvent(
 	// 设置 sessionId 并加载对应的 manifest
 	const sid = _ctx?.sessionManager?.getSessionId?.();
 	if (sid && sid !== state.sessionId) {
+		_dbg(`=== sessionId changed: prev=${state.sessionId}, new=${sid} — loading manifest ===`);
 		state.sessionId = sid;
 		loadManifest(sid, {
 			manuallyDeleted: manuallyDeletedIds,
 			agingDeleted: agingDeletedIds,
 			agingTracker,
 		});
+		_dbg(`manifest loaded: agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, manuallyDeletedIds=${manuallyDeletedIds.size}`);
 	}
 
 	const messages = event.messages as any[];
@@ -62,7 +73,7 @@ export function handleContextEvent(
 
 	// [DEBUG] 每次 context 事件输出状态摘要
 	const _toolResultCount = messages.filter((m: any) => m.role === "toolResult").length;
-	console.log(`[context-debug] context event: toolResults=${_toolResultCount}, agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, seenArgs=${seenArgs.size}, config={aging=${agingThreshold}, large=${largeResultAging}, error=${errorAgingThreshold}, distill=${distillThreshold}}`);
+	_dbg(`context event: toolResults=${_toolResultCount}, agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, seenArgs=${seenArgs.size}, config={aging=${agingThreshold}, large=${largeResultAging}, error=${errorAgingThreshold}, distill=${distillThreshold}}`);
 
 	// ── warmup ──
 	if (seenArgs.size === 0) {
@@ -128,7 +139,7 @@ export function handleContextEvent(
 
 		// [DEBUG] 采样：前 5 个 + 达到阈值的 + count>=threshold 但仍在 tracker 的
 		if (activeTcIds.size <= 5 || count >= effectiveThreshold) {
-			console.log(`[context-debug] tcId=${tcId.slice(0, 20)} tokens=${origTokens} isErr=${isError} threshold=${effectiveThreshold} prevCount=${prevCount} count=${count} willRemove=${count >= effectiveThreshold}`);
+			_dbg(`  tcId=${tcId.slice(0, 20)} tokens=${origTokens} isErr=${isError} threshold=${effectiveThreshold} prevCount=${prevCount} count=${count} willRemove=${count >= effectiveThreshold}`);
 		}
 
 		if (count >= effectiveThreshold) {
@@ -185,7 +196,7 @@ export function handleContextEvent(
 	for (const [tcId, count] of agingTracker) {
 		// 无法精确回溯分类，只输出总量
 	}
-	console.log(`[context-debug] aging decision: removed=${removedTcIds.size}, trackerRemaining=${agingTracker.size}, deletedTotal=${agingDeletedIds.size}`);
+	_dbg(`aging decision: removed=${removedTcIds.size}, trackerRemaining=${agingTracker.size}, deletedTotal=${agingDeletedIds.size}`);
 
 	for (const tcId of agingTracker.keys()) {
 		if (!activeTcIds.has(tcId)) agingTracker.delete(tcId);
@@ -198,7 +209,7 @@ export function handleContextEvent(
 	});
 
 	// [DEBUG] manifest 保存后校验
-	console.log(`[context-debug] manifest saved: agingCounts=${agingTracker.size}, agingDeleted=${agingDeletedIds.size}`);
+	_dbg(`manifest saved: agingCounts=${agingTracker.size}, agingDeleted=${agingDeletedIds.size}`);
 
 	// 更新 aging 快照
 	agingSnapshot.clear();
