@@ -60,6 +60,10 @@ export function handleContextEvent(
 	// 有效 cap：不低于 distillThreshold，避免架空 distill 机制
 	const effectiveCap = Math.max(firstSeenCap, distillThreshold);
 
+	// [DEBUG] 每次 context 事件输出状态摘要
+	const _toolResultCount = messages.filter((m: any) => m.role === "toolResult").length;
+	console.log(`[context-debug] context event: toolResults=${_toolResultCount}, agingTracker=${agingTracker.size}, agingDeletedIds=${agingDeletedIds.size}, seenArgs=${seenArgs.size}, config={aging=${agingThreshold}, large=${largeResultAging}, error=${errorAgingThreshold}, distill=${distillThreshold}}`);
+
 	// ── warmup ──
 	if (seenArgs.size === 0) {
 		let toolResultCount = 0;
@@ -118,8 +122,14 @@ export function handleContextEvent(
 			continue;
 
 		activeTcIds.add(tcId);
-		const count = (agingTracker.get(tcId) || 0) + 1;
+		const prevCount = agingTracker.get(tcId) || 0;
+		const count = prevCount + 1;
 		agingTracker.set(tcId, count);
+
+		// [DEBUG] 采样：前 5 个 + 达到阈值的 + count>=threshold 但仍在 tracker 的
+		if (activeTcIds.size <= 5 || count >= effectiveThreshold) {
+			console.log(`[context-debug] tcId=${tcId.slice(0, 20)} tokens=${origTokens} isErr=${isError} threshold=${effectiveThreshold} prevCount=${prevCount} count=${count} willRemove=${count >= effectiveThreshold}`);
+		}
 
 		if (count >= effectiveThreshold) {
 			// 达到阈值 → 静默删除（distill 和 aging 统一行为）
@@ -170,6 +180,13 @@ export function handleContextEvent(
 		}
 	}
 
+	// [DEBUG] 输出本轮 aging 决策统计
+	const _countByThreshold = { large: 0, error: 0, normal: 0 };
+	for (const [tcId, count] of agingTracker) {
+		// 无法精确回溯分类，只输出总量
+	}
+	console.log(`[context-debug] aging decision: removed=${removedTcIds.size}, trackerRemaining=${agingTracker.size}, deletedTotal=${agingDeletedIds.size}`);
+
 	for (const tcId of agingTracker.keys()) {
 		if (!activeTcIds.has(tcId)) agingTracker.delete(tcId);
 	}
@@ -179,6 +196,9 @@ export function handleContextEvent(
 		agingDeleted: agingDeletedIds,
 		agingCounts: agingTracker,
 	});
+
+	// [DEBUG] manifest 保存后校验
+	console.log(`[context-debug] manifest saved: agingCounts=${agingTracker.size}, agingDeleted=${agingDeletedIds.size}`);
 
 	// 更新 aging 快照
 	agingSnapshot.clear();
