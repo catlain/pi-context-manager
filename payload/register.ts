@@ -36,13 +36,11 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 			"\ngrowth: 上下文增长趋势（token 随请求变化的曲线）" +
 			"\nmessages: 按索引/范围/关键词精确定位消息（msgIndex/msgRange/grep/toolName）" +
 			"\n需要先开启 record（/record on）产生录制文件。",
-		promptSnippet: "分析 payload 录制文件：token 分布、增长趋势、昂贵调用",
+		promptSnippet: "分析 payload 录制文件",
 		promptGuidelines: [
-			"Use payload_analyze to inspect provider payload recordings for debugging token usage and distill behavior.",
-			"Use action='budget' for token cost breakdown, action='growth' for context growth trend, action='expensive' to find biggest tool results.",
-			"Use action='list' to see available recordings, action='overview' for detailed per-message analysis.",
-			"Use action='messages' to precisely locate specific messages by index (msgIndex), range (msgRange='5-10' or 'last:5'), grep (keyword/regex), or toolName filter.",
-			"Use action='messages' with msgIndex to see a message's full content with context, instead of reading the raw JSON.",
+			"action='list' 列出录制文件，action='overview' 逐消息分析 token 和 distill 事件。",
+			"action='budget' 看 token 预算构成，action='growth' 看上下文增长趋势，action='expensive' 找最贵的工具调用。",
+			"action='messages' 精确定位消息：msgIndex 看单条全文，msgRange='5-10' 看范围，grep 过滤，toolName 按工具过滤。",
 		],
 		parameters: Type.Object({
 			action: Type.Union([
