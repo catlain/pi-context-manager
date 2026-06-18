@@ -2,7 +2,7 @@
  * overview action — 详细分析 provider payload
  */
 
-import type { PayloadMessage } from "../types-payload.js";
+import type { PayloadMessage, ProviderPayload } from "../types-payload.js";
 import {
 	buildProviderToolCallIndex,
 	estTokens,
@@ -16,7 +16,7 @@ import {
 import { formatToolStats } from "./format.js";
 
 export function doOverview(payloadPath: string, verbose = false): string {
-	const data = readJsonFile(payloadPath);
+	const data = readJsonFile<ProviderPayload>(payloadPath);
 	if (!data) return `文件不存在: ${payloadPath}`;
 
 	const model = data.model ?? "?";

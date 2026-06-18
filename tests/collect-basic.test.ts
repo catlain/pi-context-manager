@@ -2,7 +2,11 @@
  * collect.ts — 基础场景测试
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import type { PayloadMessage } from "../types-payload.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@earendil-works/pi-coding-agent", () => ({}));
@@ -26,12 +30,12 @@ function makeCtx(
 	return {
 		getContextUsage: vi.fn(() => u),
 		getSystemPrompt: vi.fn(() => "default sys prompt"),
-	};
+	} as Pick<ExtensionContext, "getContextUsage" | "getSystemPrompt">;
 }
 
 const emptyOpts = () => ({
-	messages: [],
-	payload: undefined,
+	messages: [] as PayloadMessage[],
+	payload: null,
 	agingSnapshot: new Map<string, number>(),
 	manuallyDeletedIds: new Set<string>(),
 });

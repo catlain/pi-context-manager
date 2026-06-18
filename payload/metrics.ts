@@ -4,7 +4,7 @@
  * expensive 在独立文件 expensive.ts 中。
  */
 
-import type { PayloadMessage } from "../types-payload.js";
+import type { PayloadMessage, ProviderPayload } from "../types-payload.js";
 import { estTokens, fmtTok, getText, readJsonFile } from "./core.js";
 import { getRecordingFiles } from "./files.js";
 
@@ -31,12 +31,12 @@ export function doBudget(sessionId?: string): string {
 	let totalTools = 0;
 
 	for (const { path, filename } of files) {
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 
 		const msgs = data.messages ?? [];
 		const tools = data.tools ?? [];
-		const model = (data.model ?? "?").slice(0, 16);
+		const model = String(data.model ?? "?").slice(0, 16);
 
 		const sysMsg = msgs.find(
 			(m: PayloadMessage) => m.role === "system" || m.role === "developer",
@@ -96,11 +96,11 @@ export function doGrowth(sessionId?: string): string {
 	let prevTotal = 0;
 
 	for (const { path, filename } of files) {
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 
 		const msgs = data.messages ?? [];
-		const model = (data.model ?? "?").slice(0, 12);
+		const model = String(data.model ?? "?").slice(0, 12);
 		let total = 0;
 		for (const m of msgs) {
 			total += estTokens(getText(m.content));

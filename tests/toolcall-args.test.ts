@@ -73,9 +73,9 @@ describe("truncateToolCallArgs — 基本路径", () => {
 
 		expect(count).toBe(1);
 		// tc1 小参数保持原样
-		expect(msg.content[0].arguments._truncated).toBeUndefined();
+		expect((msg.content[0].arguments as Record<string, unknown>)._truncated).toBeUndefined();
 		// tc2 大参数被截断
-		expect(msg.content[1].arguments._truncated).toBe(true);
+		expect((msg.content[1].arguments as Record<string, unknown>)._truncated).toBe(true);
 	});
 
 	it("已截断不重复处理：truncatedIds 防止二次写入", () => {

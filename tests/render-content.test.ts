@@ -95,7 +95,7 @@ describe("renderContent", () => {
 	it("有 toolCallId 且未删除显示 d delete 提示", () => {
 		const c = createContainer();
 		const t = createTheme();
-		renderContent(c as any, t as many, "tool", recordWithTcId, 0, 10, false);
+		renderContent(c as any, t as any, "tool", recordWithTcId, 0, 10, false);
 		expect(c.clear).toHaveBeenCalled();
 	});
 

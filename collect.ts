@@ -1,5 +1,8 @@
 /** collect.ts — 纯计算函数：从 messages + payload 构建面板数据 */
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 import type {
 	CategoryItem,
 	CollectOpts,
@@ -19,7 +22,7 @@ const est = (s: string) => Math.ceil(s.length / 4);
 
 /** 从 provider payload 中提取 system prompt 文本 */
 function extractSystemFromPayload(
-	payload: ProviderPayload | undefined,
+	payload: ProviderPayload | null | undefined,
 ): string {
 	if (!payload) return "";
 	if (payload.system != null) {
@@ -51,7 +54,7 @@ function extractSystemFromPayload(
 
 /** 从 provider payload 中提取 tools 定义 */
 function extractToolsFromPayload(
-	payload: ProviderPayload | undefined,
+	payload: ProviderPayload | null | undefined,
 ): ToolDefinition[] {
 	if (!payload?.tools) return [];
 	return payload.tools;
@@ -59,10 +62,7 @@ function extractToolsFromPayload(
 
 export function collectData(
 	pi: ExtensionAPI,
-	ctx: {
-		getContextUsage(): ContextUsage | undefined;
-		getSystemPrompt(): string;
-	},
+	ctx: Pick<ExtensionContext, "getContextUsage" | "getSystemPrompt">,
 	opts: CollectOpts,
 ): ContextData | null {
 	const usage = ctx.getContextUsage();
@@ -140,8 +140,8 @@ export function collectData(
 				const parts: string[] = [];
 				for (const p of m.content)
 					if (p.type === "text") {
-						parts.push(p.text);
-						sz += est(p.text);
+						parts.push(p.text ?? "");
+						sz += est(p.text ?? "");
 					}
 				text = parts.join("\n");
 			}
@@ -161,8 +161,8 @@ export function collectData(
 			} else if (Array.isArray(m.content))
 				for (const p of m.content) {
 					if (p.type === "text") {
-						txtSz += est(p.text);
-						textParts.push(p.text);
+						txtSz += est(p.text ?? "");
+						textParts.push(p.text ?? "");
 					}
 					if (p.type === "toolCall") {
 						const cs = est(JSON.stringify(p));
@@ -212,8 +212,8 @@ export function collectData(
 			if (Array.isArray(m.content))
 				for (const p of m.content)
 					if (p.type === "text") {
-						rs += est(p.text);
-						textParts.push(p.text);
+						rs += est(p.text ?? "");
+						textParts.push(p.text ?? "");
 					}
 			resultRaw += rs;
 			const rText = textParts.join("");
@@ -261,7 +261,7 @@ export function collectData(
 			categories: [],
 			totalActual: total,
 			limit,
-			percent: usage.percent,
+			percent: usage.percent ?? 0,
 		};
 	}
 
@@ -381,6 +381,6 @@ export function collectData(
 		categories: cats,
 		totalActual: total,
 		limit,
-		percent: usage.percent,
+		percent: usage.percent ?? 0,
 	};
 }

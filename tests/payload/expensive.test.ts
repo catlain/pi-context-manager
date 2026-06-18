@@ -10,7 +10,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-const mockReadJsonFile = vi.fn(() => null);
+import type { ProviderPayload } from "../../types-payload.js";
+const mockReadJsonFile = vi.fn((): ProviderPayload | null => null);
 vi.mock("../../payload/core.js", () => ({
 	estTokens: (s: string) => Math.ceil(s.length / 4),
 	fmtTok: (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)),
@@ -31,7 +32,7 @@ vi.mock("../../payload/core.js", () => ({
 	},
 	classifyStatus: (s: string) =>
 		s.includes("[processed]") ? "TRUNCATED" : "FULL_KEPT",
-	readJsonFile: (...args: any[]) => mockReadJsonFile(...args),
+	readJsonFile: (...args: unknown[]) => (mockReadJsonFile as Function).apply(null, args),
 	RECORDINGS_DIR: "/tmp/test-recordings",
 }));
 
@@ -106,7 +107,7 @@ describe("doExpensive", () => {
 			filename: `req-${String(i + 1).padStart(4, "0")}-x`,
 			path: `/tmp/${i}.json`,
 		}));
-		mockReadJsonFile.mockImplementation((_p: string) => ({
+		(mockReadJsonFile.mockImplementation as unknown as Function)((_p: string): ProviderPayload | null => ({
 			messages: [
 				{
 					role: "assistant",

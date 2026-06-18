@@ -12,8 +12,7 @@ const mockFiles = vi.hoisted(() => [
 	{ filename: "req-0001-abc.json", path: "/fake/req-0001-abc.json" },
 	{ filename: "req-0002-def.json", path: "/fake/req-0002-def.json" },
 ]);
-
-const mockJsonData = vi.hoisted(() => ({
+const mockJsonData = vi.hoisted((): Record<string, unknown> => ({
 	"/fake/req-0001-abc.json": {
 		model: "gpt-4",
 		messages: [
@@ -59,7 +58,7 @@ const mockJsonData = vi.hoisted(() => ({
 
 const mockGetRecordingFiles = vi.hoisted(() => vi.fn());
 const mockReadJsonFile = vi.hoisted(() =>
-	vi.fn((p: string) => mockJsonData[p] ?? null),
+	vi.fn((p: string) => (mockJsonData as Record<string, unknown>)[p] ?? null),
 );
 const mockListSessions = vi.hoisted(() => vi.fn(() => []));
 const mockListRecordings = vi.hoisted(() => vi.fn(() => []));

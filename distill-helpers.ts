@@ -9,13 +9,16 @@ import { formatTokens } from "./utils.js";
 /** 从 assistant 消息中提取 toolCall 映射（pi 内部格式：type="toolCall", id, name, arguments） */
 export function buildToolCallMap(
 	messages: PayloadMessage[],
-): Map<string, { name: string; arguments: unknown }> {
-	const map = new Map<string, { name: string; arguments: unknown }>();
+): Map<string, { name: string; arguments: Record<string, unknown> }> {
+	const map = new Map<string, { name: string; arguments: Record<string, unknown> }>();
 	for (const msg of messages) {
 		if (msg.role !== "assistant") continue;
 		for (const block of Array.isArray(msg.content) ? msg.content : []) {
 			if (block.type === "toolCall" && block.id) {
-				map.set(block.id, { name: block.name, arguments: block.arguments });
+				map.set(block.id, {
+					name: block.name ?? "unknown",
+					arguments: (block.arguments ?? {}) as Record<string, unknown>,
+				});
 			}
 		}
 	}
@@ -25,12 +28,12 @@ export function buildToolCallMap(
 /** 提取工具元信息：优先用 ToolResultMessage 自带的 toolName，再从 toolCallMap 查参数细节 */
 export function toolMeta(
 	msg: PayloadMessage,
-	toolCallMap: Map<string, { name: string; arguments: unknown }>,
+	toolCallMap: Map<string, { name: string; arguments: Record<string, unknown> }>,
 ): { name: string; meta: string } {
 	const name = msg.toolName || "unknown";
 	const callId = msg.toolCallId || "";
 	const info = toolCallMap.get(callId);
-	const details = info?.arguments;
+	const details = info?.arguments as Record<string, unknown> | undefined;
 	switch (name) {
 		case "read":
 			return { name, meta: details?.path ? String(details.path) : "" };

@@ -30,6 +30,7 @@ import { collectData } from "../collect.js";
 // Re-import after mocks
 import registerContextCommand from "../context.js";
 import { renderOverview } from "../render.js";
+import type { ContextData } from "../types.js";
 
 describe("registerContextCommand — 注册与基础 handler", () => {
 	let pi: any, stateRef: any, handler: Function;
@@ -71,11 +72,12 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 	it("handler: 有 data 时打开 custom 面板", async () => {
 		vi.mocked(collectData).mockReturnValue({
 			categories: [
-				{ label: "System Prompt", value: 100, enterable: false, children: [] },
+				{ label: "System Prompt", value: 100, color: "cyan", enterable: false, children: [] },
 			],
-			totalActual: { tokens: 100, contextWindow: 8000, percent: 1.25 },
-			limit: { tokens: 8000, contextWindow: 8000, percent: 100 },
-		});
+			totalActual: 100,
+			limit: 8000,
+			present: 1.25,
+		} as unknown as ContextData);
 		const ctx = { ui: { notify: vi.fn(), custom: vi.fn() } };
 		await handler({}, ctx);
 		expect(ctx.ui.custom).toHaveBeenCalled();
@@ -88,11 +90,12 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 	it("custom 回调返回 render/invalidate/handleInput", async () => {
 		vi.mocked(collectData).mockReturnValue({
 			categories: [
-				{ label: "Sys", value: 100, enterable: false, children: [] },
+				{ label: "Sys", value: 100, color: "cyan", enterable: false, children: [] },
 			],
-			totalActual: { tokens: 100, contextWindow: 8000, percent: 1.25 },
-			limit: { tokens: 8000, contextWindow: 8000, percent: 100 },
-		});
+			totalActual: 100,
+			limit: 8000,
+			present: 1.25,
+		} as unknown as ContextData);
 		let capturedCb: Function | undefined;
 		const ctx = {
 			ui: {
@@ -127,11 +130,12 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 	it("render 输出填满终端高度", async () => {
 		vi.mocked(collectData).mockReturnValue({
 			categories: [
-				{ label: "Sys", value: 100, enterable: false, children: [] },
+				{ label: "Sys", value: 100, color: "cyan", enterable: false, children: [] },
 			],
-			totalActual: { tokens: 100, contextWindow: 8000, percent: 1.25 },
-			limit: { tokens: 8000, contextWindow: 8000, percent: 100 },
-		});
+			totalActual: 100,
+			limit: 8000,
+			present: 1.25,
+		} as unknown as ContextData);
 		let capturedCb: Function | undefined;
 		const ctx = {
 			ui: {
@@ -143,7 +147,7 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 		};
 		await handler({}, ctx);
 
-		mockContainer.render.mockReturnValue(["line1", "line2"]);
+		mockContainer.render.mockReturnValue(["line1", "line2"] as unknown as never[]);
 		const _tui = { requestRender: vi.fn(), terminal: { rows: 5 } };
 		const ctrl = capturedCb!(
 			{ requestRender: vi.fn(), terminal: { rows: 5 } },
@@ -159,11 +163,12 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 	it("render 调用时调用 renderOverview（初始状态）", async () => {
 		vi.mocked(collectData).mockReturnValue({
 			categories: [
-				{ label: "Sys", value: 100, enterable: false, children: [] },
+				{ label: "Sys", value: 100, color: "cyan", enterable: false, children: [] },
 			],
-			totalActual: { tokens: 100, contextWindow: 8000, percent: 1.25 },
-			limit: { tokens: 8000, contextWindow: 8000, percent: 100 },
-		});
+			totalActual: 100,
+			limit: 8000,
+			present: 1.25,
+		} as unknown as ContextData);
 		let capturedCb: Function | undefined;
 		const ctx = {
 			ui: {
@@ -187,11 +192,12 @@ describe("registerContextCommand — 注册与基础 handler", () => {
 	it("kb.matches 默认返回 false（无操作）", async () => {
 		vi.mocked(collectData).mockReturnValue({
 			categories: [
-				{ label: "Sys", value: 100, enterable: false, children: [] },
+				{ label: "Sys", value: 100, color: "cyan", enterable: false, children: [] },
 			],
-			totalActual: { tokens: 100, contextWindow: 8000, percent: 1.25 },
-			limit: { tokens: 8000, contextWindow: 8000, percent: 100 },
-		});
+			totalActual: 100,
+			limit: 8000,
+			present: 1.25,
+		} as unknown as ContextData);
 		let capturedCb: Function | undefined;
 		const ctx = {
 			ui: {

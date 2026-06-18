@@ -16,13 +16,31 @@ export interface PayloadContentBlock {
 	[key: string]: unknown;
 }
 
-/** Provider payload 中的消息 */
+/** OpenAI provider 格式的工具调用（assistant 消息的 tool_calls 字段） */
+export interface ProviderToolCall {
+	id?: string;
+	/** OpenAI 格式下 arguments 是 JSON 字符串 */
+	function?: { name?: string; arguments?: string };
+	[key: string]: unknown;
+}
+
+/** Provider payload 中的消息（同时覆盖 pi 内部格式与 OpenAI provider 格式） */
 export interface PayloadMessage {
-	role: "system" | "developer" | "user" | "assistant" | "toolResult" | string;
+	role:
+		| "system"
+		| "developer"
+		| "user"
+		| "assistant"
+		| "toolResult"
+		| "tool"
+		| string;
 	content?: string | PayloadContentBlock[];
-	// toolResult 字段
+	// pi 内部格式（toolResult）
 	toolName?: string;
 	toolCallId?: string;
+	// OpenAI provider 格式（tool result / assistant tool_calls）
+	tool_call_id?: string;
+	tool_calls?: ProviderToolCall[];
 	[key: string]: unknown;
 }
 

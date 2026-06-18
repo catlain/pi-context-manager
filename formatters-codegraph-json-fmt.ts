@@ -6,7 +6,7 @@
 
 // ── code-graph result types ──────────────────────
 
-interface SearchResultItem {
+export interface SearchResultItem {
 	type?: string;
 	name: string;
 	file_path?: string;
@@ -14,14 +14,14 @@ interface SearchResultItem {
 	signature?: string;
 }
 
-interface CallGraphNode {
+export interface CallGraphNode {
 	function: string;
 	callers?: Array<{ name: string; file_path?: string; depth?: number }>;
 	callees?: Array<{ name: string; file_path?: string; depth?: number }>;
 	test_callers_filtered?: number;
 }
 
-interface ReferencesResult {
+export interface ReferencesResult {
 	total_references: number;
 	symbol: string;
 	by_relation?: Record<string, number>;
@@ -33,7 +33,7 @@ interface ReferencesResult {
 	}>;
 }
 
-interface ModuleOverviewResult {
+export interface ModuleOverviewResult {
 	path: string;
 	files_count?: number;
 	summary?: string;
@@ -48,7 +48,7 @@ interface ModuleOverviewResult {
 	inactive_summary?: Array<{ type?: string; count: number; names?: string[] }>;
 }
 
-interface ProjectMapResult {
+export interface ProjectMapResult {
 	modules?: Array<{
 		path: string;
 		files?: number;
@@ -59,7 +59,7 @@ interface ProjectMapResult {
 	hot_functions?: Array<{ name: string; file?: string; caller_count?: number }>;
 }
 
-interface AstSearchResult {
+export interface AstSearchResult {
 	count?: number;
 	results?: Array<{
 		type?: string;
@@ -88,16 +88,16 @@ export function formatSearchJson(arr: SearchResultItem[]): string {
 
 export function formatCallGraphJson(obj: CallGraphNode): string {
 	const lines: string[] = [obj.function];
-	if (obj.callers?.length > 0) {
+	if ((obj.callers?.length ?? 0) > 0) {
 		lines.push("CALLERS:");
-		for (const c of obj.callers)
+		for (const c of obj.callers ?? [])
 			lines.push(
 				`  ← ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`,
 			);
 	}
-	if (obj.callees?.length > 0) {
+	if ((obj.callees?.length ?? 0) > 0) {
 		lines.push("CALLEES:");
-		for (const c of obj.callees)
+		for (const c of obj.callees ?? [])
 			lines.push(
 				`  → ${c.name} (${c.file_path ?? "?"})${c.depth ? ` [depth ${c.depth}]` : ""}`,
 			);

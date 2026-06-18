@@ -30,6 +30,7 @@ function makeWebReadJson(data: {
 	title?: string;
 	url?: string;
 	content?: string;
+	[key: string]: unknown;
 }): string {
 	return JSON.stringify(JSON.stringify(data));
 }

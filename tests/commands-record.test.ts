@@ -21,9 +21,9 @@ import { registerRecordCommand } from "../commands.js";
 import { cleanRecordings, isRecording, setRecording } from "../recording.js";
 
 function createMockPi() {
-	const registered: { name: string; handler: Function }[] = {};
+	const registered: { [name: string]: Function } = {};
 	return {
-		registerCommand: vi.fn((name, opts) => {
+		registerCommand: vi.fn((name: string, opts: { handler: Function }) => {
 			registered[name] = opts.handler;
 		}),
 		handlers: registered,

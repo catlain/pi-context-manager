@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import {
 	formatCodeGraphResult,
 	sniffCodeGraph,
-} from "./formatters-codegraph.js";
+} from "../formatters-codegraph.js";
 
 // ═══════════════════════════════════════════════════
 // 嗅探测试

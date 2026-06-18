@@ -17,7 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Mock recording 模块
 const mockIsRecording = vi.fn(() => false);
 vi.mock("../recording.js", () => ({
-	isRecording: (...args: any[]) => mockIsRecording(...args),
+	isRecording: (...args: unknown[]) => (mockIsRecording as Function).apply(null, args),
 	setRecording: vi.fn(() => true),
 	RECORDINGS_DIR: join(os.tmpdir(), "test-pi-recordings"),
 }));
@@ -145,7 +145,7 @@ describe("before_provider_request 录制", () => {
 				if (args[0]?.toString().includes("recordings")) {
 					throw new Error("disk full");
 				}
-				return origWrite(...args);
+				return (origWrite as Function).apply(null, args);
 			},
 		}));
 		indexModule(mockPi as any);

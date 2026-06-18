@@ -1,9 +1,10 @@
 /**
  * messages 测试公共 mock
  */
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
+import type { ProviderPayload } from "../../../types-payload.js";
 
-export const mockReadJsonFile = vi.fn(() => null);
+export const mockReadJsonFile = vi.fn((): ProviderPayload | null => null);
 
 export function setupCoreMock() {
 	vi.mock("../../payload/core.js", () => ({
@@ -35,7 +36,7 @@ export function setupCoreMock() {
 			}
 			return m;
 		},
-		readJsonFile: (...args: any[]) => mockReadJsonFile(...args),
+		readJsonFile: (...args: unknown[]) => (mockReadJsonFile as Function).apply(null, args),
 		RECORDINGS_DIR: "/tmp/test-recordings",
 		DISTILL_DIR: "/tmp/pi-distill",
 	}));

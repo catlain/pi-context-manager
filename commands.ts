@@ -1,5 +1,6 @@
 /** 命令注册：/record、/distill-config、/processor-config、/context-clean */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ContextConfig } from "./shared.js";
 import { cleanContextData, listSessionData } from "./clean.js";
 import { cleanRecordings, isRecording, setRecording } from "./recording.js";
 import { getContextConfig, setContextConfig } from "./shared.js";

@@ -34,7 +34,7 @@ export function summaryLine(
 	// assistant 消息含 tool_calls 时显示工具名 + args 预览
 	if (role === "assistant" && m.tool_calls?.length) {
 		const calls = m.tool_calls
-			.map((tc: Record<string, unknown>) =>
+			.map((tc) =>
 				tc.function
 					? `${tc.function.name}(${(tc.function.arguments ?? "").slice(0, 40)})`
 					: "?",
@@ -158,7 +158,7 @@ export function matchesToolName(
 	// assistant 消息：检查 tool_calls
 	if (m.role === "assistant" && m.tool_calls) {
 		for (const tc of m.tool_calls) {
-			if (tc.function && matchToolName(toolName, tc.function.name)) return true;
+			if (tc.function && matchToolName(toolName, tc.function.name ?? "")) return true;
 		}
 	}
 	return false;

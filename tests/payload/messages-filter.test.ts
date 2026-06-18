@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockReadJsonFile = vi.fn(() => null);
+const mockReadJsonFile = vi.fn(() => null as unknown as any);
 vi.mock("../../payload/core.js", () => ({
 	estTokens: (s: string) => Math.ceil(s.length / 4),
 	fmtTok: (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)),
@@ -34,7 +34,7 @@ vi.mock("../../payload/core.js", () => ({
 		}
 		return m;
 	},
-	readJsonFile: (...args: any[]) => mockReadJsonFile(...args),
+	readJsonFile: (...args: unknown[]) => (mockReadJsonFile as Function).apply(null, args),
 	RECORDINGS_DIR: "/tmp/test-recordings",
 	DISTILL_DIR: "/tmp/pi-distill",
 }));

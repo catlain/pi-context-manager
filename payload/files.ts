@@ -3,6 +3,7 @@
  */
 
 import { existsSync, readdirSync } from "node:fs";
+import type { ProviderPayload } from "../types-payload.js";
 import { join } from "node:path";
 import {
 	buildProviderToolCallIndex,
@@ -70,7 +71,7 @@ export function collectTimeline(
 	const timeline = new Map<string, TimelineEntry[]>();
 	for (const { path, filename } of files) {
 		const reqNum = filename.split("-")[1];
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 		const msgs = data.messages ?? [];
 		const toolIdx = buildProviderToolCallIndex(msgs);
@@ -101,7 +102,7 @@ export function collectTimelineByTcId(
 	const timeline = new Map<string, TimelineEntry[]>();
 	for (const { path, filename } of files) {
 		const reqNum = filename.split("-")[1];
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 		const msgs = data.messages ?? [];
 		const toolIdx = buildProviderToolCallIndex(msgs);

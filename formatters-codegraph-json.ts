@@ -13,6 +13,14 @@ import {
 	formatReferencesJson,
 	formatSearchJson,
 } from "./formatters-codegraph-json-fmt.js";
+import type {
+	AstSearchResult,
+	CallGraphNode,
+	ModuleOverviewResult,
+	ProjectMapResult,
+	ReferencesResult,
+	SearchResultItem,
+} from "./formatters-codegraph-json-fmt.js";
 
 const MAX_LINES = 200;
 
@@ -46,45 +54,46 @@ export function sniffCodeGraphJson(text: string): boolean {
 		);
 	}
 
-	if (typeof obj !== "object" || obj === null) return false;
+	const o = obj as Record<string, unknown>;
 
 	// get_call_graph: {function, callers, callees}
 	if (
-		typeof obj.function === "string" &&
-		Array.isArray(obj.callers) &&
-		Array.isArray(obj.callees)
+		typeof o.function === "string" &&
+		Array.isArray(o.callers) &&
+		Array.isArray(o.callees)
 	)
 		return true;
 
 	// find_references: {symbol, total_references, references}
 	if (
-		typeof obj.symbol === "string" &&
-		typeof obj.total_references === "number" &&
-		Array.isArray(obj.references)
+		typeof o.symbol === "string" &&
+		typeof o.total_references === "number" &&
+		Array.isArray(o.references)
 	)
 		return true;
 
 	// module_overview: {active_exports, files_count, path}
 	if (
-		Array.isArray(obj.active_exports) &&
-		typeof obj.files_count === "number" &&
-		typeof obj.path === "string"
+		Array.isArray(o.active_exports) &&
+		typeof o.files_count === "number" &&
+		typeof o.path === "string"
 	)
 		return true;
 
 	// project_map: {modules, hot_functions, module_dependencies}
 	if (
-		Array.isArray(obj.modules) &&
-		Array.isArray(obj.hot_functions) &&
-		Array.isArray(obj.module_dependencies)
+		Array.isArray(o.modules) &&
+		Array.isArray(o.hot_functions) &&
+		Array.isArray(o.module_dependencies)
 	)
 		return true;
 
 	// ast_search: {count, results:[{name, file_path, ...}]}
 	if (
-		typeof obj.count === "number" &&
-		Array.isArray(obj.results) &&
-		(typeof obj.results[0]?.name === "string" || obj.results.length === 0)
+		typeof o.count === "number" &&
+		Array.isArray(o.results) &&
+		(typeof (o.results as Array<{ name?: string }>)[0]?.name === "string" ||
+			(o.results as unknown[]).length === 0)
 	)
 		return true;
 
@@ -104,21 +113,23 @@ export function formatCodeGraphJson(text: string): string {
 
 	let formatted: string;
 
+	const o = obj as Record<string, unknown>;
+
 	if (Array.isArray(obj)) {
-		formatted = formatSearchJson(obj);
-	} else if (Array.isArray(obj.callers) && Array.isArray(obj.callees)) {
-		formatted = formatCallGraphJson(obj);
-	} else if (typeof obj.symbol === "string" && Array.isArray(obj.references)) {
-		formatted = formatReferencesJson(obj);
-	} else if (Array.isArray(obj.active_exports)) {
-		formatted = formatModuleOverviewJson(obj);
+		formatted = formatSearchJson(obj as SearchResultItem[]);
+	} else if (Array.isArray(o.callers) && Array.isArray(o.callees)) {
+		formatted = formatCallGraphJson(obj as CallGraphNode);
+	} else if (typeof o.symbol === "string" && Array.isArray(o.references)) {
+		formatted = formatReferencesJson(obj as ReferencesResult);
+	} else if (Array.isArray(o.active_exports)) {
+		formatted = formatModuleOverviewJson(obj as ModuleOverviewResult);
 	} else if (
-		Array.isArray(obj.modules) &&
-		Array.isArray(obj.module_dependencies)
+		Array.isArray(o.modules) &&
+		Array.isArray(o.module_dependencies)
 	) {
-		formatted = formatProjectMapJson(obj);
-	} else if (typeof obj.count === "number" && Array.isArray(obj.results)) {
-		formatted = formatAstSearchJson(obj);
+		formatted = formatProjectMapJson(obj as ProjectMapResult);
+	} else if (typeof o.count === "number" && Array.isArray(o.results)) {
+		formatted = formatAstSearchJson(obj as AstSearchResult);
 	} else {
 		return text;
 	}

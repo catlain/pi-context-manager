@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
-import type { PayloadMessage } from "./collect-payload-types";
+import type { PayloadMessage } from "./types-payload.js";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
 export const DISTILL_DIR = join(

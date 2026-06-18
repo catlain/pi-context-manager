@@ -1,4 +1,9 @@
 /** handle-context.ts — context 事件处理逻辑（纯操作，从 index.ts 闭包获取状态引用） */
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import type { PayloadContentBlock, PayloadMessage } from "./types-payload.js";
 import {
 	buildToolCallMap,
 	estimateTokens,
@@ -30,7 +35,7 @@ export interface ContextState {
 
 export function handleContextEvent(
 	event: { messages: PayloadMessage[] },
-	_ctx: unknown,
+	_ctx: { sessionManager: { getSessionId?: () => string | undefined } },
 	state: ContextState,
 	pi: ExtensionAPI,
 ) {
@@ -117,7 +122,7 @@ export function handleContextEvent(
 
 		// 技能文件 / plans 目录豁免：read 调用这些路径时永不 aging
 		const callInfo = toolCallMap.get(tcId);
-		const filePath = callInfo?.arguments?.path;
+		const filePath = callInfo?.arguments?.path as string | undefined;
 		if (toolName === "read" && (isSkillFilePath(filePath) || isPlansFilePath(filePath)))
 			continue;
 

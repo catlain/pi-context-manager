@@ -20,10 +20,10 @@ vi.mock("@earendil-works/pi-tui", () => ({
 vi.mock("../collect.js", () => ({ collectData: vi.fn() }));
 vi.mock("../shared.js", () => ({ readCachedPayload: vi.fn(() => null) }));
 vi.mock("../render.js", () => ({
-	renderOverview: vi.fn(),
-	renderCategory: vi.fn(),
-	renderRecords: vi.fn(),
-	renderContent: vi.fn(),
+	renderOverview: vi.fn() as any,
+	renderCategory: vi.fn() as any,
+	renderRecords: vi.fn() as any,
+	renderContent: vi.fn() as any,
 	getViewport: vi.fn(() => ({ rows: 40, cols: 80 })),
 }));
 
@@ -137,10 +137,10 @@ describe("层级导航 — overview → category → records → content", () =>
 	const kb = mkKb();
 
 	beforeEach(() => {
-		renderOverview.mockClear();
-		renderCategory.mockClear();
-		renderRecords.mockClear();
-		renderContent.mockClear();
+		vi.mocked(renderOverview).mockClear();
+		vi.mocked(renderCategory).mockClear();
+		vi.mocked(renderRecords).mockClear();
+		vi.mocked(renderContent).mockClear();
 	});
 
 	it("初始渲染 overview", async () => {
@@ -165,7 +165,7 @@ describe("层级导航 — overview → category → records → content", () =>
 			kb,
 			done,
 		);
-		renderOverview.mockClear();
+		vi.mocked(renderOverview).mockClear();
 		ctrl.handleInput("down");
 		expect(renderOverview).toHaveBeenCalled();
 	});
@@ -229,7 +229,7 @@ describe("层级导航 — overview → category → records → content", () =>
 		);
 		ctrl.handleInput("down"); // to System Tools
 		ctrl.handleInput("enter"); // → category (read has empty records)
-		renderRecords.mockClear();
+		vi.mocked(renderRecords).mockClear();
 		ctrl.handleInput("enter"); // try to enter
 		expect(renderRecords).not.toHaveBeenCalled();
 	});
@@ -266,7 +266,7 @@ describe("层级导航 — overview → category → records → content", () =>
 		ctrl.handleInput("down");
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records
-		renderContent.mockClear();
+		vi.mocked(renderContent).mockClear();
 		ctrl.handleInput("enter"); // → content (lines empty → no)
 		expect(renderContent).not.toHaveBeenCalled();
 	});
@@ -285,13 +285,13 @@ describe("层级导航 — overview → category → records → content", () =>
 		ctrl.handleInput("enter"); // → category
 		ctrl.handleInput("enter"); // → records
 		ctrl.handleInput("enter"); // → content
-		renderRecords.mockClear();
+		vi.mocked(renderRecords).mockClear();
 		ctrl.handleInput("escape"); // esc → records
 		expect(renderRecords).toHaveBeenCalled();
-		renderCategory.mockClear();
+		vi.mocked(renderCategory).mockClear();
 		ctrl.handleInput("escape"); // esc → category
 		expect(renderCategory).toHaveBeenCalled();
-		renderOverview.mockClear();
+		vi.mocked(renderOverview).mockClear();
 		ctrl.handleInput("escape"); // esc → overview
 		expect(renderOverview).toHaveBeenCalled();
 		ctrl.handleInput("escape"); // esc → done
@@ -309,7 +309,7 @@ describe("层级导航 — overview → category → records → content", () =>
 			done,
 		);
 		ctrl.handleInput("up"); // up at index 0 → still 0 (clamped)
-		renderOverview.mockClear();
+		vi.mocked(renderOverview).mockClear();
 		ctrl.handleInput("down"); // down to index 1
 		expect(renderOverview).toHaveBeenCalled();
 	});

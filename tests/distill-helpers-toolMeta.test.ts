@@ -19,7 +19,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "read", { path: "foo.ts" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "read", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "read", meta: "foo.ts" });
 	});
@@ -28,7 +28,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "read", {}]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "read", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "read", meta: "" });
 	});
@@ -37,7 +37,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "write", { path: "bar.ts" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "write", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "write", meta: "bar.ts" });
 	});
@@ -46,7 +46,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "edit", { path: "baz.ts" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "edit", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "edit", meta: "baz.ts" });
 	});
@@ -57,7 +57,7 @@ describe("toolMeta", () => {
 		]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "bash", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "bash", meta: "ls -la" });
 	});
@@ -66,7 +66,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "bash", {}]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "bash", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "bash", meta: "" });
 	});
@@ -77,7 +77,7 @@ describe("toolMeta", () => {
 		]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "grep", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "grep", meta: "foo in src/" });
 	});
@@ -86,7 +86,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "grep", { pattern: "foo" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "grep", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "grep", meta: "foo" });
 	});
@@ -95,7 +95,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "find", { pattern: "*.ts" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "find", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "find", meta: "*.ts" });
 	});
@@ -104,7 +104,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "find", {}]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "find", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "find", meta: "" });
 	});
@@ -113,7 +113,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "ls", { path: "src/" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "ls", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "ls", meta: "src/" });
 	});
@@ -122,7 +122,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "ls", {}]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", toolName: "ls", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "ls", meta: "" });
 	});
@@ -136,7 +136,7 @@ describe("toolMeta", () => {
 				toolName: "custom-tool",
 				content: [],
 			},
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "custom-tool", meta: "" });
 	});
@@ -145,7 +145,7 @@ describe("toolMeta", () => {
 		const map = makeToolCallMap([["tc1", "read", { path: "x.ts" }]]);
 		const result = toolMeta(
 			{ role: "toolResult", toolCallId: "tc1", content: [] },
-			map,
+			map as unknown as Map<string, { name: string; arguments: Record<string, unknown> }>,
 		);
 		expect(result).toEqual({ name: "unknown", meta: "" });
 	});

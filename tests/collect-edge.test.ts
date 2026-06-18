@@ -145,8 +145,8 @@ describe("collectData — 边界场景", () => {
 		const pi = makePi();
 		vi.mocked(pi.getActiveTools).mockReturnValue(["fn_name"]);
 		vi.mocked(pi.getAllTools).mockReturnValue([
-			{ function: { name: "fn_name" } },
-		]);
+			{ function: { name: "fn_name" } } as unknown as { name: string },
+		] as any);
 		const result = collectData(pi, makeCtx(), {
 			...emptyOpts(),
 			payload: { messages: [] },

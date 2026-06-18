@@ -8,6 +8,7 @@
  * 修复：getSessionId() 返回 falsy 时用 process.env.PI_SESSION_ID 作为 fallback。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { type ContextState, handleContextEvent } from "../handle-context.js";
 import { loadManifest } from "../shared.js";
 
@@ -65,7 +66,7 @@ function mkState(): ContextState {
 	};
 }
 function mkPi() {
-	return { events: { emit: vi.fn() } };
+	return { events: { emit: vi.fn() } } as unknown as ExtensionAPI;
 }
 function mkMsg(tcId: string, text: string): any[] {
 	return [

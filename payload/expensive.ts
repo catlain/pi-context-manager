@@ -2,6 +2,7 @@
  * expensive action — 找出最贵的工具调用
  */
 
+import type { ProviderPayload } from "../types-payload.js";
 import {
 	buildProviderToolCallIndex,
 	classifyStatus,
@@ -27,7 +28,7 @@ export function doExpensive(files: RecordingEntry[], topN = 20): string {
 	}> = [];
 
 	for (const { path, filename } of files) {
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 		const msgs = data.messages ?? [];
 		const toolIdx = buildProviderToolCallIndex(msgs);

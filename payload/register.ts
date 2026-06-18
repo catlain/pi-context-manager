@@ -18,6 +18,35 @@ import { doChainTcId, doStats } from "./stats.js";
 
 const LAST_PAYLOAD = join(DISTILL_DIR, "last-payload.json");
 
+/** payload_analyze 工具参数类型（与 parameters schema 对齐） */
+type PayloadAction =
+	| "list"
+	| "single"
+	| "overview"
+	| "chain"
+	| "chain-tcid"
+	| "stats"
+	| "diff"
+	| "budget"
+	| "expensive"
+	| "growth"
+	| "messages";
+
+interface PayloadAnalyzeParams {
+	action: PayloadAction;
+	payloadPath?: string;
+	payloadPath2?: string;
+	verbose?: boolean;
+	topN?: number;
+	sessionId?: string;
+	msgIndex?: number;
+	msgRange?: string;
+	grep?: string;
+	toolName?: string;
+	file?: string;
+	context?: number;
+}
+
 export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "payload_analyze",
@@ -110,10 +139,7 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 
 		async execute(
 			_id: string,
-			params: Record<string, unknown>,
-			_signal: unknown,
-			_onUpdate: unknown,
-			_ctx: unknown,
+		params: PayloadAnalyzeParams,
 		): Promise<{
 			content: Array<{ type: string; text: string }>;
 			details: Record<string, unknown>;
@@ -249,5 +275,5 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 				};
 			}
 		},
-	});
+	} as never);
 }

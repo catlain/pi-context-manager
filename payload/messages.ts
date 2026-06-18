@@ -11,6 +11,7 @@
  */
 
 import { matchFile } from "@pi-atelier/shared-utils";
+import type { ProviderPayload } from "../types-payload.js";
 import { buildProviderToolCallIndex, readJsonFile } from "./core.js";
 import {
 	DEFAULT_SUMMARY_LIMIT,
@@ -47,7 +48,7 @@ export function doMessages(params: MessagesParams): string {
 		context = 3,
 	} = params;
 
-	const data = readJsonFile(payloadPath);
+	const data = readJsonFile<ProviderPayload>(payloadPath);
 	if (!data) return `❌ 文件不存在: ${payloadPath}`;
 
 	const msgs = data.messages ?? [];

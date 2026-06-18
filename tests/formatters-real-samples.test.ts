@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { formatCodeGraphResult } from "../formatters-codegraph.js";
 import { formatMcpJsonResult } from "../formatters-mcp-json.js";
 import { formatWebSearchResult } from "../formatters-web.js";
-import { processToolResult } from "../tool-result-processor-core.js";
+import { processToolResult, type ToolResultEvent } from "../tool-result-processor-core.js";
 
 const samplesPath = path.join(__dirname, "fixtures", "real-samples.json");
 const rawSamples: Record<string, string> = JSON.parse(
@@ -39,14 +39,13 @@ const nonCodegraphTools = Object.keys(rawSamples).filter(
 
 describe("formatter 误判防护 — formatWebSearchResult", () => {
 	it.each(nonSearchTools)("不误判 %s", (tool) => {
-		const result = formatWebSearchResult(rawSamples[tool], 4000);
+		const result = formatWebSearchResult(rawSamples[tool]);
 		expect(result).toBe(rawSamples[tool]);
 	});
 
 	it("正确处理真实 glm_web_search 输出", () => {
 		const result = formatWebSearchResult(
 			rawSamples.glm_web_search_web_search_prime,
-			4000,
 		);
 		expect(typeof result).toBe("string");
 		expect(result.length).toBeGreaterThan(0);
@@ -55,7 +54,6 @@ describe("formatter 误判防护 — formatWebSearchResult", () => {
 	it("不误判 settings.json packages (String.prototype.link bug)", () => {
 		const result = formatWebSearchResult(
 			rawSamples.settings_json_packages,
-			4000,
 		);
 		expect(result).toBe(rawSamples.settings_json_packages);
 	});
@@ -68,21 +66,21 @@ describe("formatter 误判防护 — formatWebSearchResult", () => {
 		"roadmap_list",
 	];
 	it.each(mdTools)("%s (markdown) 不被格式化", (tool) => {
-		const result = formatWebSearchResult(rawSamples[tool], 4000);
+		const result = formatWebSearchResult(rawSamples[tool]);
 		expect(result).toBe(rawSamples[tool]);
 	});
 });
 
 describe("formatter 误判防护 — formatCodeGraphResult", () => {
 	it.each(nonCodegraphTools)("不误判 %s", (tool) => {
-		const result = formatCodeGraphResult(rawSamples[tool], 4000);
+		const result = formatCodeGraphResult(rawSamples[tool]);
 		expect(result).toBe(rawSamples[tool]);
 	});
 });
 
 describe("formatter 误判防护 — formatMcpJsonResult", () => {
 	it.each(Object.keys(rawSamples))("不破坏 %s", (tool) => {
-		const result = formatMcpJsonResult(rawSamples[tool], 4000);
+		const result = formatMcpJsonResult(rawSamples[tool]);
 		expect(typeof result).toBe("string");
 		expect(result.length).toBeGreaterThan(0);
 	});
@@ -98,7 +96,7 @@ describe("大输出处理", () => {
 		const event = {
 			toolName: tool,
 			content: [{ type: "text" as const, text: sample }],
-		};
+		} as unknown as ToolResultEvent;
 		const result = processToolResult(event, 4000, false);
 		expect(result).toBeDefined();
 		const newText = result!.content
@@ -137,7 +135,7 @@ describe("小输出不误截", () => {
 			toolName: tool,
 			content: [{ type: "text" as const, text: sample }],
 		};
-		const result = processToolResult(event, 4000, false);
+		const result = processToolResult(event as unknown as ToolResultEvent, 4000, false);
 		// 小输出可能返回 undefined（表示不处理）或返回原文
 		if (result === undefined) return; // 不处理 = 原样通过
 		const newText = result.content

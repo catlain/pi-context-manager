@@ -3,13 +3,14 @@
  */
 
 import { basename } from "node:path";
+import type { ProviderPayload } from "../types-payload.js";
 import { estTokens, fmtTok, getText, readJsonFile } from "./core.js";
 
 // ════════════════════════════════════════════════════════════
 
 export function doDiff(path1: string, path2: string): string {
-	const p1 = readJsonFile(path1);
-	const p2 = readJsonFile(path2);
+	const p1 = readJsonFile<ProviderPayload>(path1);
+	const p2 = readJsonFile<ProviderPayload>(path2);
 	if (!p1) return `文件不存在: ${path1}`;
 	if (!p2) return `文件不存在: ${path2}`;
 

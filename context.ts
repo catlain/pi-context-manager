@@ -105,12 +105,12 @@ export default function registerContextCommand(
 						},
 						invalidate: () => container.invalidate(),
 						handleInput: (kd: unknown) => {
-							const up = kb.matches(kd, "tui.select.up");
-							const dn = kb.matches(kd, "tui.select.down");
-							const ok = kb.matches(kd, "tui.select.confirm");
-							const esc = kb.matches(kd, "tui.select.cancel");
-							const pgup = kb.matches(kd, "tui.editor.pageUp");
-							const pgdn = kb.matches(kd, "tui.editor.pageDown");
+							const up = kb.matches(kd as string, "tui.select.up");
+							const dn = kb.matches(kd as string, "tui.select.down");
+							const ok = kb.matches(kd as string, "tui.select.confirm");
+							const esc = kb.matches(kd as string, "tui.select.cancel");
+							const pgup = kb.matches(kd as string, "tui.editor.pageUp");
+							const pgdn = kb.matches(kd as string, "tui.editor.pageDown");
 							const keyD = kd === "d" || kd === "D";
 							const keyY = kd === "y" || kd === "Y";
 							const keyN = kd === "n" || kd === "N";

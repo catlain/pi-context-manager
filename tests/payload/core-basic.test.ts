@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { PayloadMessage } from "../../types-payload.js";
 import {
 	buildPiToolCallIndex,
 	buildProviderToolCallIndex,
@@ -39,7 +40,7 @@ describe("getText", () => {
 		];
 		expect(getText(content)).toBe("hello\nworld");
 	});
-	it("其他类型 toString", () => expect(getText(42)).toBe("42"));
+	it("其他类型 toString", () => expect(getText(42 as unknown as string | null)).toBe("42"));
 });
 
 describe("buildProviderToolCallIndex", () => {
@@ -104,7 +105,7 @@ describe("buildPiToolCallIndex", () => {
 				],
 			},
 		];
-		expect(buildPiToolCallIndex(msgs).get("tc1")!.argsStr).toBe('{"cmd":"ls"}');
+		expect(buildPiToolCallIndex(msgs as unknown as PayloadMessage[]).get("tc1")!.argsStr).toBe('{"cmd":"ls"}');
 	});
 });
 

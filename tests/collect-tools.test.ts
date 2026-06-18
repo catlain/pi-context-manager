@@ -241,7 +241,7 @@ describe("collectData — 工具场景", () => {
 
 	it("fallbackTools 过滤 inactive tools", () => {
 		const pi = makePi({
-			tools: [{ function: { name: "fn_a" } }, { function: { name: "fn_b" } }],
+			tools: [{ function: { name: "fn_a" } } as unknown as { name: string }, { function: { name: "fn_b" } } as unknown as { name: string }],
 			active: ["fn_a"],
 		});
 		const result = collectData(pi, makeCtx(), {

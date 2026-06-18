@@ -30,22 +30,25 @@ export function registerToolResultProcessor(
 	// 每次调用时从 settings 读阈值（支持 /processor-config 热更新）
 	const writeFallback = options?.writeFallback ?? false;
 
-	pi.on("tool_result", (event: ToolResultEvent, ctx: ExtensionContext) => {
-		try {
-			const threshold =
-				options?.distillThreshold ?? getContextConfig().processorThreshold;
-			if (threshold <= 0) return undefined; // 0 = 禁用
-			const sessionId = ctx?.sessionManager?.getSessionId?.();
-			const result = processToolResult(
-				event,
-				threshold,
-				writeFallback,
-				sessionId,
-			);
+	pi.on(
+		"tool_result",
+		((event: ToolResultEvent, ctx: ExtensionContext) => {
+			try {
+				const threshold =
+					options?.distillThreshold ?? getContextConfig().processorThreshold;
+				if (threshold <= 0) return undefined; // 0 = 禁用
+				const sessionId = ctx?.sessionManager?.getSessionId?.();
+				const result = processToolResult(
+					event,
+					threshold,
+					writeFallback,
+					sessionId,
+				);
 
-			return result;
-		} catch {
-			return undefined;
-		}
-	});
+				return result;
+			} catch {
+				return undefined;
+			}
+		}) as never,
+	);
 }

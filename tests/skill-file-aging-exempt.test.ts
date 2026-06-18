@@ -93,7 +93,7 @@ const rem = (msgs: any[]) =>
 
 async function trigger(s: ContextState, msgs: any[], pi: any) {
 	const { handleContextEvent } = await import("../handle-context.js");
-	handleContextEvent({ messages: msgs }, {}, s, pi);
+	handleContextEvent({ messages: msgs }, {} as unknown as { sessionManager: { getSessionId?: () => string | undefined } }, s, pi);
 }
 
 // ── Tests ──

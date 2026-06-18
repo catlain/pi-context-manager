@@ -1,5 +1,6 @@
 /** index.ts — context 扩展入口：闭包持有运行时状态，创建 stateRef 传给子模块 */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { PayloadMessage } from "./types-payload.js";
 import {
 	registerAgingConfigCommand,
 	registerContextCleanCommand,
@@ -80,8 +81,13 @@ export default function (pi: ExtensionAPI) {
 	// ── 注册事件 ──
 	pi.on(
 		"context",
-		async (event: { messages: PayloadMessage[] }, _ctx: unknown) => {
-			handleContextEvent(event, _ctx, state, pi);
+		async (event, ctx) => {
+			handleContextEvent(
+				{ messages: event.messages as unknown as PayloadMessage[] },
+				ctx,
+				state,
+				pi,
+			);
 			return { messages: event.messages };
 		},
 	);

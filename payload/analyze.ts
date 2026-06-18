@@ -5,6 +5,7 @@
  */
 
 import { basename } from "node:path";
+import type { ProviderPayload } from "../types-payload.js";
 import {
 	buildProviderToolCallIndex,
 	type ChainEntry,
@@ -66,9 +67,9 @@ export function doList(sessionId?: string): string {
 		try {
 			const stat = require("node:fs").statSync(path);
 			size = stat.size;
-			const data = readJsonFile(path);
+			const data = readJsonFile<ProviderPayload>(path);
 			msgCount = data?.messages?.length ?? 0;
-			model = data?.model ?? "?";
+			model = String(data?.model ?? "?");
 		} catch {
 			/* ignore */
 		}
@@ -84,7 +85,7 @@ export function doList(sessionId?: string): string {
 // ════════════════════════════════════════════════════════════
 
 export function doSingle(payloadPath: string, threshold = 500): string {
-	const data = readJsonFile(payloadPath);
+	const data = readJsonFile<ProviderPayload>(payloadPath);
 	if (!data) return `文件不存在: ${payloadPath}`;
 
 	const msgs = data.messages ?? [];

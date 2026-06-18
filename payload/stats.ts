@@ -2,6 +2,7 @@
  * stats action — 聚合统计 distill/processor 命中率
  */
 
+import type { ProviderPayload } from "../types-payload.js";
 import { classifyStatus, getText, readJsonFile } from "./core.js";
 import { collectTimelineByTcId, getRecordingFiles } from "./files.js";
 import { foldChainEntries } from "./format.js";
@@ -17,7 +18,7 @@ export function doStats(sessionId?: string): string {
 		SMALL: 0,
 	};
 	for (const { path } of files) {
-		const data = readJsonFile(path);
+		const data = readJsonFile<ProviderPayload>(path);
 		if (!data) continue;
 		for (const m of data.messages ?? []) {
 			if (m.role !== "tool") continue;

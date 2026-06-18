@@ -152,7 +152,7 @@ export function parseArgs(argsStr: string): Record<string, unknown> {
 }
 
 export function extractReadPath(argsStr: string): string {
-	return parseArgs(argsStr).path ?? parseArgs(argsStr).filePath ?? "";
+	return String(parseArgs(argsStr).path ?? parseArgs(argsStr).filePath ?? "");
 }
 
 // ── 文件 I/O ──

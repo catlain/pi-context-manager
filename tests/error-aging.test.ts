@@ -115,7 +115,7 @@ function remaining(msgs: any[]): string[] {
 }
 
 function trigger(state: ContextState, msgs: any[], pi: any) {
-	handleContextEvent({ messages: msgs }, {}, state, pi);
+	handleContextEvent({ messages: msgs }, {} as any, state, pi);
 }
 
 // ═══════════════════════════════════════════
