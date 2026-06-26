@@ -26,6 +26,18 @@ vi.mock("../distill-helpers.js", () => ({
 	estimateTokens: (t: string) => Math.ceil(t.length / 4),
 	isSkillFilePath: () => false,
 	isPlansFilePath: () => false,
+	isAgingExempt: () => false,
+	selectAgingThreshold: (
+		ctx: { isError: boolean; toolName: string; tokens: number },
+		cfg: { errorAgingThreshold: number; distillThreshold: number; largeResultAging: number; agingThreshold: number },
+	) =>
+		(ctx.toolName === "edit" || ctx.toolName === "write") && !ctx.isError
+			? Number.POSITIVE_INFINITY
+			: ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0
+				? cfg.largeResultAging
+				: ctx.isError && cfg.errorAgingThreshold > 0
+					? cfg.errorAgingThreshold
+					: cfg.agingThreshold,
 	toolMeta: () => ({ meta: "" }),
 	removeOrphanedToolCalls: (msgs: any[]) => {
 		const activeIds = new Set<string>();

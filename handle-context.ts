@@ -5,11 +5,12 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { PayloadContentBlock, PayloadMessage } from "./types-payload.js";
 import {
+	type AgingContext,
 	buildToolCallMap,
 	estimateTokens,
-	isPlansFilePath,
-	isSkillFilePath,
+	isAgingExempt,
 	removeOrphanedToolCalls,
+	selectAgingThreshold,
 	toolMeta,
 } from "./distill-helpers.js";
 import {
@@ -111,20 +112,29 @@ export function handleContextEvent(
 			.map((p: PayloadContentBlock) => p.text ?? "")
 			.join("");
 		const origTokens = estimateTokens(origText);
-
-		// 计算该 tcId 的实际阈值（优先级：大结果 > 错误结果 > 普通结果）
 		const isError = !!(msg as any).isError;
-		const effectiveThreshold =
-			origTokens >= distillThreshold && largeResultAging > 0 ? largeResultAging
-			: isError && errorAgingThreshold > 0 ? errorAgingThreshold
-			: agingThreshold;
-		if (effectiveThreshold <= 0) continue; // aging 关闭时跳过普通结果
 
-		// 技能文件 / plans 目录豁免：read 调用这些路径时永不 aging
+		// 构造 aging 决策上下文
 		const callInfo = toolCallMap.get(tcId);
 		const filePath = callInfo?.arguments?.path as string | undefined;
-		if (toolName === "read" && (isSkillFilePath(filePath) || isPlansFilePath(filePath)))
-			continue;
+		const agingCtx: AgingContext = {
+			toolName,
+			isError,
+			tokens: origTokens,
+			filePath,
+		};
+
+		// 完全豁免：skill 文件 / plans 目录（连计数都不累加）
+		if (isAgingExempt(agingCtx)) continue;
+
+		// 选择有效阈值（优先级：edit/write 非错误=Infinity > 大文件 > 错误 > 普通轮数）
+		const effectiveThreshold = selectAgingThreshold(agingCtx, {
+			distillThreshold,
+			agingThreshold,
+			errorAgingThreshold,
+			largeResultAging,
+		});
+		if (effectiveThreshold <= 0) continue; // aging 关闭时跳过普通结果
 
 		activeTcIds.add(tcId);
 		const prevCount = agingTracker.get(tcId) || 0;

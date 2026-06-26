@@ -204,3 +204,60 @@ export function isPlansFilePath(path: string | undefined): boolean {
 	// 匹配 .pi/plans/ 路径（项目级计划文档）— 支持相对路径和绝对路径
 	return /(^|[\\/])\.pi[\\/]plans[\\/]/.test(path);
 }
+
+// ── aging 策略选择（纯函数，便于独立测试） ──
+
+/** aging 决策上下文：一个 toolResult 的关键字段 */
+export interface AgingContext {
+	toolName: string;
+	isError: boolean;
+	tokens: number;
+	filePath?: string;
+}
+
+/** 判断是否完全跳过 aging（不累加计数、不进 firstSeenCap）。
+ *  现有规则：read 命中 skill/plans 路径。
+ *  注意：edit/write 不在此豁免——它们走 selectAgingThreshold 的 Infinity 阈值，
+ *  以便仍能经过 firstSeenCap 检查。 */
+export function isAgingExempt(ctx: AgingContext): boolean {
+	if (
+		ctx.toolName === "read" &&
+		(isSkillFilePath(ctx.filePath) || isPlansFilePath(ctx.filePath))
+	)
+		return true;
+	return false;
+}
+
+/** aging 策略所需配置字段的精简接口（selectAgingThreshold 只读这 4 个字段） */
+export interface AgingConfig {
+	distillThreshold: number;
+	agingThreshold: number;
+	errorAgingThreshold: number;
+	largeResultAging: number;
+}
+
+/** 选择有效 aging 阈值（轮数）。返回 Infinity 表示永不达龄。
+ *  优先级：edit/write 非错误（豁免 A+C）> 大文件（A，保持原有 A>B 优先）> 错误结果（B）> 普通轮数（C）。
+ *  返回 ≤0 表示该策略被禁用（配置关闭）。
+ *  注意：edit/write 的错误结果不给予豁免——如果是大文件走 A，否则走 B，与原行为一致。 */
+export function selectAgingThreshold(
+	ctx: AgingContext,
+	cfg: AgingConfig,
+): number {
+	// edit/write 非错误：豁免 A（大文件）和 C（轮数），用 Infinity 表示永不达龄，
+	// 但仍会经过主循环的 firstSeenCap 检查（见 handle-context.ts）。
+	// 必须在 A 之前拦截，否则会被大文件优先级抢走。
+	if (
+		(ctx.toolName === "edit" || ctx.toolName === "write") &&
+		!ctx.isError
+	)
+		return Number.POSITIVE_INFINITY;
+	// A（大文件）：对所有工具（含 edit/write 错误的大文件）生效，保持原有 A>B 优先级
+	if (ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0)
+		return cfg.largeResultAging;
+	// B（出错）：非大文件的错误结果走加速淘汰
+	if (ctx.isError && cfg.errorAgingThreshold > 0)
+		return cfg.errorAgingThreshold;
+	// C（轮数）
+	return cfg.agingThreshold;
+}
