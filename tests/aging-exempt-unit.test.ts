@@ -74,6 +74,74 @@ describe("isAgingExempt", () => {
 		).toBe(false);
 	});
 
+	it("read openspec 变更文档（相对路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "openspec/changes/aging-exempt-openspec-docs/design.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec 变更文档（绝对路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath:
+						"C:/repo/openspec/changes/foo/specs/bar/spec.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec 变更文档（反斜杠路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath:
+						"C:\\repo\\openspec\\changes\\foo\\tasks.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec specs 目录文件 → false（仅 changes 豁免）", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "openspec/specs/aging-exemption/spec.md",
+				}),
+			),
+		).toBe(false);
+	});
+
+	it("edit openspec 变更文档路径 → false（edit 走策略选择不豁免）", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "edit",
+					filePath: "openspec/changes/foo/design.md",
+				}),
+			),
+		).toBe(false);
+	});
+
+	it("write openspec 变更文档路径 → false（write 走策略选择不豁免）", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "write",
+					filePath: "openspec/changes/foo/tasks.md",
+				}),
+			),
+		).toBe(false);
+	});
+
 	it("edit → false（不走完全豁免，走策略选择）", () => {
 		expect(isAgingExempt(ctx({ toolName: "edit" }))).toBe(false);
 	});

@@ -205,6 +205,14 @@ export function isPlansFilePath(path: string | undefined): boolean {
 	return /(^|[\\/])\.pi[\\/]plans[\\/]/.test(path);
 }
 
+/** 判断路径是否属于 openspec 变更文档（openspec/changes/）— 变更文档永不 aging
+ *  仅匹配 changes 目录（当前活跃变更），不含 specs 目录（已归档能力规格不豁免）。 */
+export function isOpenspecChangePath(path: string | undefined): boolean {
+	if (!path) return false;
+	// 匹配 openspec/changes/ 路径段 — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
+	return /(^|[\\/])openspec[\\/]changes[\\/]/.test(path);
+}
+
 // ── aging 策略选择（纯函数，便于独立测试） ──
 
 /** aging 决策上下文：一个 toolResult 的关键字段 */
@@ -216,13 +224,15 @@ export interface AgingContext {
 }
 
 /** 判断是否完全跳过 aging（不累加计数、不进 firstSeenCap）。
- *  现有规则：read 命中 skill/plans 路径。
+ *  现有规则：read 命中 skill / plans / openspec 变更文档路径。
  *  注意：edit/write 不在此豁免——它们走 selectAgingThreshold 的 Infinity 阈值，
  *  以便仍能经过 firstSeenCap 检查。 */
 export function isAgingExempt(ctx: AgingContext): boolean {
 	if (
 		ctx.toolName === "read" &&
-		(isSkillFilePath(ctx.filePath) || isPlansFilePath(ctx.filePath))
+		(isSkillFilePath(ctx.filePath) ||
+			isPlansFilePath(ctx.filePath) ||
+			isOpenspecChangePath(ctx.filePath))
 	)
 		return true;
 	return false;
