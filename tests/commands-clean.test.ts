@@ -1,14 +1,19 @@
 /**
  * /context-clean 命令测试
  *
- * 依赖 clean.js 的 cleanContextData / listSessionData，使用 vi.mock 隔离。
+ * 依赖 clean.js 的 cleanContextData，使用 vi.mock 隔离。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type CleanResult = {
+	cleaned: number;
+	freedMB: number;
+	status: "cleaned" | "not_found" | "ambiguous";
+	candidates: string[];
+};
+
 const mockClean = vi.hoisted(() => ({
-	cleanContextData:
-		vi.fn<(sessionId?: string) => { cleaned: number; freedMB: number }>(),
-	listSessionData: vi.fn<() => { sessionId: string; sizeMB: number }[]>(),
+	cleanContextData: vi.fn<(sessionId?: string) => CleanResult>(),
 }));
 
 vi.mock("../clean.js", () => mockClean);
@@ -27,6 +32,10 @@ function createMockPi() {
 
 function createMockCtx() {
 	return { ui: { notify: vi.fn() } };
+}
+
+function ok(cleaned = 1, freedMB = 0.05): CleanResult {
+	return { cleaned, freedMB, status: "cleaned", candidates: [] };
 }
 
 describe("/context-clean", () => {
@@ -55,7 +64,7 @@ describe("/context-clean", () => {
 	});
 
 	it("指定会话 clean 成功通知", async () => {
-		mockClean.cleanContextData.mockReturnValue({ cleaned: 1, freedMB: 0.05 });
+		mockClean.cleanContextData.mockReturnValue(ok(1, 0.05));
 		const ctx = createMockCtx();
 		await pi.handlers["context-clean"]("session-123", ctx as any);
 		expect(mockClean.cleanContextData).toHaveBeenCalledWith("session-123");
@@ -64,21 +73,50 @@ describe("/context-clean", () => {
 		expect(msg).toContain("0.05");
 	});
 
-	it("指定会话无数据通知", async () => {
-		mockClean.cleanContextData.mockReturnValue({ cleaned: 0, freedMB: 0 });
+	it("指定会话未找到时通知并给出候选尾段", async () => {
+		mockClean.cleanContextData.mockReturnValue({
+			cleaned: 0,
+			freedMB: 0,
+			status: "not_found",
+			candidates: ["019feeed-5337-747e-91b2-32042ddbef95"],
+		});
 		const ctx = createMockCtx();
 		await pi.handlers["context-clean"]("session-nonexist", ctx as any);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(
-			expect.stringContaining("无数据可清理"),
-			"info",
-		);
+		const msg = ctx.ui.notify.mock.calls[0][0] as string;
+		expect(msg).toContain("未找到会话");
+		expect(msg).toContain("32042ddbef95"); // 候选尾段辅助
 	});
 
-	it("无参且无会话时通知无数据", async () => {
-		mockClean.listSessionData.mockReturnValue([]);
+	it("多义匹配时警告并提示补全", async () => {
+		mockClean.cleanContextData.mockReturnValue({
+			cleaned: 0,
+			freedMB: 0,
+			status: "ambiguous",
+			candidates: [
+				"019feeed-5337-747e-91b2-32042ddbef95",
+				"019aaaaa-bbbb-cccc-91b2-32042ddbef95",
+			],
+		});
+		const ctx = createMockCtx();
+		await pi.handlers["context-clean"]("91b2-32042ddbef95", ctx as any);
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("多个会话"),
+			"warning",
+		);
+		const msg = ctx.ui.notify.mock.calls[0][0] as string;
+		expect(msg).toContain("019feeed-5337-747e-91b2-32042ddbef95");
+	});
+
+	it("无参且无数据时通知无数据", async () => {
+		mockClean.cleanContextData.mockReturnValue({
+			cleaned: 0,
+			freedMB: 0,
+			status: "cleaned",
+			candidates: [],
+		});
 		const ctx = createMockCtx();
 		await pi.handlers["context-clean"]("", ctx as any);
-		expect(mockClean.listSessionData).toHaveBeenCalled();
+		expect(mockClean.cleanContextData).toHaveBeenCalledWith(); // 无参
 		expect(ctx.ui.notify).toHaveBeenCalledWith(
 			expect.stringContaining("无持久化数据可清理"),
 			"info",
@@ -86,11 +124,7 @@ describe("/context-clean", () => {
 	});
 
 	it("无参时清理全部会话", async () => {
-		mockClean.listSessionData.mockReturnValue([
-			{ sessionId: "sess-a", sizeMB: 0.5 },
-			{ sessionId: "sess-b", sizeMB: 1.2 },
-		]);
-		mockClean.cleanContextData.mockReturnValue({ cleaned: 2, freedMB: 1.7 });
+		mockClean.cleanContextData.mockReturnValue(ok(2, 1.7));
 		const ctx = createMockCtx();
 		await pi.handlers["context-clean"]("", ctx as any);
 		expect(mockClean.cleanContextData).toHaveBeenCalledWith(); // 无参
@@ -100,9 +134,14 @@ describe("/context-clean", () => {
 	});
 
 	it("空字符串（空格）等同于无参", async () => {
-		mockClean.listSessionData.mockReturnValue([]);
+		mockClean.cleanContextData.mockReturnValue({
+			cleaned: 0,
+			freedMB: 0,
+			status: "cleaned",
+			candidates: [],
+		});
 		const ctx = createMockCtx();
 		await pi.handlers["context-clean"]("   ", ctx as any);
-		expect(mockClean.listSessionData).toHaveBeenCalled();
+		expect(mockClean.cleanContextData).toHaveBeenCalledWith();
 	});
 });

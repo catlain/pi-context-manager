@@ -42,15 +42,13 @@ function writeArgsTmpFile(
 	toolName: string,
 	args: Record<string, any>,
 	tcId: string,
+	sessionId?: string,
 ): string | null {
 	const timestamp = Date.now();
-	const sidSuffix = tcId.length >= 8 ? tcId.slice(-8) : "anon";
-	const tmpPath = join(
-		TOOLCALL_PROCESSOR_DIR,
-		`toolcall-${sidSuffix}-${timestamp}.txt`,
-	);
+	const sidDir = join(TOOLCALL_PROCESSOR_DIR, sessionId || "anon");
+	const tmpPath = join(sidDir, `toolcall-${tcId}-${timestamp}.txt`);
 	try {
-		mkdirSync(TOOLCALL_PROCESSOR_DIR, { recursive: true });
+		mkdirSync(sidDir, { recursive: true });
 		const header = `=== ${toolName} toolCall.arguments ===\n时间: ${new Date().toISOString()}\n调用ID: ${tcId}\n`;
 		writeFileSync(tmpPath, header + JSON.stringify(args, null, 2), "utf-8");
 		return tmpPath;
@@ -69,6 +67,7 @@ export function truncateToolCallArgs(
 	messages: PayloadMessage[],
 	threshold: number,
 	truncatedIds: Set<string>,
+	sessionId?: string,
 ): number {
 	let count = 0;
 	for (const msg of messages) {
@@ -93,7 +92,12 @@ export function truncateToolCallArgs(
 			if (tokens < threshold) continue;
 
 			// 写临时文件
-			const tmpPath = writeArgsTmpFile(block.name || "unknown", args, block.id);
+			const tmpPath = writeArgsTmpFile(
+				block.name || "unknown",
+				args,
+				block.id,
+				sessionId,
+			);
 			if (!tmpPath) continue;
 
 			// 替换为摘要

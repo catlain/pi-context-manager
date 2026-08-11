@@ -234,7 +234,12 @@ export function handleContextEvent(
 	// ── 截断 toolCall.arguments ──
 	const { processorThreshold } = getContextConfig();
 	if (processorThreshold > 0) {
-		truncateToolCallArgs(messages, processorThreshold, truncatedToolCallIds);
+		truncateToolCallArgs(
+			messages,
+			processorThreshold,
+			truncatedToolCallIds,
+			state.sessionId,
+		);
 	}
 
 	// 保存最终 messages

@@ -4,7 +4,12 @@
  * 从 tool-result-processor-core.ts 提取，避免文件超 200 行。
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { DISTILL_DIR } from "./shared.js";
 
@@ -58,21 +63,15 @@ export function writeRawToFile(
 	sessionId?: string,
 ): string | null {
 	const timestamp = Date.now();
-	const sidSuffix = sessionId ? sessionId.slice(-8) : "anon";
-	const tmpPath = join(
-		PROCESSOR_DIR,
-		`${toolName}-${sidSuffix}-${timestamp}.txt`,
-	);
+	const sidDir = join(PROCESSOR_DIR, sessionId || "anon");
+	const tmpPath = join(sidDir, `${toolName}-${timestamp}.txt`);
 	try {
-		mkdirSync(PROCESSOR_DIR, { recursive: true });
+		mkdirSync(sidDir, { recursive: true });
 		if (writeFallback) throw new Error("simulated write failure");
 		const header = buildFileHeader(toolName, input, toolCallId, sessionId);
 		const body =
 			sourcePath && existsSync(sourcePath)
-				? (() => {
-						const f = require("node:fs");
-						return f.readFileSync(sourcePath, "utf-8");
-					})()
+				? readFileSync(sourcePath, "utf-8")
 				: rawText;
 		writeFileSync(tmpPath, header + body, "utf-8");
 		return tmpPath;

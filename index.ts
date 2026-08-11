@@ -1,6 +1,7 @@
 /** index.ts — context 扩展入口：闭包持有运行时状态，创建 stateRef 传给子模块 */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { PayloadMessage } from "./types-payload.js";
+import { migrateLegacyProcessorFiles } from "./clean.js";
 import {
 	registerAgingConfigCommand,
 	registerContextCleanCommand,
@@ -77,6 +78,13 @@ export default function (pi: ExtensionAPI) {
 			});
 		},
 	};
+
+	// ── 迁移旧格式 processor 文件（根目录散落 → 新结构子目录已就位）──
+	try {
+		migrateLegacyProcessorFiles();
+	} catch (err) {
+		console.warn("[context] processor 旧格式迁移失败:", err);
+	}
 
 	// ── 注册事件 ──
 	pi.on(

@@ -1,7 +1,7 @@
 /** 命令注册：/record、/distill-config、/processor-config、/context-clean */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { ContextConfig } from "./shared.js";
-import { cleanContextData, listSessionData } from "./clean.js";
+import { cleanContextData } from "./clean.js";
 import { cleanRecordings, isRecording, setRecording } from "./recording.js";
 import { getContextConfig, setContextConfig } from "./shared.js";
 
@@ -40,33 +40,42 @@ export function registerContextCleanCommand(pi: ExtensionAPI) {
 			const sid = args?.trim() ?? "";
 			if (sid === "help" || sid === "-h") {
 				ctx.ui.notify(
-					`[context-clean] 清理 context 持久化数据\n\n用法:\n  /context-clean            # 清理全部会话数据\n  /context-clean <sessionId> # 只清理指定会话`,
+					`[context-clean] 清理 context 持久化数据\n\n用法:\n  /context-clean            # 清理全部会话数据\n  /context-clean <sessionId> # 只清理指定会话（支持短 id 后缀）`,
 					"info",
 				);
 				return;
 			}
 			if (sid) {
-				const { cleaned, freedMB } = cleanContextData(sid);
-				if (cleaned > 0) {
+				const result = cleanContextData(sid);
+				if (result.status === "ambiguous") {
 					ctx.ui.notify(
-						`🧹 已清理会话 ${sid} 的数据（释放 ${freedMB} MB）`,
+						`⚠️ 「${sid}」匹配到多个会话，请补全为更长的 id：\n${result.candidates.map((c) => `  ${c}`).join("\n")}`,
+						"warning",
+					);
+				} else if (result.status === "not_found") {
+					const hint =
+						result.candidates.length > 0
+							? `\n已存在的会话：\n${result.candidates
+									.map((c) => `  ...${c.slice(-17)}`)
+									.join("\n")}`
+							: "";
+					ctx.ui.notify(`未找到会话 ${sid} 的数据${hint}`, "info");
+				} else {
+					ctx.ui.notify(
+						`🧹 已清理会话 ${sid} 的数据（释放 ${result.freedMB} MB）`,
 						"info",
 					);
-				} else {
-					ctx.ui.notify(`会话 ${sid} 无数据可清理`, "info");
 				}
 			} else {
-				const sessions = listSessionData();
-				if (sessions.length === 0) {
+				const result = cleanContextData();
+				if (result.cleaned === 0 && result.freedMB === 0) {
 					ctx.ui.notify("无持久化数据可清理", "info");
-					return;
+				} else {
+					ctx.ui.notify(
+						`🧹 已清理${result.cleaned > 0 ? `全部 ${result.cleaned} 个会话数据` : "持久化数据"}（释放 ${result.freedMB} MB）`,
+						"info",
+					);
 				}
-				const totalMB = sessions.reduce((s, x) => s + x.sizeMB, 0);
-				cleanContextData();
-				ctx.ui.notify(
-					`🧹 已清理全部 ${sessions.length} 个会话数据（释放 ${Math.round(totalMB * 100) / 100} MB）`,
-					"info",
-				);
 			}
 		},
 	});

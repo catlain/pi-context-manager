@@ -25,6 +25,7 @@ vi.mock("../context.js", () => ({ default: vi.fn() }));
 vi.mock("../clean.js", () => ({
 	cleanContextData: vi.fn(() => ({ cleaned: 0, freedMB: 0 })),
 	listSessionData: vi.fn(() => []),
+	migrateLegacyProcessorFiles: vi.fn(() => 0),
 }));
 
 import indexModule from "../index.js";
