@@ -9,7 +9,7 @@ export default createConfig({
 		"@pi-atelier/context-manager": path.resolve(__dirname, "./lib"),
 		typebox: path.resolve(
 			__dirname,
-			"node_modules/@sinclair/typebox/build/esm/index.mjs",
+			"../_sdk-link/node_modules/typebox/build/index.mjs",
 		),
 	},
 	fileParallelism: false,
