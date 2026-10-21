@@ -124,7 +124,7 @@ export function handleContextEvent(
 			filePath,
 		};
 
-		// 完全豁免：skill 文件 / plans 目录（连计数都不累加）
+		// 完全豁免：skill 文件 / plans / openspec 文档（连计数都不累加）
 		if (isAgingExempt(agingCtx)) continue;
 
 		// 选择有效阈值（优先级：edit/write 非错误=Infinity > 大文件 > 错误 > 普通轮数）
