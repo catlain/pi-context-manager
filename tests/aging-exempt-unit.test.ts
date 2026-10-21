@@ -109,12 +109,45 @@ describe("isAgingExempt", () => {
 		).toBe(true);
 	});
 
-	it("read openspec specs 目录文件 → false（仅 changes 豁免）", () => {
+	it("read openspec specs 目录文件（相对路径）→ true", () => {
 		expect(
 			isAgingExempt(
 				ctx({
 					toolName: "read",
 					filePath: "openspec/specs/aging-exemption/spec.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec specs 目录文件（绝对路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "C:/repo/openspec/specs/foo/spec.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec specs 目录文件（反斜杠路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "C:\\repo\\openspec\\specs\\foo\\spec.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec 根下非 changes/specs 文件 → false（豁免仅限两类文档目录）", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "openspec/AGENTS.md",
 				}),
 			),
 		).toBe(false);

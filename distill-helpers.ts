@@ -205,12 +205,12 @@ export function isPlansFilePath(path: string | undefined): boolean {
 	return /(^|[\\/])\.pi[\\/]plans[\\/]/.test(path);
 }
 
-/** 判断路径是否属于 openspec 变更文档（openspec/changes/）— 变更文档永不 aging
- *  仅匹配 changes 目录（当前活跃变更），不含 specs 目录（已归档能力规格不豁免）。 */
-export function isOpenspecChangePath(path: string | undefined): boolean {
+/** 判断路径是否属于 openspec 文档（openspec/changes/ 或 openspec/specs/）— 永不 aging
+ *  匹配 changes（活跃变更）与 specs（主能力规格）两类约束性文档。 */
+export function isOpenspecDocPath(path: string | undefined): boolean {
 	if (!path) return false;
-	// 匹配 openspec/changes/ 路径段 — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
-	return /(^|[\\/])openspec[\\/]changes[\\/]/.test(path);
+	// 匹配 openspec/changes/ 或 openspec/specs/ 路径段 — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
+	return /(^|[\\/])openspec[\\/](changes|specs)[\\/]/.test(path);
 }
 
 // ── aging 策略选择（纯函数，便于独立测试） ──
@@ -224,7 +224,7 @@ export interface AgingContext {
 }
 
 /** 判断是否完全跳过 aging（不累加计数、不进 firstSeenCap）。
- *  现有规则：read 命中 skill / plans / openspec 变更文档路径。
+ *  现有规则：read 命中 skill / plans / openspec 文档（changes 与 specs）路径。
  *  注意：edit/write 不在此豁免——它们走 selectAgingThreshold 的 Infinity 阈值，
  *  以便仍能经过 firstSeenCap 检查。 */
 export function isAgingExempt(ctx: AgingContext): boolean {
@@ -232,7 +232,7 @@ export function isAgingExempt(ctx: AgingContext): boolean {
 		ctx.toolName === "read" &&
 		(isSkillFilePath(ctx.filePath) ||
 			isPlansFilePath(ctx.filePath) ||
-			isOpenspecChangePath(ctx.filePath))
+			isOpenspecDocPath(ctx.filePath))
 	)
 		return true;
 	return false;
