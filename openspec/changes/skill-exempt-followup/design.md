@@ -91,3 +91,13 @@ Windows 文件系统大小写不敏感，`SKILL.MD`/`Design.md`/`invatriants.md`
 ## Open Questions
 
 （无——D1 的路径事实已核实：全局技能在 `.pi/agent/skills`，用户提议的统一后缀方案不可行，OR 分支为修正形态）
+
+## 补记（2026-10-26 实施中）：并行会话取代了 1.x/3.1 本地方案
+
+实施中途，另一并行会话发布了 shared-utils 1.2.0 `protected-docs.ts`（change：unify-protected-doc-list，commit 455845d）：豁免谓词上移群岛公共库单一事实源，消费方 pi-context-manager（aging 豁免）+ pi-shepherd（compact 回补）。本 change 的 D1（本地 OR 分支）与 D6（拆 aging-exempt-paths.ts）被该方案取代：distill-helpers.ts 变为别名 re-export（262 行，回阈值内）。
+
+新语义与本 change 原方案的差异（对方设计声明，本会话已适配测试）：
+- 技能：仅豁免 `skills/{name}/SKILL.md` 精确入口（收窄：非 SKILL.md 文件不再豁免）；任意目录树命中（扩齐：.agents/git 包等，不再限 AGENT_DIR + .pi/skills）
+- openspec design.md / 架构宪法：与本 change 语义一致，一并沉入 shared-utils
+
+本 change 保留的成果：2.x 全部（I4 共享 mock 基座 aging-test-helpers.ts、I7 五处全量 mock 复刻消除）不受影响，全量 821/821 + typecheck 验证通过。
