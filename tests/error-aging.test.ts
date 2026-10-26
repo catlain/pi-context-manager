@@ -100,8 +100,27 @@ describe("errorAgingThreshold 错误加速淘汰", () => {
 		expect(state.agingDeletedIds.has("tc-ok")).toBe(false);
 	});
 
-	it("isError=true 但 errorAgingThreshold=0 → 不淘汰（禁用错误加速）", () => {
-		// 需要 errorAgingThreshold=0 的 mock，单独测试
-		// 此用例由配置层测试覆盖
+	it("isError=true 但 errorAgingThreshold=0 → 走普通 agingThreshold（禁用错误加速）", () => {
+		agingMockState.config = {
+			...agingMockState.config,
+			errorAgingThreshold: 0,
+			agingThreshold: 3,
+		};
+		const state = mkState();
+		const pi = mkPi();
+		// error 结果：errorAging=0 禁用 → 回退到普通 agingThreshold=3
+		for (let r = 0; r < 2; r++) {
+			const msgs = [
+				...mkMsg("tc-err0", "bash", {}, "Error: disabled", { isError: true }),
+			];
+			trigger(state, msgs, pi);
+			expect(rem(msgs)).toEqual(["tc-err0"]);
+		}
+		const msgs3 = [
+			...mkMsg("tc-err0", "bash", {}, "Error: disabled", { isError: true }),
+		];
+		trigger(state, msgs3, pi);
+		expect(rem(msgs3)).toEqual([]);
+		expect(state.agingDeletedIds.has("tc-err0")).toBe(true);
 	});
 });

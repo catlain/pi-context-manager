@@ -96,3 +96,31 @@ describe("distill 首次提示", () => {
 		expect(calls).not.toContain("ephemeral:hint");
 	});
 });
+
+// ═══════════════════════════════════════
+// manuallyDeletedIds（补回：并行提交 89f1de5 覆盖时丢失的用例）
+// ═══════════════════════════════════════
+describe("manuallyDeletedIds", () => {
+	it("手动删除的 tcId 不再出现", () => {
+		const state = mkState();
+		state.manuallyDeletedIds.add("tc-del");
+		const pi = mkPi();
+		const msgs = [...mkMsg("tc-del", "data"), ...mkMsg("tc-keep", "data")];
+		trigger(state, msgs, pi);
+		expect(remaining(msgs)).toEqual(["tc-keep"]);
+	});
+});
+
+// ═══════════════════════════════════════
+// agingSnapshot（补回：并行提交 89f1de5 覆盖时丢失的用例）
+// ═══════════════════════════════════════
+describe("agingSnapshot", () => {
+	it("每轮更新 agingSnapshot 反映当前计数", () => {
+		const state = mkState();
+		const pi = mkPi();
+		trigger(state, [...mkMsg("tc-1", "hi")], pi);
+		expect(state.agingSnapshot.get("tc-1")).toBe(1);
+		trigger(state, [...mkMsg("tc-1", "hi")], pi);
+		expect(state.agingSnapshot.get("tc-1")).toBe(2);
+	});
+});

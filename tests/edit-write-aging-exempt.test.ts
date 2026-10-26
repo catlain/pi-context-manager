@@ -1,12 +1,9 @@
 /**
  * edit/write aging 豁免集成测试
  *
- * 覆盖 spec 的全部场景：
- * - edit/write 成功结果永不因轮数/大文件淘汰
- * - edit/write 错误结果走 errorAgingThreshold
- * - edit/write 仍受 firstSeenCap 兜底
- *
- * 豁免路径回归（skill 豁免、plans/openspec 不再豁免、ADR 新豁免）见 aging-exempt-regression.test.ts。
+ * 覆盖：edit/write 成功结果永不因轮数/大文件淘汰；错误结果走 errorAgingThreshold。
+ * firstSeenCap 兜底场景见 edit-write-first-seen-cap.test.ts；
+ * 豁免路径回归见 aging-exempt-regression.test.ts。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";
@@ -28,11 +25,6 @@ vi.mock("../shared.js", () => sharedMockFactory());
 // 只覆盖 estimateTokens 以控制 token 判断
 vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
 vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
-
-const hints = (pi: any) =>
-	pi.events.emit.mock.calls
-		.filter((c: any[]) => c[0] === "ephemeral:hint")
-		.map((c: any[]) => c[1]?.text ?? "");
 
 async function trigger(s: ContextState, msgs: any[], pi: any) {
 	const { handleContextEvent } = await import("../handle-context.js");
@@ -178,5 +170,3 @@ describe("edit/write 错误结果走 errorAgingThreshold", () => {
 		expect(s.agingDeletedIds.has("w4")).toBe(true);
 	});
 });
-
-// ════════════════════════════════════════
