@@ -186,8 +186,6 @@ export function buildSummary(
 	return `${header}\n${size}\nFull content: ${tmpPath}\n\n${preview}${more}`;
 }
 
-// ── 技能文件豁免 ──
-
 // ── 保护文档清单（单一事实源：@pi-atelier/shared-utils）──
 // 谓词语义见 shared-utils/src/protected-docs.ts：技能入口 SKILL.md（任意目录树，含 .agents/git 包）、
 // openspec/changes/{change}/design.md、docs/agent/ 架构宪法文档。
