@@ -1,26 +1,11 @@
 /**
- * 纯函数单元测试：isAgingExempt / selectAgingThreshold
+ * 纯函数单元测试：isAgingExempt（豁免组装层）
  *
  * 直接测 distill-helpers.ts 导出的纯函数，不走 handleContextEvent 集成路径。
+ * selectAgingThreshold 见 select-aging-threshold-unit.test.ts。
  */
 import { describe, expect, it } from "vitest";
-import {
-	type AgingContext,
-	isAgingExempt,
-	selectAgingThreshold,
-} from "../distill-helpers.js";
-import type { ContextConfig } from "../shared.js";
-
-// ── 测试用配置基座（只需 selectAgingThreshold 实际读取的 4 个字段） ──
-const cfg = (o: Partial<ContextConfig> = {}): ContextConfig => ({
-	distillThreshold: 1000,
-	agingThreshold: 10,
-	errorAgingThreshold: 3,
-	largeResultAging: 2,
-	processorThreshold: 500,
-	firstSeenCap: 15000,
-	...o,
-});
+import { type AgingContext, isAgingExempt } from "../distill-helpers.js";
 
 const ctx = (o: Partial<AgingContext> = {}): AgingContext => ({
 	toolName: "bash",
@@ -60,12 +45,12 @@ describe("isAgingExempt", () => {
 		).toBe(true);
 	});
 
-	it("read plans 文件 → true", () => {
+	it("read .pi/plans/ 计划文档 → false（不再豁免，走普通 aging）", () => {
 		expect(
 			isAgingExempt(
 				ctx({ toolName: "read", filePath: "/project/.pi/plans/E1.md" }),
 			),
-		).toBe(true);
+		).toBe(false);
 	});
 
 	it("read 普通文件 → false", () => {
@@ -74,18 +59,46 @@ describe("isAgingExempt", () => {
 		).toBe(false);
 	});
 
-	it("read openspec 变更文档（相对路径）→ true", () => {
+	it("read openspec change 的 design.md（相对路径）→ true", () => {
 		expect(
 			isAgingExempt(
 				ctx({
 					toolName: "read",
-					filePath: "openspec/changes/aging-exempt-openspec-docs/design.md",
+					filePath: "openspec/changes/retune-aging-exemptions/design.md",
 				}),
 			),
 		).toBe(true);
 	});
 
-	it("read openspec 变更文档（绝对路径）→ true", () => {
+	it("read openspec change 的 design.md（反斜杠路径）→ true", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath:
+						"C:\\repo\\openspec\\changes\\foo\\design.md",
+				}),
+			),
+		).toBe(true);
+	});
+
+	it("read openspec change 的 proposal/tasks → false（不再豁免）", () => {
+		expect(
+			isAgingExempt(
+				ctx({
+					toolName: "read",
+					filePath: "openspec/changes/foo/proposal.md",
+				}),
+			),
+		).toBe(false);
+		expect(
+			isAgingExempt(
+				ctx({ toolName: "read", filePath: "openspec/changes/foo/tasks.md" }),
+			),
+		).toBe(false);
+	});
+
+	it("read openspec change 的增量 specs → false（不再豁免）", () => {
 		expect(
 			isAgingExempt(
 				ctx({
@@ -94,22 +107,10 @@ describe("isAgingExempt", () => {
 						"C:/repo/openspec/changes/foo/specs/bar/spec.md",
 				}),
 			),
-		).toBe(true);
+		).toBe(false);
 	});
 
-	it("read openspec 变更文档（反斜杠路径）→ true", () => {
-		expect(
-			isAgingExempt(
-				ctx({
-					toolName: "read",
-					filePath:
-						"C:\\repo\\openspec\\changes\\foo\\tasks.md",
-				}),
-			),
-		).toBe(true);
-	});
-
-	it("read openspec specs 目录文件（相对路径）→ true", () => {
+	it("read openspec 主规格 specs/ → false（不再豁免）", () => {
 		expect(
 			isAgingExempt(
 				ctx({
@@ -117,21 +118,7 @@ describe("isAgingExempt", () => {
 					filePath: "openspec/specs/aging-exemption/spec.md",
 				}),
 			),
-		).toBe(true);
-	});
-
-	it("read openspec specs 目录文件（绝对路径）→ true", () => {
-		expect(
-			isAgingExempt(
-				ctx({
-					toolName: "read",
-					filePath: "C:/repo/openspec/specs/foo/spec.md",
-				}),
-			),
-		).toBe(true);
-	});
-
-	it("read openspec specs 目录文件（反斜杠路径）→ true", () => {
+		).toBe(false);
 		expect(
 			isAgingExempt(
 				ctx({
@@ -139,10 +126,10 @@ describe("isAgingExempt", () => {
 					filePath: "C:\\repo\\openspec\\specs\\foo\\spec.md",
 				}),
 			),
-		).toBe(true);
+		).toBe(false);
 	});
 
-	it("read openspec 根下非 changes/specs 文件 → false（豁免仅限两类文档目录）", () => {
+	it("read openspec 根下非 changes 文档 → false（豁免仅限 change design.md）", () => {
 		expect(
 			isAgingExempt(
 				ctx({
@@ -191,106 +178,5 @@ describe("isAgingExempt", () => {
 
 	it("bash → false", () => {
 		expect(isAgingExempt(ctx({ toolName: "bash" }))).toBe(false);
-	});
-});
-
-// ════════════════════════════════════════
-// selectAgingThreshold
-// ════════════════════════════════════════
-describe("selectAgingThreshold", () => {
-	it("edit 非错误 → Infinity（豁免 A 和 C）", () => {
-		expect(
-			selectAgingThreshold(ctx({ toolName: "edit", isError: false }), cfg()),
-		).toBe(Number.POSITIVE_INFINITY);
-	});
-
-	it("write 非错误 → Infinity（豁免 A 和 C）", () => {
-		expect(
-			selectAgingThreshold(ctx({ toolName: "write", isError: false }), cfg()),
-		).toBe(Number.POSITIVE_INFINITY);
-	});
-
-	it("edit 错误 → errorAgingThreshold（B 不豁免）", () => {
-		expect(
-			selectAgingThreshold(ctx({ toolName: "edit", isError: true }), cfg()),
-		).toBe(3);
-	});
-
-	it("write 错误 → errorAgingThreshold（B 不豁免）", () => {
-		expect(
-			selectAgingThreshold(ctx({ toolName: "write", isError: true }), cfg()),
-		).toBe(3);
-	});
-
-	it("bash 错误 → errorAgingThreshold", () => {
-		expect(
-			selectAgingThreshold(ctx({ toolName: "bash", isError: true }), cfg()),
-		).toBe(3);
-	});
-
-	it("bash 大文件（tokens >= distillThreshold）→ largeResultAging", () => {
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "bash", tokens: 1500 }),
-				cfg({ distillThreshold: 1000, largeResultAging: 2 }),
-			),
-		).toBe(2);
-	});
-
-	it("bash 小文件 → agingThreshold", () => {
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "bash", tokens: 100 }),
-				cfg({ agingThreshold: 10 }),
-			),
-		).toBe(10);
-	});
-
-	it("edit 错误大文件 → largeResultAging（A 优先于 B）", () => {
-		// edit 错误 + 大文件：不子 Infinity（因为是 isError），走 A（大文件优先于 B）
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "edit", isError: true, tokens: 1500 }),
-				cfg({ distillThreshold: 1000, largeResultAging: 2, errorAgingThreshold: 3 }),
-			),
-		).toBe(2);
-	});
-
-	it("errorAgingThreshold=0 时，错误结果不走 B 分支", () => {
-		// isError=true 但 errorAging=0 → 跳过 B，走后续（大文件/普通）
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "bash", isError: true, tokens: 100 }),
-				cfg({ errorAgingThreshold: 0, agingThreshold: 10 }),
-			),
-		).toBe(10);
-	});
-
-	it("errorAgingThreshold=0 时，错误大文件走 A 分支", () => {
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "bash", isError: true, tokens: 1500 }),
-				cfg({ errorAgingThreshold: 0, largeResultAging: 2 }),
-			),
-		).toBe(2);
-	});
-
-	it("edit 非错误优先级高于大文件（tokens 大但走 Infinity）", () => {
-		// edit 非错误，即使 tokens 很大，也是 Infinity，不走 A
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "edit", isError: false, tokens: 99999 }),
-				cfg({ largeResultAging: 2 }),
-			),
-		).toBe(Number.POSITIVE_INFINITY);
-	});
-
-	it("largeResultAging=0 时，大文件不走 A，走 C", () => {
-		expect(
-			selectAgingThreshold(
-				ctx({ toolName: "bash", tokens: 1500 }),
-				cfg({ largeResultAging: 0, agingThreshold: 10 }),
-			),
-		).toBe(10);
 	});
 });

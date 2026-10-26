@@ -43,7 +43,7 @@ vi.mock("../distill-helpers.js", () => ({
 	buildToolCallMap: () => new Map(),
 	estimateTokens: (t: string) => Math.ceil(t.length / 4),
 	isSkillFilePath: () => false,
-	isPlansFilePath: () => false,
+	isArchDocPath: () => false,
 	isAgingExempt: () => false,
 	selectAgingThreshold: (
 		ctx: { isError: boolean; toolName: string; tokens: number },

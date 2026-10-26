@@ -11,7 +11,11 @@ const ORIG_PI_AGENT = process.env.PI_AGENT_DIR;
 // 必须在 import distill-helpers 前设置 PI_AGENT_DIR
 process.env.PI_AGENT_DIR = require("node:path").resolve("/home/user/.pi/agent");
 
-const { isPlansFilePath, isSkillFilePath } = await import("../distill-helpers.js");
+const {
+	isArchDocPath,
+	isOpenspecDocPath,
+	isSkillFilePath,
+} = await import("../distill-helpers.js");
 
 afterAll(() => {
 	if (ORIG_PI_AGENT) process.env.PI_AGENT_DIR = ORIG_PI_AGENT;
@@ -62,36 +66,106 @@ describe("isSkillFilePath", () => {
 	});
 });
 
-describe("isPlansFilePath", () => {
+describe("isOpenspecDocPath", () => {
 	it("undefined 路径返回 false", () => {
-		expect(isPlansFilePath(undefined)).toBe(false);
+		expect(isOpenspecDocPath(undefined)).toBe(false);
 	});
 
-	it("空字符串返回 false", () => {
-		expect(isPlansFilePath("")).toBe(false);
-	});
-
-	it("项目 .pi/plans/ 路径返回 true", () => {
-		expect(isPlansFilePath(".pi/plans/E1.md")).toBe(true);
-	});
-
-	it("绝对路径 .pi/plans/ 返回 true", () => {
+	it("change 的 design.md 返回 true（相对路径）", () => {
 		expect(
-			isPlansFilePath("/home/user/project/.pi/plans/E1-S1.md"),
-		).toBe(true);
-		expect(
-			isPlansFilePath("C:\\Users\\dev\\project\\.pi\\plans\\E1.md"),
+			isOpenspecDocPath("openspec/changes/retune-aging-exemptions/design.md"),
 		).toBe(true);
 	});
 
-	it("非 plans 路径返回 false", () => {
-		expect(isPlansFilePath(".pi/memory/foo.md")).toBe(false);
-		expect(isPlansFilePath(".pi/settings.json")).toBe(false);
-		expect(isPlansFilePath("src/index.ts")).toBe(false);
+	it("change 的 design.md 返回 true（绝对路径）", () => {
+		expect(
+			isOpenspecDocPath(
+				"/home/user/repo/openspec/changes/foo/design.md",
+			),
+		).toBe(true);
+		expect(
+			isOpenspecDocPath("C:\\repo\\openspec\\changes\\foo\\design.md"),
+		).toBe(true);
 	});
 
-	it("plans 一词在别处出现不误匹配", () => {
-		expect(isPlansFilePath("src/plans/some.md")).toBe(false);
-		expect(isPlansFilePath("myplans/file.md")).toBe(false);
+	it("change 的 proposal.md / tasks.md 返回 false（不再豁免）", () => {
+		expect(
+			isOpenspecDocPath("openspec/changes/foo/proposal.md"),
+		).toBe(false);
+		expect(isOpenspecDocPath("openspec/changes/foo/tasks.md")).toBe(false);
+	});
+
+	it("change 的增量 specs 返回 false（不再豁免）", () => {
+		expect(
+			isOpenspecDocPath("openspec/changes/foo/specs/bar/spec.md"),
+		).toBe(false);
+	});
+
+	it("主规格 openspec/specs/ 返回 false（不再豁免）", () => {
+		expect(isOpenspecDocPath("openspec/specs/aging/spec.md")).toBe(false);
+		expect(isOpenspecDocPath("C:/repo/openspec/specs/foo/spec.md")).toBe(
+			false,
+		);
+	});
+
+	it("design.md 出现在别处不误匹配", () => {
+		expect(isOpenspecDocPath("docs/design.md")).toBe(false);
+		expect(isOpenspecDocPath("openspec/changes/design.md")).toBe(false);
+	});
+
+	it("左边界防护：myopenspec 不误匹配", () => {
+		expect(
+			isOpenspecDocPath("myopenspec/changes/foo/design.md"),
+		).toBe(false);
+	});
+});
+
+describe("isArchDocPath", () => {
+	it("undefined 路径返回 false", () => {
+		expect(isArchDocPath(undefined)).toBe(false);
+	});
+
+	it("docs/agent/adr/ 目录（INDEX 与编号 ADR）返回 true", () => {
+		expect(isArchDocPath("docs/agent/adr/INDEX.md")).toBe(true);
+		expect(
+			isArchDocPath(
+				"docs/agent/adr/0390-ic-single-substrate-dual-view.md",
+			),
+		).toBe(true);
+		expect(
+			isArchDocPath(
+				"D:\\Project\\Quant\\docs\\agent\\adr\\0100-foo.md",
+			),
+		).toBe(true);
+	});
+
+	it("docs/agent/adr-archive/ 归档 ADR 返回 true", () => {
+		expect(isArchDocPath("docs/agent/adr-archive/0368-xxx.md")).toBe(true);
+	});
+
+	it("单文件形态 docs/agent/ADR.md 返回 true", () => {
+		expect(isArchDocPath("docs/agent/ADR.md")).toBe(true);
+		expect(isArchDocPath("C:\\repo\\docs\\agent\\ADR.md")).toBe(true);
+	});
+
+	it("docs/agent/INVARIANTS.md 返回 true", () => {
+		expect(isArchDocPath("docs/agent/INVARIANTS.md")).toBe(true);
+		expect(isArchDocPath("/repo/docs/agent/INVARIANTS.md")).toBe(true);
+	});
+
+	it("docs/agent/designs/ Design Note 返回 true", () => {
+		expect(isArchDocPath("docs/agent/designs/回测引擎.md")).toBe(true);
+		expect(isArchDocPath("docs/agent/designs/README.md")).toBe(true);
+	});
+
+	it("docs/agent 前缀外同名文件不误匹配", () => {
+		expect(isArchDocPath("results/designs/x.md")).toBe(false);
+		expect(isArchDocPath("docs/ADR.md")).toBe(false);
+		expect(isArchDocPath("ADR.md")).toBe(false);
+		expect(isArchDocPath("src/adr/foo.md")).toBe(false);
+	});
+
+	it("docs/agent 下非宪法文件不误匹配", () => {
+		expect(isArchDocPath("docs/agent/ARCHITECTURE.md")).toBe(false);
 	});
 });

@@ -198,19 +198,25 @@ export function isSkillFilePath(path: string | undefined): boolean {
 	return /[\\/]skills[\\/][^\\/]+[\\/]/.test(resolved);
 }
 
-/** 判断路径是否属于项目 plans 目录（.pi/plans/）— 路线图计划文档永不 aging */
-export function isPlansFilePath(path: string | undefined): boolean {
-	if (!path) return false;
-	// 匹配 .pi/plans/ 路径（项目级计划文档）— 支持相对路径和绝对路径
-	return /(^|[\\/])\.pi[\\/]plans[\\/]/.test(path);
-}
-
-/** 判断路径是否属于 openspec 文档（openspec/changes/ 或 openspec/specs/）— 永不 aging
- *  匹配 changes（活跃变更）与 specs（主能力规格）两类约束性文档。 */
+/** 判断路径是否属于 openspec 变更设计文档（openspec/changes/<change>/design.md）— 永不 aging
+ *  仅豁免 design.md（低频高价值的决策记录）；proposal/tasks/增量 specs/主规格走普通 aging。
+ *  理由：tasks.md 等高频参照文档留在上下文的是旧快照，aging 掉逼着重读反而拿到实况。 */
 export function isOpenspecDocPath(path: string | undefined): boolean {
 	if (!path) return false;
-	// 匹配 openspec/changes/ 或 openspec/specs/ 路径段 — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
-	return /(^|[\\/])openspec[\\/](changes|specs)[\\/]/.test(path);
+	// 匹配 openspec/changes/<change>/design.md — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
+	return /(^|[\\/])openspec[\\/]changes[\\/][^\\/]+[\\/]design\.md$/.test(path);
+}
+
+/** 判断路径是否属于架构宪法文档 — 永不 aging
+ *  覆盖：docs/agent/adr/（含 INDEX.md 与编号 ADR）、docs/agent/adr-archive/、
+ *  单文件形态 docs/agent/ADR.md、docs/agent/INVARIANTS.md、docs/agent/designs/（Design Note）。
+ *  docs/agent/ 前缀约束防止业务文件误伤（如 results/designs/、根目录 ADR.md）。 */
+export function isArchDocPath(path: string | undefined): boolean {
+	if (!path) return false;
+	// 匹配 docs/agent/ 下的 adr(-archive)/、ADR.md、INVARIANTS.md、designs/ — 兼容 / 与 \ 分隔符
+	return /(^|[\\/])docs[\\/]agent[\\/](?:adr(?:-archive)?[\\/]|ADR\.md$|INVARIANTS\.md$|designs[\\/])/.test(
+		path,
+	);
 }
 
 // ── aging 策略选择（纯函数，便于独立测试） ──
@@ -224,15 +230,16 @@ export interface AgingContext {
 }
 
 /** 判断是否完全跳过 aging（不累加计数、不进 firstSeenCap）。
- *  现有规则：read 命中 skill / plans / openspec 文档（changes 与 specs）路径。
+ *  现有规则：read 命中 skill / openspec changes design.md / 架构宪法文档
+ *  （ADR、INVARIANTS、Design Note）路径。
  *  注意：edit/write 不在此豁免——它们走 selectAgingThreshold 的 Infinity 阈值，
  *  以便仍能经过 firstSeenCap 检查。 */
 export function isAgingExempt(ctx: AgingContext): boolean {
 	if (
 		ctx.toolName === "read" &&
 		(isSkillFilePath(ctx.filePath) ||
-			isPlansFilePath(ctx.filePath) ||
-			isOpenspecDocPath(ctx.filePath))
+			isOpenspecDocPath(ctx.filePath) ||
+			isArchDocPath(ctx.filePath))
 	)
 		return true;
 	return false;

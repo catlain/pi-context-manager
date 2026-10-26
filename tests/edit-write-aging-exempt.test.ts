@@ -5,9 +5,8 @@
  * - edit/write 成功结果永不因轮数/大文件淘汰
  * - edit/write 错误结果走 errorAgingThreshold
  * - edit/write 仍受 firstSeenCap 兜底
- * - 混合场景 + 回归（skill/plans 不变）
  *
- * 参照 skill-file-aging-exempt.test.ts 的 mock 模式。
+ * 豁免路径回归（skill 豁免、plans/openspec 不再豁免、ADR 新豁免）见 aging-exempt-regression.test.ts。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";
@@ -294,45 +293,3 @@ describe("edit/write 仍受 firstSeenCap 兜底", () => {
 	});
 });
 
-// ════════════════════════════════════════
-// 回归：skill/plans 豁免行为不变
-// ════════════════════════════════════════
-describe("回归：skill/plans 豁免不变", () => {
-	beforeEach(() => {
-		mockConfig = {
-			distillThreshold: 1000,
-			agingThreshold: 3,
-			errorAgingThreshold: 3,
-			largeResultAging: 2,
-			processorThreshold: 0,
-			firstSeenCap: 15000,
-		};
-		mockEstimateTokens = (t) => Math.ceil(t.length / 4);
-	});
-
-	it("skill 文件仍豁免 aging", async () => {
-		const s = mkState(),
-			pi = mkPi();
-		const skillMsg = mkMsg(
-			"sk1",
-			"read",
-			{ path: `${AGENT_DIR}/skills/code-graph/SKILL.md` },
-			"x".repeat(200),
-		);
-		for (let i = 0; i < 5; i++) await trigger(s, [...skillMsg], pi);
-		expect(rem(s.lastMessages)).toContain("sk1");
-	});
-
-	it("plans 文件仍豁免 aging", async () => {
-		const s = mkState(),
-			pi = mkPi();
-		const plansMsg = mkMsg(
-			"pl1",
-			"read",
-			{ path: "/project/.pi/plans/E1.md" },
-			"x".repeat(200),
-		);
-		for (let i = 0; i < 5; i++) await trigger(s, [...plansMsg], pi);
-		expect(rem(s.lastMessages)).toContain("pl1");
-	});
-});
