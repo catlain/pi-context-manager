@@ -18,7 +18,11 @@ vi.hoisted(() => {
 	process.env.HOME = pJoin(os.tmpdir(), `pi-proc-write-test-${Date.now()}`);
 });
 
-vi.mock("@pi-atelier/shared-utils", () => ({
+vi.mock("@pi-atelier/shared-utils", async (importOriginal) => ({
+	// 纯函数透传（estimateTokens 等），仅 mock settings 相关导出
+	...(await importOriginal<
+		typeof import("@pi-atelier/shared-utils")
+	>()),
 	getSettingsSection: vi.fn((_s: string, defaults: any) => ({ ...defaults })),
 	patchSettingsSection: vi.fn((_s: string, patch: any, defaults: any) => ({
 		...defaults,

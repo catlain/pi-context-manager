@@ -6,6 +6,7 @@ import {
 	isOpenspecDesignDocPath,
 	isSkillMdPath,
 } from "@pi-atelier/shared-utils";
+import { estimateTokens as estimateTokensImpl } from "@pi-atelier/shared-utils";
 import type { PayloadContentBlock, PayloadMessage } from "./types-payload.js";
 import { formatTokens } from "./utils.js";
 
@@ -69,10 +70,9 @@ export function toolMeta(
 
 // ── token 估算 ──
 
-/** 估算 token 数（字符数 / 4，向上取整） */
-export function estimateTokens(text: string): number {
-	return Math.ceil(text.length / 4);
-}
+/** 估算 token 数（单一事实源：shared-utils tokens.ts，字符数/4 向上取整）
+ *  本包内同名转发门面，消费方 import 路径不变。 */
+export const estimateTokens = estimateTokensImpl;
 
 // ── toolCall/toolResult 配对清理 ──
 
@@ -192,12 +192,9 @@ export function buildSummary(
 // 相对旧本地实现的行为变化（设计声明）：技能目录非 SKILL.md 文件（模板等）不再豁免（收窄）；
 // .agents 等非 .pi 树的 skills/{name}/SKILL.md 新增豁免（扩齐）；相对路径 SKILL.md 保持命中。
 
-// 本地历史导出名保留为别名（护住既有测试 import），行为以 shared-utils 谓词为准
-export {
-	isSkillMdPath as isSkillFilePath,
-	isOpenspecDesignDocPath as isOpenspecDesignPath,
-	isArchDocPath,
-};
+// 本地历史导出名收敛：别名已删（归档审计 S3），统一转发原名，
+// 下游 import 统一使用 isSkillMdPath / isOpenspecDesignDocPath / isArchDocPath
+export { isArchDocPath, isOpenspecDesignDocPath, isSkillMdPath };
 
 // ── aging 策略选择（纯函数，便于独立测试） ──
 

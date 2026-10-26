@@ -28,7 +28,7 @@ vi.mock("fs", () => mockFs);
 
 vi.mock("../../payload/core.js", () => ({
 	RECORDINGS_DIR: mockDir,
-	estTokens: vi.fn(),
+	estimateTokens: vi.fn(),
 	fmtTok: vi.fn(),
 	getText: vi.fn(),
 	readJsonFile: vi.fn(),

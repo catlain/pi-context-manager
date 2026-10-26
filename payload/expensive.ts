@@ -6,7 +6,7 @@ import type { ProviderPayload } from "../types-payload.js";
 import {
 	buildProviderToolCallIndex,
 	classifyStatus,
-	estTokens,
+	estimateTokens,
 	fmtTok,
 	getText,
 	readJsonFile,
@@ -40,7 +40,7 @@ export function doExpensive(files: RecordingEntry[], topN = 20): string {
 			const info = toolIdx.get(tcid);
 			const toolName = info?.name ?? "unknown";
 			const text = getText(m.content);
-			const tokens = estTokens(text);
+			const tokens = estimateTokens(text);
 			const status = classifyStatus(text);
 
 			allResults.push({

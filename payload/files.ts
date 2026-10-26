@@ -8,7 +8,7 @@ import { join } from "node:path";
 import {
 	buildProviderToolCallIndex,
 	classifyStatus,
-	estTokens,
+	estimateTokens,
 	getText,
 	RECORDINGS_DIR,
 	readJsonFile,
@@ -87,7 +87,7 @@ export function collectTimeline(
 				req: reqNum,
 				idx: i,
 				status: classifyStatus(text),
-				tokens: estTokens(text),
+				tokens: estimateTokens(text),
 				preview: text.slice(0, 80).replace(/\n/g, "\\n"),
 			});
 		}
@@ -118,7 +118,7 @@ export function collectTimelineByTcId(
 				req: reqNum,
 				idx: i,
 				status: classifyStatus(text),
-				tokens: estTokens(text),
+				tokens: estimateTokens(text),
 				preview: text.slice(0, 80).replace(/\n/g, "\\n"),
 			});
 		}

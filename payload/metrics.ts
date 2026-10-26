@@ -5,7 +5,7 @@
  */
 
 import type { PayloadMessage, ProviderPayload } from "../types-payload.js";
-import { estTokens, fmtTok, getText, readJsonFile } from "./core.js";
+import { estimateTokens, fmtTok, getText, readJsonFile } from "./core.js";
 import { getRecordingFiles } from "./files.js";
 
 export { doExpensive } from "./expensive.js";
@@ -41,19 +41,19 @@ export function doBudget(sessionId?: string): string {
 		const sysMsg = msgs.find(
 			(m: PayloadMessage) => m.role === "system" || m.role === "developer",
 		);
-		const sysTokens = sysMsg ? estTokens(getText(sysMsg.content)) : 0;
+		const sysTokens = sysMsg ? estimateTokens(getText(sysMsg.content)) : 0;
 		const toolsTokens = tools.reduce(
 			(s: number, t: Record<string, unknown>) =>
-				s + estTokens(JSON.stringify(t)),
+				s + estimateTokens(JSON.stringify(t)),
 			0,
 		);
 
 		let histTokens = 0;
 		for (const m of msgs) {
 			if (m === sysMsg) continue;
-			histTokens += estTokens(getText(m.content));
+			histTokens += estimateTokens(getText(m.content));
 			if (m.role === "assistant" && m.tool_calls) {
-				histTokens += estTokens(JSON.stringify(m.tool_calls));
+				histTokens += estimateTokens(JSON.stringify(m.tool_calls));
 			}
 		}
 
@@ -103,9 +103,9 @@ export function doGrowth(sessionId?: string): string {
 		const model = String(data.model ?? "?").slice(0, 12);
 		let total = 0;
 		for (const m of msgs) {
-			total += estTokens(getText(m.content));
+			total += estimateTokens(getText(m.content));
 			if (m.role === "assistant" && m.tool_calls) {
-				total += estTokens(JSON.stringify(m.tool_calls));
+				total += estimateTokens(JSON.stringify(m.tool_calls));
 			}
 		}
 

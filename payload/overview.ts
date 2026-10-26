@@ -5,7 +5,7 @@
 import type { PayloadMessage, ProviderPayload } from "../types-payload.js";
 import {
 	buildProviderToolCallIndex,
-	estTokens,
+	estimateTokens,
 	fmtSize,
 	fmtTok,
 	getText,
@@ -31,7 +31,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 
 	// Tools
 	const toolTotalTok = tools.reduce(
-		(s: number, t: Record<string, unknown>) => s + estTokens(JSON.stringify(t)),
+		(s: number, t: Record<string, unknown>) => s + estimateTokens(JSON.stringify(t)),
 		0,
 	);
 	lines.push(`\n📦 Tools: ${tools.length} 个, ~${fmtTok(toolTotalTok)} tokens`);
@@ -40,7 +40,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 			const name = t.name ?? t.function?.name ?? "?";
 			const tText = JSON.stringify(t);
 			lines.push(
-				`   ${name.padEnd(30)} ~${fmtTok(estTokens(tText)).padStart(6)}  ${fmtSize(tText.length)}`,
+				`   ${name.padEnd(30)} ~${fmtTok(estimateTokens(tText)).padStart(6)}  ${fmtSize(tText.length)}`,
 			);
 		}
 	}
@@ -52,7 +52,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 	if (sysMsg) {
 		const sysText = getText(sysMsg.content);
 		lines.push(
-			`\n📝 System Prompt: ~${fmtTok(estTokens(sysText))} tokens, ${fmtSize(sysText.length)}`,
+			`\n📝 System Prompt: ~${fmtTok(estimateTokens(sysText))} tokens, ${fmtSize(sysText.length)}`,
 		);
 	}
 
@@ -75,7 +75,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 		const m = msgs[i];
 		const role = m.role ?? "?";
 		const text = getText(m.content);
-		const tokens = estTokens(text);
+		const tokens = estimateTokens(text);
 		const firstLine = text.split("\n")[0]?.slice(0, 60) ?? "";
 
 		if (role === "assistant") {
@@ -87,7 +87,7 @@ export function doOverview(payloadPath: string, verbose = false): string {
 				if (!perTool[name])
 					perTool[name] = { count: 0, callTokens: 0, resultTokens: 0 };
 				perTool[name].count++;
-				perTool[name].callTokens += estTokens(tc.function?.arguments ?? "");
+				perTool[name].callTokens += estimateTokens(tc.function?.arguments ?? "");
 			}
 			const parts: string[] = [];
 			if (text.trim()) parts.push(`text ~${fmtTok(tokens)}`);

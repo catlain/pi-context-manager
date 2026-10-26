@@ -5,7 +5,7 @@
 import { extractStringValues, matchToolName } from "@pi-atelier/shared-utils";
 import type { PayloadMessage } from "../types-payload.js";
 import type { ToolCallInfo } from "./core.js";
-import { estTokens, fmtTok, getText } from "./core.js";
+import { estimateTokens, fmtTok, getText } from "./core.js";
 
 // ── 常量 ──
 
@@ -22,7 +22,7 @@ export function summaryLine(
 ): string {
 	const role = m.role ?? "?";
 	const text = getText(m.content);
-	const tokens = estTokens(text);
+	const tokens = estimateTokens(text);
 	const tokStr = fmtTok(tokens).padStart(7);
 
 	let extra = "";
@@ -55,7 +55,7 @@ export function detailBlock(
 ): string {
 	const role = m.role ?? "?";
 	const text = getText(m.content);
-	const tokens = estTokens(text);
+	const tokens = estimateTokens(text);
 
 	const lines: string[] = [];
 	lines.push(`┌─── [${i}] ${role} ${fmtTok(tokens)}tok ───`);

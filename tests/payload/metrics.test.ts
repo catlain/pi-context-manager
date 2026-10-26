@@ -68,7 +68,7 @@ vi.mock("../../payload/files.js", () => ({
 }));
 
 vi.mock("../../payload/core.js", () => ({
-	estTokens: (s: string) => Math.ceil(s.length / 4),
+	estimateTokens: (s: string) => Math.ceil(s.length / 4),
 	fmtTok: (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)),
 	getText: (c: any) =>
 		typeof c === "string"

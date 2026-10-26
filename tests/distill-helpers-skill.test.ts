@@ -1,5 +1,5 @@
 /**
- * distill-helpers isSkillFilePath 单元测试（项目级/全局/npm 技能路径）
+ * distill-helpers isSkillMdPath 单元测试（项目级/全局/npm 技能路径）
  *
  * 注意：AGENT_DIR 是模块级常量（import 时求值），
  * 所以在 import 之前就要设好环境变量。
@@ -12,7 +12,7 @@ const ORIG_PI_AGENT = process.env.PI_AGENT_DIR;
 process.env.PI_AGENT_DIR = require("node:path").resolve("/home/user/.pi/agent");
 
 const {
-	isSkillFilePath,
+	isSkillMdPath,
 } = await import("../distill-helpers.js");
 
 afterAll(() => {
@@ -20,48 +20,48 @@ afterAll(() => {
 	else delete process.env.PI_AGENT_DIR;
 });
 
-describe("isSkillFilePath", () => {
+describe("isSkillMdPath", () => {
 	it("undefined 路径返回 false", () => {
-		expect(isSkillFilePath(undefined)).toBe(false);
+		expect(isSkillMdPath(undefined)).toBe(false);
 	});
 
 	it("空字符串返回 false", () => {
-		expect(isSkillFilePath("")).toBe(false);
+		expect(isSkillMdPath("")).toBe(false);
 	});
 
 	it("AGENT_DIR 外的路径返回 false", () => {
-		expect(isSkillFilePath("/etc/passwd")).toBe(false);
+		expect(isSkillMdPath("/etc/passwd")).toBe(false);
 	});
 
 	it("相对路径 skills/ 内文件返回 true", () => {
-		expect(isSkillFilePath("skills/code-graph/SKILL.md")).toBe(true);
+		expect(isSkillMdPath("skills/code-graph/SKILL.md")).toBe(true);
 	});
 
 	it("npm 技能路径返回 true", () => {
-		expect(isSkillFilePath("node_modules/pkg/skills/setup/SKILL.md")).toBe(
+		expect(isSkillMdPath("node_modules/pkg/skills/setup/SKILL.md")).toBe(
 			true,
 		);
 	});
 
 	it("AGENT_DIR 内但非 skills 的路径返回 false", () => {
-		expect(isSkillFilePath("memory/foo.md")).toBe(false);
+		expect(isSkillMdPath("memory/foo.md")).toBe(false);
 	});
 
 	it("项目级技能 .pi/skills/（绝对路径）返回 true", () => {
 		expect(
-			isSkillFilePath("D:/Project/Quant/.pi/skills/field-lineage/SKILL.md"),
+			isSkillMdPath("D:/Project/Quant/.pi/skills/field-lineage/SKILL.md"),
 		).toBe(true);
 	});
 
 	it("项目级技能 .pi/skills/（相对路径）返回 true", () => {
-		expect(isSkillFilePath(".pi/skills/field-lineage/SKILL.md")).toBe(
+		expect(isSkillMdPath(".pi/skills/field-lineage/SKILL.md")).toBe(
 			true,
 		);
 	});
 
 	it("项目级技能 .pi/skills/（反斜杠路径）返回 true", () => {
 		expect(
-			isSkillFilePath(
+			isSkillMdPath(
 				"D:\\Project\\Quant\\.pi\\skills\\field-lineage\\SKILL.md",
 			),
 		).toBe(true);
@@ -70,23 +70,23 @@ describe("isSkillFilePath", () => {
 	it("非 C 盘绝对路径不被误判（无盘符硬编码）", () => {
 		// 旧实现 startsWith("C:") 硬编码的历史回归；新谓词无盘符依赖，
 		// D 盘任意 skills 目录树同样正确命中（任意目录树语义）
-		expect(isSkillFilePath("D:/proj/skills/foo/SKILL.md")).toBe(true);
-		expect(isSkillFilePath("D:/proj/.pi/skills/foo/SKILL.md")).toBe(true);
+		expect(isSkillMdPath("D:/proj/skills/foo/SKILL.md")).toBe(true);
+		expect(isSkillMdPath("D:/proj/.pi/skills/foo/SKILL.md")).toBe(true);
 	});
 
 	it("非 .pi 树 skills 目录（业务/.agents/git 包）也命中（任意目录树语义）", () => {
 		// 用户拍板“任意 skills 目录都收”：D:/proj/skills/、/opt/x/skills/、
 		// .agents/skills/ 等非 .pi 树形态统一命中
-		expect(isSkillFilePath("D:/proj/skills/foo/SKILL.md")).toBe(true);
-		expect(isSkillFilePath("/opt/x/skills/foo/SKILL.md")).toBe(true);
-		expect(isSkillFilePath("C:/Users/u/.agents/skills/skill-creator/SKILL.md")).toBe(
+		expect(isSkillMdPath("D:/proj/skills/foo/SKILL.md")).toBe(true);
+		expect(isSkillMdPath("/opt/x/skills/foo/SKILL.md")).toBe(true);
+		expect(isSkillMdPath("C:/Users/u/.agents/skills/skill-creator/SKILL.md")).toBe(
 			true,
 		);
 	});
 
 	it("大小写异写仍豁免", () => {
-		expect(isSkillFilePath(".PI/skills/foo/SKILL.MD")).toBe(true);
-		expect(isSkillFilePath("D:/proj/.pi/Skills/foo/Skill.md")).toBe(true);
+		expect(isSkillMdPath(".PI/skills/foo/SKILL.MD")).toBe(true);
+		expect(isSkillMdPath("D:/proj/.pi/Skills/foo/Skill.md")).toBe(true);
 	});
 
 	it("绝对路径匹配 skills/ 返回 true", () => {
@@ -94,7 +94,7 @@ describe("isSkillFilePath", () => {
 			process.env.PI_AGENT_DIR!,
 			"skills/code-graph/SKILL.md",
 		);
-		expect(isSkillFilePath(p)).toBe(true);
+		expect(isSkillMdPath(p)).toBe(true);
 	});
 
 	it("绝对路径不匹配 skills/ 返回 false", () => {
@@ -102,7 +102,7 @@ describe("isSkillFilePath", () => {
 			process.env.PI_AGENT_DIR!,
 			"memory/foo.md",
 		);
-		expect(isSkillFilePath(p)).toBe(false);
+		expect(isSkillMdPath(p)).toBe(false);
 	});
 });
 

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockReadJsonFile = vi.fn(() => null as unknown as any);
 vi.mock("../../payload/core.js", () => ({
-	estTokens: (s: string) => Math.ceil(s.length / 4),
+	estimateTokens: (s: string) => Math.ceil(s.length / 4),
 	fmtTok: (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)),
 	getText: (c: any) =>
 		typeof c === "string"

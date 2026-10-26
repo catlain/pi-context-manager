@@ -10,7 +10,7 @@ import {
 	buildProviderToolCallIndex,
 	type ChainEntry,
 	classifyStatus,
-	estTokens,
+	estimateTokens,
 	getText,
 	RECORDINGS_DIR,
 	readJsonFile,
@@ -112,7 +112,7 @@ export function doSingle(payloadPath: string, threshold = 500): string {
 		const tcid = m.tool_call_id ?? "";
 		const info = toolIdx.get(tcid) ?? { name: "unknown", argsStr: tcid };
 		const text = getText(m.content);
-		const tokens = estTokens(text);
+		const tokens = estimateTokens(text);
 		const status = classifyStatus(text, threshold);
 
 		stats[status]++;

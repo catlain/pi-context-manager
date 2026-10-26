@@ -4,17 +4,17 @@ import {
 	buildPiToolCallIndex,
 	buildProviderToolCallIndex,
 	classifyStatus,
-	estTokens,
+	estimateTokens,
 	fmtSize,
 	fmtTok,
 	getText,
 } from "../../payload/core.js";
 
-describe("estTokens", () => {
-	it("空字符串返回 1（下限）", () => expect(estTokens("")).toBe(1));
-	it("4 字符 = 1 token", () => expect(estTokens("abcd")).toBe(1));
-	it("5 字符 = 2 tokens（向上取整）", () => expect(estTokens("abcde")).toBe(2));
-	it("长文本按长度/4 估算", () => expect(estTokens("a".repeat(100))).toBe(25));
+describe("estimateTokens", () => {
+	it("空字符串返回 1（下限）", () => expect(estimateTokens("")).toBe(1));
+	it("4 字符 = 1 token", () => expect(estimateTokens("abcd")).toBe(1));
+	it("5 字符 = 2 tokens（向上取整）", () => expect(estimateTokens("abcde")).toBe(2));
+	it("长文本按长度/4 估算", () => expect(estimateTokens("a".repeat(100))).toBe(25));
 });
 
 describe("fmtTok", () => {

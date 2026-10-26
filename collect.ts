@@ -3,6 +3,7 @@ import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import { estimateTokens } from "@pi-atelier/shared-utils";
 import type {
 	CategoryItem,
 	CollectOpts,
@@ -18,7 +19,6 @@ import type {
 	ToolDefinition,
 } from "./types-payload.js";
 
-const est = (s: string) => Math.ceil(s.length / 4);
 
 /** 从 provider payload 中提取 system prompt 文本 */
 function extractSystemFromPayload(
@@ -91,7 +91,7 @@ export function collectData(
 			const tName = t.name || t.function?.name || "unknown";
 			return {
 				label: tName,
-				value: est(defText),
+				value: estimateTokens(defText),
 				callTokens: 0,
 				resultTokens: 0,
 				color: "dim",
@@ -99,7 +99,7 @@ export function collectData(
 				records: [
 					{
 						summary: `Tool: ${tName}`,
-						callTokens: est(defText),
+						callTokens: estimateTokens(defText),
 						resultTokens: 0,
 						lines: defText.split("\n"),
 					},
@@ -135,13 +135,13 @@ export function collectData(
 				sz = 0;
 			if (typeof m.content === "string") {
 				text = m.content;
-				sz = est(text);
+				sz = estimateTokens(text);
 			} else if (Array.isArray(m.content)) {
 				const parts: string[] = [];
 				for (const p of m.content)
 					if (p.type === "text") {
 						parts.push(p.text ?? "");
-						sz += est(p.text ?? "");
+						sz += estimateTokens(p.text ?? "");
 					}
 				text = parts.join("\n");
 			}
@@ -156,16 +156,16 @@ export function collectData(
 			let txtSz = 0;
 			const textParts: string[] = [];
 			if (typeof m.content === "string") {
-				txtSz = est(m.content);
+				txtSz = estimateTokens(m.content);
 				textParts.push(m.content);
 			} else if (Array.isArray(m.content))
 				for (const p of m.content) {
 					if (p.type === "text") {
-						txtSz += est(p.text ?? "");
+						txtSz += estimateTokens(p.text ?? "");
 						textParts.push(p.text ?? "");
 					}
 					if (p.type === "toolCall") {
-						const cs = est(JSON.stringify(p));
+						const cs = estimateTokens(JSON.stringify(p));
 						callRaw += cs;
 						const name = p.name || "unknown";
 						const tcId = (p as any).id || "";
@@ -212,7 +212,7 @@ export function collectData(
 			if (Array.isArray(m.content))
 				for (const p of m.content)
 					if (p.type === "text") {
-						rs += est(p.text ?? "");
+						rs += estimateTokens(p.text ?? "");
 						textParts.push(p.text ?? "");
 					}
 			resultRaw += rs;
@@ -252,7 +252,7 @@ export function collectData(
 		}
 	}
 
-	const sysRaw = est(sysPrompt);
+	const sysRaw = estimateTokens(sysPrompt);
 	const total = usage.tokens,
 		limit = usage.contextWindow;
 
@@ -266,7 +266,7 @@ export function collectData(
 	}
 
 	const toolDefText = JSON.stringify(toolsSource);
-	const toolDefTokens = est(toolDefText);
+	const toolDefTokens = estimateTokens(toolDefText);
 	const ratio =
 		sysRaw + toolDefTokens + msgRaw + callRaw + resultRaw > 0
 			? total / (sysRaw + toolDefTokens + msgRaw + callRaw + resultRaw)

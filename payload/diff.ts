@@ -4,7 +4,7 @@
 
 import { basename } from "node:path";
 import type { ProviderPayload } from "../types-payload.js";
-import { estTokens, fmtTok, getText, readJsonFile } from "./core.js";
+import { estimateTokens, fmtTok, getText, readJsonFile } from "./core.js";
 
 // ════════════════════════════════════════════════════════════
 
@@ -41,7 +41,7 @@ export function doDiff(path1: string, path2: string): string {
 			lines.push(`\n  ── ${label} 尾部 ──`);
 			for (let i = start; i < msgs.length; i++) {
 				const text = getText(msgs[i].content);
-				const tokens = estTokens(text);
+				const tokens = estimateTokens(text);
 				lines.push(
 					`  [${String(i).padStart(3)}] ${(msgs[i].role ?? "?").padEnd(12)} ~${fmtTok(tokens).padStart(6)}  ${text.split("\n")[0]?.slice(0, 50) ?? ""}`,
 				);

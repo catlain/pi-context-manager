@@ -15,8 +15,13 @@ export const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");
 
 // ── Token 估算 ──
 
-export function estTokens(text: string): number {
-	return Math.max(1, Math.ceil(text.length / 4));
+import { estimateTokens as baseEstimateTokens } from "@pi-atelier/shared-utils";
+
+/** 面板统计口径：基础估算（shared-utils 单源）+ 每消息至少 1 token 占位
+ *  （空消息在面板/预算统计中仍计为一条非零记录，避免归零失真）。
+ *  与 distill 侧裸 ceil(len/4) 的差异是显式业务适配，非重复实现。 */
+export function estimateTokens(text: string): number {
+	return Math.max(1, baseEstimateTokens(text));
 }
 
 export function fmtTok(n: number): string {
@@ -101,7 +106,7 @@ export function buildPiToolCallIndex(
 
 export function classifyStatus(text: string, threshold = 500): string {
 	if (text.includes("[processed]")) return "TRUNCATED";
-	if (estTokens(text) >= threshold) return "FULL_KEPT";
+	if (estimateTokens(text) >= threshold) return "FULL_KEPT";
 	return "SMALL";
 }
 
