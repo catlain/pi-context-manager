@@ -6,13 +6,15 @@ retune-aging-exemptions 归档后遗留两批问题：①技能文件豁免只�
 
 ## What Changes
 
-- `isSkillFilePath` 新增项目技能匹配：路径段 `.pi/skills/{name}/`（OR 关系，不替换 AGENT_DIR 前缀路径——全局技能在 `.pi/agent/skills`，`.pi/skills` 段覆盖不到）；`startsWith("C:")` 改为 `isAbsolute` 标准判断
-- 文档化事实：npm 技能无需单独正则（AGENT_DIR 前缀 + `skills/{name}/` 段匹配天然覆盖 `npm/node_modules/{pkg}/skills/{name}/`）
-- I5：三条豁免正则（skill / openspec design / arch doc）统一加 `i` 标志，防 Windows 大小写异写漏豁免
-- I6：`isOpenspecDocPath` 改名 `isOpenspecDesignPath`（收窄后名实不符）
-- 行数治理：`distill-helpers.ts`（281 行）的路径豁免判断组拆出独立模块（I4 之后做，mock 已统一则只改一处）
-- I4：提取测试共享 mock/helper 基座（`vi.hoisted` 模式），消除 6 个文件的基座复制与漂移
-- I7：first-seen-cap / error-aging / handle-context-aging / handle-context-manifest / resume-manifest 五个全量 mock 逐个判定"刻意隔离 vs 无意复刻"，无意复刻者改部分 mock（`importOriginal` 保真实生产逻辑）
+> **实施后实际形态**：本 change 的 1.x/3.1 本地方案被并行会话的 shared-utils 单一事实源方案
+> 取代（见 design.md 补记）。最终落地：豁免谓词公用 `@pi-atelier/shared-utils@1.2.0
+> protected-docs.ts`（消费方：pi-context-manager aging 豁免 + pi-shepherd compact 回补），
+> distill-helpers.ts 保留别名 re-export。以下保留原始方案描述供变更史参考。
+
+- ~~isSkillFilePath 本地重构（OR 分支 + isAbsolute + i 标志）~~ → shared-utils `isSkillMdPath`（任意目录树 skills/{name}/SKILL.md，大小写不敏感；收窄：非 SKILL.md 不豁免；扩齐：.agents/git 包命中）
+- ~~拆 aging-exempt-paths.ts~~ → 谓词上移群岛公共库，distill-helpers 262 行回阈值内
+- I4：提取测试共享 mock 基座 `tests/aging-test-helpers.ts`，消除 8 个文件的基座复制与漂移
+- I7：五个全量 mock 的手写 selectAgingThreshold 优先级复刻 → 真实实现 + 只 override estimateTokens
 
 ## Capabilities
 
@@ -22,11 +24,12 @@ retune-aging-exemptions 归档后遗留两批问题：①技能文件豁免只�
 
 ### Modified Capabilities
 
-- `aging-exemptions`: 技能文件豁免 requirement 扩展——新增项目技能（`.pi/skills/`）场景与路径大小写不敏感约束；绝对路径判定改标准 `isAbsolute`。
+- `aging-exemptions`: 技能文件豁免 requirement 改为**引用 shared-utils 公用谓词语义**——任意目录树的 skills/{name}/SKILL.md 精确入口豁免（含项目级 .pi/skills、npm、.agents/git 包）；收窄声明：技能目录非 SKILL.md 文件（references/ 模板等）不再豁免；openspec design.md 与宪法文档语义不变。
 
 ## Impact
 
-- **代码**：`distill-helpers.ts`（isSkillFilePath 重构 + i 标志 + 改名）→ 拆分出 `aging-exempt-paths.ts`；`handle-context.ts`（引用同步）
-- **测试**：6+ 文件迁移到共享 mock 基座；新增项目技能/大小写用例；5 个全量 mock 判定改造
-- **行为影响**：项目技能 read 结果常驻上下文；大小写异写路径（`SKILL.MD`、`Design.md`、`.PI/skills/`）正确豁免；非 C 盘绝对路径不再误判
+- **代码**：`distill-helpers.ts` 别名 re-export shared-utils 谓词；测试迁移到共享 mock 基座（-929 行）
+- **依赖**：`@pi-atelier/shared-utils`（既有 `^1.1.1`，^ 语义兼容自动拿到 1.2.0，未新增依赖声明）
+- **测试**：共享基座 `aging-test-helpers.ts` + 新增任意目录树/收窄用例
+- **行为影响**：项目技能/任意树 SKILL.md read 结果常驻；技能目录非入口文件（references/ 等）不再豁免；openspec/宪法语义不变
 - **配置**：无新增配置

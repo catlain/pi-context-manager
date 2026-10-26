@@ -2,32 +2,32 @@
 
 ## MODIFIED Requirements
 
-### Requirement: 技能文件完全豁免
-系统 SHALL 对 read 工具读取的技能文件给予 aging 完全豁免：不计数、不删除、不进入 firstSeenCap。技能文件覆盖三类：① pi agent 目录（`~/.pi/agent/`）下 `skills/<name>/` 内的文件；② agent 目录 `npm/node_modules/<pkg>/skills/<name>/` 内的文件（由 ① 的前缀门禁与段匹配天然覆盖，无单独匹配规则）；③ **项目级技能：任意路径下 `.pi/skills/<name>/` 路径段内的文件**。路径判定 SHALL 兼容 `/` 与 `\` 分隔符且大小写不敏感；绝对路径判定 SHALL 使用标准 `isAbsolute`（不得硬编码盘符）。
+### Requirement: 技能文件完全豁免（公用谓词语义）
+系统 SHALL 对 read 工具读取的技能入口文件给予 aging 完全豁免：不计数、不删除、不进入 firstSeenCap。豁免判定 SHALL 引用 `@pi-atelier/shared-utils` protected-docs 公用谓词（单一事实源，禁止下游复制正则）：`skills/<name>/SKILL.md` 精确入口，任意目录树命中（agent 目录内联/npm 安装/项目级 `.pi/skills/`/`.agents` 等其他工具链目录树），大小写不敏感。技能目录内非 SKILL.md 文件（references/、模板等）SHALL NOT 豁免（收窄声明）。
 
-#### Scenario: 读取内联技能文件
+#### Scenario: 读取内联技能入口
 - **WHEN** read 读取 `C:/Users/x/.pi/agent/skills/code-graph/SKILL.md`
 - **THEN** 该 toolResult 获得完全豁免
 
-#### Scenario: 读取 npm 安装的技能文件
+#### Scenario: 读取 npm 安装的技能入口
 - **WHEN** read 读取 `~/.pi/agent/npm/node_modules/pi-worktree/skills/worktree-setup/SKILL.md`
 - **THEN** 该 toolResult 获得完全豁免
 
-#### Scenario: 读取项目级技能文件
-- **WHEN** read 读取 `D:/Project/Quant/.pi/skills/field-lineage/SKILL.md`（或相对形式 `.pi/skills/field-lineage/SKILL.md`、反斜杠形式）
+#### Scenario: 读取项目级技能入口
+- **WHEN** read 读取 `D:/Project/Quant/.pi/skills/field-lineage/SKILL.md`（或相对/反斜杠形式）
 - **THEN** 该 toolResult 获得完全豁免
 
-#### Scenario: 非 C 盘绝对路径正确判定
-- **WHEN** read 读取 `D:/proj/.pi/skills/foo/SKILL.md`（绝对路径但不以 `C:` 开头）
-- **THEN** 不被误判为相对路径，按项目技能规则豁免
+#### Scenario: 任意目录树扩齐（.agents 等）
+- **WHEN** read 读取 `~/.agents/skills/foo/SKILL.md` 或 `D:/proj/skills/foo/SKILL.md`
+- **THEN** 任意目录树的 skills/<name>/SKILL.md 均获得完全豁免（不再限定 agent 目录与 .pi 前缀）
+
+#### Scenario: 技能目录非入口文件不豁免（收窄）
+- **WHEN** read 读取 `~/.pi/agent/skills/frontend-test/references/echarts-events.md`
+- **THEN** 该 toolResult 不豁免，走普通 aging（仅 SKILL.md 精确入口豁免）
 
 #### Scenario: 大小写异写仍豁免
 - **WHEN** read 读取 `.../.PI/skills/foo/SKILL.MD` 或 `.../skills/foo/Skill.md`
-- **THEN** 路径匹配大小写不敏感，该 toolResult 获得完全豁免
-
-#### Scenario: agent 目录之外的普通 skills 路径不豁免
-- **WHEN** read 读取 `D:/proj/skills/foo/SKILL.md`（无 `.pi/` 前缀且不在 agent 目录下）
-- **THEN** 该 toolResult 不豁免，走普通 aging
+- **THEN** 大小写不敏感匹配，该 toolResult 获得完全豁免
 
 ### Requirement: OpenSpec 豁免收窄至 design 文档
 系统 SHALL 仅对 read 工具读取的 `openspec/changes/<change>/design.md` 给予完全豁免。`openspec/changes/` 下其他文件（proposal.md、tasks.md、specs/ 增量规格等）与 `openspec/specs/` 主规格 SHALL NOT 豁免，走普通 aging。路径段匹配 SHALL 兼容 `/` 与 `\` 分隔符且大小写不敏感。
