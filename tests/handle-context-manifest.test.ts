@@ -2,85 +2,26 @@
  * handleContextEvent 集成测试 — manifest 会话隔离、agingDeletedIds 持久化
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// ⚠ helper 必须在静态 import 被测模块之前（handle-context 加载触发 mock 工厂）
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkPi,
+	mkState,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 import { type ContextState, handleContextEvent } from "../handle-context.js";
+import { loadManifest, saveManifest } from "../shared.js";
 
-// ── mocks ──
-const mockLoadManifest = vi.fn();
-const mockSaveManifest = vi.fn();
+vi.mock("../shared.js", () => sharedMockFactory());
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => ({
-		distillThreshold: 100,
-		agingThreshold: 3,
-		processorThreshold: 0,
-	}),
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: (...a: any[]) => mockSaveManifest(...a),
-	loadManifest: (...a: any[]) => mockLoadManifest(...a),
-}));
-
-vi.mock("../distill-helpers.js", () => ({
-	buildToolCallMap: () => new Map(),
-	estimateTokens: (t: string) => Math.ceil(t.length / 4),
-	isSkillFilePath: () => false,
-	isArchDocPath: () => false,
-	isAgingExempt: () => false,
-	selectAgingThreshold: (
-		ctx: { isError: boolean; toolName: string; tokens: number },
-		cfg: { errorAgingThreshold: number; distillThreshold: number; largeResultAging: number; agingThreshold: number },
-	) =>
-		(ctx.toolName === "edit" || ctx.toolName === "write") && !ctx.isError
-			? Number.POSITIVE_INFINITY
-			: ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0
-				? cfg.largeResultAging
-				: ctx.isError && cfg.errorAgingThreshold > 0
-					? cfg.errorAgingThreshold
-					: cfg.agingThreshold,
-	toolMeta: () => ({ meta: "" }),
-	removeOrphanedToolCalls: (msgs: any[]) => {
-		const activeIds = new Set<string>();
-		for (const m of msgs)
-			if (m.role === "toolResult" && m.toolCallId) activeIds.add(m.toolCallId);
-		for (const msg of msgs) {
-			if (msg.role === "assistant" && Array.isArray(msg.content))
-				msg.content = msg.content.filter(
-					(b: any) => b.type !== "toolCall" || activeIds.has(b.id),
-				);
-		}
-		for (let i = msgs.length - 1; i >= 0; i--) {
-			const m = msgs[i];
-			if (
-				m.role === "assistant" &&
-				Array.isArray(m.content) &&
-				m.content.length === 0
-			)
-				msgs.splice(i, 1);
-		}
-	},
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
+const mockLoadManifest = vi.mocked(loadManifest);
+const mockSaveManifest = vi.mocked(saveManifest);
 
 // ── helpers ──
-function mkState(): ContextState {
-	return {
-		agingTracker: new Map(),
-		agingSnapshot: new Map(),
-		manuallyDeletedIds: new Set(),
-		agingDeletedIds: new Set(),
-		seenArgs: new Set(),
-		truncatedToolCallIds: new Set(),
-		lastMessages: [],
-		sessionId: "",
-	};
-}
-function mkPi() {
-	return { events: { emit: vi.fn() } };
-}
 function mkMsg(tcId: string, text: string): any[] {
 	return [
 		{
@@ -104,17 +45,23 @@ function trigger(state: ContextState, msgs: any[], pi: any, ctx?: any) {
 	handleContextEvent({ messages: msgs }, ctx ?? {}, state, pi);
 }
 
+beforeEach(() => {
+	agingMockState.config = {
+		distillThreshold: 100,
+		agingThreshold: 3,
+		processorThreshold: 0,
+	};
+	agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
+	mockLoadManifest.mockReset();
+	mockSaveManifest.mockReset();
+	// 默认不加载任何 manifest 数据
+	mockLoadManifest.mockImplementation(() => {});
+});
+
 // ═══════════════════════════════════════════
 // 1. manifest 会话隔离
 // ═══════════════════════════════════════════
 describe("manifest 会话隔离", () => {
-	beforeEach(() => {
-		mockLoadManifest.mockReset();
-		mockSaveManifest.mockReset();
-		// 默认不加载任何 manifest 数据
-		mockLoadManifest.mockImplementation(() => {});
-	});
-
 	it("sessionId 变化时调用 loadManifest", () => {
 		const state = mkState();
 		const pi = mkPi();
@@ -193,11 +140,6 @@ describe("manifest 会话隔离", () => {
 // 2. toRemove index 排序（splice 顺序 bug 回归测试）
 // ═══════════════════════════════════════════
 describe("toRemove index 排序", () => {
-	beforeEach(() => {
-		mockLoadManifest.mockReset();
-		mockLoadManifest.mockImplementation(() => {});
-	});
-
 	it("多个不同通道的删除（agingDeleted + manuallyDeleted）index 必须正确", () => {
 		const state = mkState();
 		const pi = mkPi();

@@ -5,83 +5,22 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkMsg,
+	mkPi,
+	mkState,
+	piSdkMockFactory,
+	rem,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 
-// ── Mocks ──
-let mockConfig: Record<string, number>;
-let mockEstimateTokens: (t: string) => number;
-
-vi.mock("@earendil-works/pi-coding-agent", () => ({
-	registerExtension: vi.fn(),
-	registerCommand: vi.fn(),
-	registerTool: vi.fn(),
-}));
-
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => mockConfig,
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: vi.fn(),
-	loadManifest: vi.fn(),
-	hintsConfig: {
-		distillWarning: "📋 「{label}」~{tokens} tokens，下轮移除。",
-		distillWarningShort: "📋 「{label}」下轮移除",
-		distillOverCapWarning: "⚠️ 「{label}」~{tokens} > {cap}，已直接移除。",
-		distillOverCapWarningShort: "⚠️ 「{label}」已移除",
-		processorSummary: "",
-		processorSmallResult: "",
-	},
-	fillTemplate: (t: string, v: Record<string, string>) =>
-		t.replace(/\{(\w+)\}/g, (_: string, k: string) => v[k] ?? `{${k}}`),
-}));
-
-// 保留真实 distill-helpers（含 isAgingExempt/isSkillFilePath/isArchDocPath），
-// 只覆盖 estimateTokens 以控制 token 判断
-vi.mock("../distill-helpers.js", async (orig) => ({
-	...(await orig<typeof import("../distill-helpers.js")>()),
-	estimateTokens: (t: string) => mockEstimateTokens(t),
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
-
-// ── Helpers ──
-const mkState = (): ContextState => ({
-	agingTracker: new Map(),
-	agingSnapshot: new Map(),
-	manuallyDeletedIds: new Set(),
-	agingDeletedIds: new Set(),
-	seenArgs: new Set(),
-	truncatedToolCallIds: new Set(),
-	lastMessages: [],
-	sessionId: "",
-});
-const mkPi = () => ({ events: { emit: vi.fn() } });
-
-/** 构造 toolCall + toolResult 消息对 */
-const mkMsg = (
-	tcId: string,
-	toolName: string,
-	args: Record<string, unknown>,
-	text: string,
-): any[] => [
-	{
-		role: "assistant",
-		content: [
-			{ type: "toolCall", id: tcId, name: toolName, arguments: args },
-		],
-	},
-	{
-		role: "toolResult",
-		toolCallId: tcId,
-		toolName,
-		content: [{ type: "text", text }],
-		isError: false,
-	},
-];
-const rem = (msgs: any[]) =>
-	msgs.filter((m: any) => m.role === "toolResult").map((m: any) => m.toolCallId);
+vi.mock("@earendil-works/pi-coding-agent", () => piSdkMockFactory());
+vi.mock("../shared.js", () => sharedMockFactory());
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
 async function trigger(s: ContextState, msgs: any[], pi: any) {
 	const { handleContextEvent } = await import("../handle-context.js");
@@ -95,7 +34,7 @@ async function trigger(s: ContextState, msgs: any[], pi: any) {
 
 describe("回归：skill 豁免不变，plans/openspec 不再豁免，ADR 豁免", () => {
 	beforeEach(() => {
-		mockConfig = {
+		agingMockState.config = {
 			distillThreshold: 1000,
 			agingThreshold: 3,
 			errorAgingThreshold: 3,
@@ -103,7 +42,7 @@ describe("回归：skill 豁免不变，plans/openspec 不再豁免，ADR 豁免
 			processorThreshold: 0,
 			firstSeenCap: 15000,
 		};
-		mockEstimateTokens = (t) => Math.ceil(t.length / 4);
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("skill 文件仍豁免 aging", async () => {

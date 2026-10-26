@@ -9,77 +9,23 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+// ⚠ helper 必须在静态 import 被测模块之前（handle-context 加载触发 mock 工厂）
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkPi,
+	mkState,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 import { type ContextState, handleContextEvent } from "../handle-context.js";
 import { loadManifest } from "../shared.js";
 
-// ── mocks ──
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => ({
-		distillThreshold: 100,
-		agingThreshold: 10,
-		errorAgingThreshold: 3,
-		largeResultAging: 2,
-		processorThreshold: 0,
-		firstSeenCap: 15000,
-	}),
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: vi.fn(),
-	loadManifest: vi.fn(),
-	hintsConfig: {
-		distillWarning: "📋 {label}",
-		distillWarningShort: "📋 {label}",
-		distillOverCapWarning: "⚠️ {label}",
-		distillOverCapWarningShort: "⚠️ {label}",
-		processorSummary: "[processed] {toolName}",
-		processorSmallResult: "{formatted}",
-	},
-	fillTemplate: (t: string, vars: Record<string, string>) =>
-		t.replace(/\{(\w+)\}/g, (_: string, k: string) => vars[k] ?? `{${k}}`),
-}));
-
-vi.mock("../distill-helpers.js", () => ({
-	buildToolCallMap: () => new Map(),
-	estimateTokens: (t: string) => Math.ceil(t.length / 4),
-	isSkillFilePath: () => false,
-	isArchDocPath: () => false,
-	isAgingExempt: () => false,
-	selectAgingThreshold: (
-		ctx: { isError: boolean; toolName: string; tokens: number },
-		cfg: { errorAgingThreshold: number; distillThreshold: number; largeResultAging: number; agingThreshold: number },
-	) =>
-		(ctx.toolName === "edit" || ctx.toolName === "write") && !ctx.isError
-			? Number.POSITIVE_INFINITY
-			: ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0
-				? cfg.largeResultAging
-				: ctx.isError && cfg.errorAgingThreshold > 0
-					? cfg.errorAgingThreshold
-					: cfg.agingThreshold,
-	toolMeta: () => ({ meta: "" }),
-	removeOrphanedToolCalls: vi.fn(),
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
+vi.mock("../shared.js", () => sharedMockFactory());
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
 // ── helpers ──
-function mkState(): ContextState {
-	return {
-		agingTracker: new Map(),
-		agingSnapshot: new Map(),
-		manuallyDeletedIds: new Set(),
-		agingDeletedIds: new Set(),
-		seenArgs: new Set(),
-		truncatedToolCallIds: new Set(),
-		lastMessages: [],
-		sessionId: "",
-	};
-}
-function mkPi() {
-	return { events: { emit: vi.fn() } } as unknown as ExtensionAPI;
-}
 function mkMsg(tcId: string, text: string): any[] {
 	return [
 		{
@@ -104,13 +50,22 @@ function remaining(msgs: any[]): string[] {
 // ═══════════════════════════════════════════
 describe("resume manifest 恢复", () => {
 	beforeEach(() => {
+		agingMockState.config = {
+			distillThreshold: 100,
+			agingThreshold: 10,
+			errorAgingThreshold: 3,
+			largeResultAging: 2,
+			processorThreshold: 0,
+			firstSeenCap: 15000,
+		};
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 		vi.clearAllMocks();
 		delete process.env.PI_SESSION_ID;
 	});
 
 	it("getSessionId 正常时用其值恢复 manifest", () => {
 		const state = mkState();
-		const pi = mkPi();
+		const pi = mkPi() as unknown as ExtensionAPI;
 		const ctx = {
 			sessionManager: { getSessionId: () => "ctx-session-id" },
 		};
@@ -127,7 +82,7 @@ describe("resume manifest 恢复", () => {
 	it("getSessionId 返回 undefined 时用 PI_SESSION_ID fallback 恢复 manifest", () => {
 		process.env.PI_SESSION_ID = "env-session-id";
 		const state = mkState();
-		const pi = mkPi();
+		const pi = mkPi() as unknown as ExtensionAPI;
 		// 模拟 resume 冷启动早期：getSessionId 返回 undefined
 		const ctx = {
 			sessionManager: { getSessionId: () => undefined },
@@ -146,7 +101,7 @@ describe("resume manifest 恢复", () => {
 	it("env fallback 恢复的 agingDeleted 被正确应用 — 大结果不进入上下文", () => {
 		process.env.PI_SESSION_ID = "env-session-id";
 		const state = mkState();
-		const pi = mkPi();
+		const pi = mkPi() as unknown as ExtensionAPI;
 		const ctx = {
 			sessionManager: { getSessionId: () => undefined },
 		};
@@ -171,7 +126,7 @@ describe("resume manifest 恢复", () => {
 
 	it("getSessionId 和 PI_SESSION_ID 都为空时不加载 manifest", () => {
 		const state = mkState();
-		const pi = mkPi();
+		const pi = mkPi() as unknown as ExtensionAPI;
 		const ctx = {
 			sessionManager: { getSessionId: () => undefined },
 		};
@@ -184,7 +139,7 @@ describe("resume manifest 恢复", () => {
 	it("同一 session 第二次 context 事件不重复加载 manifest", () => {
 		process.env.PI_SESSION_ID = "env-session-id";
 		const state = mkState();
-		const pi = mkPi();
+		const pi = mkPi() as unknown as ExtensionAPI;
 		const ctx = {
 			sessionManager: { getSessionId: () => undefined },
 		};

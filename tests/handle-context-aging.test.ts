@@ -1,95 +1,26 @@
 /**
- * handleContextEvent 集成测试 — aging 删除、distill+aging 统一流程、提示文案
+ * handleContextEvent 集成测试 — aging 基本删除、distill+aging 统一流程、提示文案
+ * （manuallyDeletedIds / agingSnapshot 见 handle-context-aging-misc.test.ts）
  */
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+// ⚠ helper 必须在静态 import 被测模块之前（handle-context 加载触发 mock 工厂）
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkPi,
+	mkState,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 import { type ContextState, handleContextEvent } from "../handle-context.js";
 
-// ── mocks ──
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => ({
-		distillThreshold: 100,
-		agingThreshold: 3,
-		errorAgingThreshold: 3,
-		largeResultAging: 2,
-		processorThreshold: 0,
-	}),
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: vi.fn(),
-	loadManifest: vi.fn(),
-	hintsConfig: {
-		distillWarning:
-			"📋 [auto-distill] 「{label}」全文 ~{tokens} tokens，超过上下文阈值。请使用 read(offset,limit)/grep 等精确方法获取所需信息，下轮请求时此结果会被自动移除。",
-		distillWarningShort: "📋 大结果「{label}」下轮自动移除",
-		processorSummary:
-			"[processed] {toolName} 结果（~{tokens} tokens）\n完整内容：{tmpPath}\n\n{preview}\n{more}",
-		processorSmallResult: "{formatted}\n\n原文：{tmpPath}",
-	},
-	fillTemplate: (t: string, vars: Record<string, string>) =>
-		t.replace(/\{(\w+)\}/g, (_: string, k: string) => vars[k] ?? `{${k}}`),
-}));
-
-vi.mock("../distill-helpers.js", () => ({
-	buildToolCallMap: () => new Map(),
-	estimateTokens: (t: string) => Math.ceil(t.length / 4),
-	isSkillFilePath: () => false,
-	isArchDocPath: () => false,
-	isAgingExempt: () => false,
-	selectAgingThreshold: (
-		ctx: { isError: boolean; toolName: string; tokens: number },
-		cfg: { errorAgingThreshold: number; distillThreshold: number; largeResultAging: number; agingThreshold: number },
-	) =>
-		(ctx.toolName === "edit" || ctx.toolName === "write") && !ctx.isError
-			? Number.POSITIVE_INFINITY
-			: ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0
-				? cfg.largeResultAging
-				: ctx.isError && cfg.errorAgingThreshold > 0
-					? cfg.errorAgingThreshold
-					: cfg.agingThreshold,
-	toolMeta: () => ({ meta: "" }),
-	removeOrphanedToolCalls: (msgs: any[]) => {
-		const activeIds = new Set<string>();
-		for (const m of msgs)
-			if (m.role === "toolResult" && m.toolCallId) activeIds.add(m.toolCallId);
-		for (const msg of msgs) {
-			if (msg.role === "assistant" && Array.isArray(msg.content))
-				msg.content = msg.content.filter(
-					(b: any) => b.type !== "toolCall" || activeIds.has(b.id),
-				);
-		}
-		for (let i = msgs.length - 1; i >= 0; i--) {
-			const m = msgs[i];
-			if (
-				m.role === "assistant" &&
-				Array.isArray(m.content) &&
-				m.content.length === 0
-			)
-				msgs.splice(i, 1);
-		}
-	},
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
+vi.mock("../shared.js", () => sharedMockFactory());
+// 保留真实 distill-helpers（用例均无 path，isAgingExempt 真实判定恒 false，
+// 与原 stub 等价），只覆盖 estimateTokens —— 消除复刻假绿
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
 // ── helpers ──
-function mkState(): ContextState {
-	return {
-		agingTracker: new Map(),
-		agingSnapshot: new Map(),
-		manuallyDeletedIds: new Set(),
-		agingDeletedIds: new Set(),
-		seenArgs: new Set(),
-		truncatedToolCallIds: new Set(),
-		lastMessages: [],
-		sessionId: "",
-	};
-}
-function mkPi() {
-	return { events: { emit: vi.fn() } };
-}
 function mkMsg(tcId: string, text: string, toolName = "bash"): any[] {
 	return [
 		{
@@ -109,10 +40,21 @@ function remaining(msgs: any[]): string[] {
 		.filter((m: any) => m.role === "toolResult")
 		.map((m: any) => m.toolCallId);
 }
-
 function trigger(state: ContextState, msgs: any[], pi: any, ctx?: any) {
 	handleContextEvent({ messages: msgs }, ctx ?? {}, state, pi);
 }
+
+// 文件级统一配置（原 mock 为静态内联，此处等价复刻；六个 describe 共用）
+beforeEach(() => {
+	agingMockState.config = {
+		distillThreshold: 100,
+		agingThreshold: 3,
+		errorAgingThreshold: 3,
+		largeResultAging: 2,
+		processorThreshold: 0,
+	};
+	agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
+});
 
 // ═══════════════════════════════════════════
 // 1. aging 基本递增和删除
@@ -228,73 +170,4 @@ describe("distill + aging 统一流程", () => {
 	});
 });
 
-// ═══════════════════════════════════════════
-// 3. distill 首次提示文案
-// ═══════════════════════════════════════════
-describe("distill 首次提示", () => {
-	it("大结果 count=1 时给提示告诉 AI 用精确方法", () => {
-		const state = mkState();
-		const pi = mkPi();
-		const bigText = "x".repeat(500);
-		const msgs = [...mkMsg("tc-big", bigText)];
-		trigger(state, msgs, pi);
-		// 检查 pi.events.emit 被调用的提示
-		const calls = pi.events.emit.mock.calls.map((c: any[]) => c[0]);
-		expect(calls).toContain("ephemeral:hint");
-	});
-
-	it("大结果 count=2 删除时静默（不给提示）", () => {
-		const state = mkState();
-		const pi = mkPi();
-		const bigText = "x".repeat(500);
-		// 轮 1
-		trigger(state, [...mkMsg("tc-big", bigText)], pi);
-		pi.events.emit.mockClear();
-		// 轮 2: 删除
-		trigger(state, [...mkMsg("tc-big", bigText)], pi);
-		const calls = pi.events.emit.mock.calls.map((c: any[]) => c[0]);
-		expect(calls).not.toContain("ephemeral:hint");
-	});
-
-	it("小结果不给 distill 提示", () => {
-		const state = mkState();
-		const pi = mkPi();
-		const msgs = [...mkMsg("tc-small", "hi")];
-		trigger(state, msgs, pi);
-		const calls = pi.events.emit.mock.calls.map((c: any[]) => c[0]);
-		expect(calls).not.toContain("ephemeral:hint");
-	});
-});
-
-// ═══════════════════════════════════════════
-// 4. manuallyDeletedIds
-// ═══════════════════════════════════════════
-describe("manuallyDeletedIds", () => {
-	it("手动删除的 tcId 不再出现", () => {
-		const state = mkState();
-		state.manuallyDeletedIds.add("tc-del");
-		const pi = mkPi();
-		const msgs = [...mkMsg("tc-del", "data"), ...mkMsg("tc-keep", "data")];
-		trigger(state, msgs, pi);
-		expect(remaining(msgs)).toEqual(["tc-keep"]);
-	});
-});
-
-// ═══════════════════════════════════════════
-// 5. agingSnapshot 更新
-// ═══════════════════════════════════════════
-describe("agingSnapshot", () => {
-	it("每轮更新 agingSnapshot 反映当前计数", () => {
-		const state = mkState();
-		const pi = mkPi();
-		trigger(state, [...mkMsg("tc-1", "hi")], pi);
-		expect(state.agingSnapshot.get("tc-1")).toBe(1);
-		trigger(state, [...mkMsg("tc-1", "hi")], pi);
-		expect(state.agingSnapshot.get("tc-1")).toBe(2);
-	});
-});
-
-// ═══════════════════════════════════════════
-// 6. agingThreshold=0 禁用（需要单独 mock 配置，跳过集成测试）
-// ═══════════════════════════════════════════
-// 此场景由单元测试覆盖
+// agingThreshold=0 禁用场景由单元测试覆盖

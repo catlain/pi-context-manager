@@ -1,6 +1,11 @@
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+	isArchDocPath,
+	isOpenspecDesignDocPath,
+	isSkillMdPath,
+} from "@pi-atelier/shared-utils";
 import type { PayloadContentBlock, PayloadMessage } from "./types-payload.js";
 import { formatTokens } from "./utils.js";
 
@@ -183,41 +188,18 @@ export function buildSummary(
 
 // ── 技能文件豁免 ──
 
-const AGENT_DIR =
-	process.env.PI_AGENT_DIR || join(process.env.HOME || "/root", ".pi", "agent");
+// ── 保护文档清单（单一事实源：@pi-atelier/shared-utils）──
+// 谓词语义见 shared-utils/src/protected-docs.ts：技能入口 SKILL.md（任意目录树，含 .agents/git 包）、
+// openspec/changes/{change}/design.md、docs/agent/ 架构宪法文档。
+// 相对旧本地实现的行为变化（设计声明）：技能目录非 SKILL.md 文件（模板等）不再豁免（收窄）；
+// .agents 等非 .pi 树的 skills/{name}/SKILL.md 新增豁免（扩齐）；相对路径 SKILL.md 保持命中。
 
-/** 判断路径是否属于技能文件（内联技能或 npm 技能） */
-export function isSkillFilePath(path: string | undefined): boolean {
-	if (!path) return false;
-	const resolved =
-		path.startsWith("/") || path.startsWith("C:")
-			? path
-			: join(AGENT_DIR, path);
-	if (!resolved.startsWith(AGENT_DIR)) return false;
-	// 匹配 skills/{name}/ 或 node_modules/{pkg}/skills/{name}/
-	return /[\\/]skills[\\/][^\\/]+[\\/]/.test(resolved);
-}
-
-/** 判断路径是否属于 openspec 变更设计文档（openspec/changes/<change>/design.md）— 永不 aging
- *  仅豁免 design.md（低频高价值的决策记录）；proposal/tasks/增量 specs/主规格走普通 aging。
- *  理由：tasks.md 等高频参照文档留在上下文的是旧快照，aging 掉逼着重读反而拿到实况。 */
-export function isOpenspecDocPath(path: string | undefined): boolean {
-	if (!path) return false;
-	// 匹配 openspec/changes/<change>/design.md — 支持相对路径和绝对路径、兼容 / 与 \ 分隔符
-	return /(^|[\\/])openspec[\\/]changes[\\/][^\\/]+[\\/]design\.md$/.test(path);
-}
-
-/** 判断路径是否属于架构宪法文档 — 永不 aging
- *  覆盖：docs/agent/adr/（含 INDEX.md 与编号 ADR）、docs/agent/adr-archive/、
- *  单文件形态 docs/agent/ADR.md、docs/agent/INVARIANTS.md、docs/agent/designs/（Design Note）。
- *  docs/agent/ 前缀约束防止业务文件误伤（如 results/designs/、根目录 ADR.md）。 */
-export function isArchDocPath(path: string | undefined): boolean {
-	if (!path) return false;
-	// 匹配 docs/agent/ 下的 adr(-archive)/、ADR.md、INVARIANTS.md、designs/ — 兼容 / 与 \ 分隔符
-	return /(^|[\\/])docs[\\/]agent[\\/](?:adr(?:-archive)?[\\/]|ADR\.md$|INVARIANTS\.md$|designs[\\/])/.test(
-		path,
-	);
-}
+// 本地历史导出名保留为别名（护住既有测试 import），行为以 shared-utils 谓词为准
+export {
+	isSkillMdPath as isSkillFilePath,
+	isOpenspecDesignDocPath as isOpenspecDesignPath,
+	isArchDocPath,
+};
 
 // ── aging 策略选择（纯函数，便于独立测试） ──
 
@@ -237,8 +219,8 @@ export interface AgingContext {
 export function isAgingExempt(ctx: AgingContext): boolean {
 	if (
 		ctx.toolName === "read" &&
-		(isSkillFilePath(ctx.filePath) ||
-			isOpenspecDocPath(ctx.filePath) ||
+		(isSkillMdPath(ctx.filePath) ||
+			isOpenspecDesignDocPath(ctx.filePath) ||
 			isArchDocPath(ctx.filePath))
 	)
 		return true;

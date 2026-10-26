@@ -5,84 +5,23 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkPi,
+	mkState,
+	rem,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 
-let mockConfig: Record<string, number>;
-
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => mockConfig,
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: vi.fn(),
-	loadManifest: vi.fn(),
-	hintsConfig: {
-		distillWarning: "📋 「{label}」~{tokens} tokens，下轮移除。",
-		distillWarningShort: "📋 「{label}」下轮移除",
-		distillOverCapWarning: "⚠️ 「{label}」~{tokens} > {cap}，已直接移除。",
-		distillOverCapWarningShort: "⚠️ 「{label}」已移除",
-		processorSummary: "",
-		processorSmallResult: "",
-	},
-	fillTemplate: (t: string, v: Record<string, string>) =>
-		t.replace(/\{(\w+)\}/g, (_: string, k: string) => v[k] ?? `{${k}}`),
-}));
-
-vi.mock("../distill-helpers.js", () => ({
-	buildToolCallMap: () => new Map(),
-	estimateTokens: (t: string) => Math.ceil(t.length / 4),
-	isSkillFilePath: () => false,
-	isArchDocPath: () => false,
-	isAgingExempt: () => false,
-	selectAgingThreshold: (
-		ctx: { isError: boolean; toolName: string; tokens: number },
-		cfg: { errorAgingThreshold: number; distillThreshold: number; largeResultAging: number; agingThreshold: number },
-	) =>
-		(ctx.toolName === "edit" || ctx.toolName === "write") && !ctx.isError
-			? Number.POSITIVE_INFINITY
-			: ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0
-				? cfg.largeResultAging
-				: ctx.isError && cfg.errorAgingThreshold > 0
-					? cfg.errorAgingThreshold
-					: cfg.agingThreshold,
-	toolMeta: () => ({ meta: "" }),
-	removeOrphanedToolCalls: (msgs: any[]) => {
-		const active = new Set<string>();
-		for (const m of msgs)
-			if (m.role === "toolResult" && m.toolCallId) active.add(m.toolCallId);
-		for (const msg of msgs) {
-			if (msg.role === "assistant" && Array.isArray(msg.content))
-				msg.content = msg.content.filter(
-					(b: any) => b.type !== "toolCall" || active.has(b.id),
-				);
-		}
-		for (let i = msgs.length - 1; i >= 0; i--) {
-			const m = msgs[i];
-			if (
-				m.role === "assistant" &&
-				Array.isArray(m.content) &&
-				m.content.length === 0
-			)
-				msgs.splice(i, 1);
-		}
-	},
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
+vi.mock("../shared.js", () => sharedMockFactory());
+// 保留真实 distill-helpers（selectAgingThreshold 优先级 / isAgingExempt——用例均无
+// path，真实判定恒 false，与原手写 stub 等价），只覆盖 estimateTokens —— 消除复刻假绿
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
 // ── helpers ──
-const mkState = (): ContextState => ({
-	agingTracker: new Map(),
-	agingSnapshot: new Map(),
-	manuallyDeletedIds: new Set(),
-	agingDeletedIds: new Set(),
-	seenArgs: new Set(),
-	truncatedToolCallIds: new Set(),
-	lastMessages: [],
-	sessionId: "",
-});
-const mkPi = () => ({ events: { emit: vi.fn() } });
 const mkMsg = (tcId: string, text: string) => [
 	{
 		role: "assistant",
@@ -95,8 +34,6 @@ const mkMsg = (tcId: string, text: string) => [
 		content: [{ type: "text", text }],
 	},
 ];
-const rem = (msgs: any[]) =>
-	msgs.filter((m) => m.role === "toolResult").map((m) => m.toolCallId);
 const hints = (pi: any) =>
 	pi.events.emit.mock.calls
 		.filter((c: any[]) => c[0] === "ephemeral:hint")
@@ -118,7 +55,8 @@ async function trigger(s: ContextState, msgs: any[], pi: any) {
 // ═══════════════════════════════════════
 describe("firstSeenCap: 正常首次保留", () => {
 	beforeEach(() => {
-		mockConfig = cfg();
+		agingMockState.config = cfg();
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("保留全文 + 普通 hint", async () => {
@@ -143,7 +81,8 @@ describe("firstSeenCap: 正常首次保留", () => {
 // ═══════════════════════════════════════
 describe("firstSeenCap: 超大结果直接删除", () => {
 	beforeEach(() => {
-		mockConfig = cfg();
+		agingMockState.config = cfg();
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("首次也直接删除", async () => {
@@ -181,7 +120,8 @@ describe("firstSeenCap: 超大结果直接删除", () => {
 // ═══════════════════════════════════════
 describe("firstSeenCap: cap=0 无限", () => {
 	beforeEach(() => {
-		mockConfig = cfg({ firstSeenCap: 0 });
+		agingMockState.config = cfg({ firstSeenCap: 0 });
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("cap=0 时正常大结果首次保留（0 表示不限制）", async () => {
@@ -199,7 +139,8 @@ describe("firstSeenCap: cap=0 无限", () => {
 // ═══════════════════════════════════════
 describe("firstSeenCap: 配置矛盾自动修复", () => {
 	beforeEach(() => {
-		mockConfig = cfg({ firstSeenCap: 50 });
+		agingMockState.config = cfg({ firstSeenCap: 50 });
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("200 tokens > max(50,100)=100 → 删除", async () => {
@@ -224,7 +165,8 @@ describe("firstSeenCap: 配置矛盾自动修复", () => {
 // ═══════════════════════════════════════
 describe("firstSeenCap: 小结果 + 多轮混合", () => {
 	beforeEach(() => {
-		mockConfig = cfg({ agingThreshold: 3 });
+		agingMockState.config = cfg({ agingThreshold: 3 });
+		agingMockState.tokensFn = (t) => Math.ceil(t.length / 4);
 	});
 
 	it("小结果走 aging 不受 cap 影响", async () => {
@@ -237,7 +179,7 @@ describe("firstSeenCap: 小结果 + 多轮混合", () => {
 	});
 
 	it("正常→删除→超大新出现直接删除", async () => {
-		mockConfig = cfg({ agingThreshold: 2 }); // 轮1保留，轮2删除
+		agingMockState.config = cfg({ agingThreshold: 2 }); // 轮1保留，轮2删除
 		const s = mkState(),
 			pi = mkPi();
 		// 轮1: 正常大结果 200 tokens ∈ [100, 500]，首次保留

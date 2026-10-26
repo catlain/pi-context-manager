@@ -5,60 +5,26 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";
+import {
+	agingMockState,
+	distillHelpersMockFactory,
+	mkPi,
+	mkState,
+	piSdkMockFactory,
+	rem,
+	sharedMockFactory,
+	truncatorMockFactory,
+} from "./aging-test-helpers.js";
 
-// ── Mocks ──
-let mockConfig: Record<string, number>;
+vi.mock("@earendil-works/pi-coding-agent", () => piSdkMockFactory());
+vi.mock("../shared.js", () => sharedMockFactory());
+// 保留真实 distill-helpers（含 isSkillFilePath 三类匹配），只覆盖 estimateTokens 固定 500（< distillThreshold → 走 aging 路径）
+vi.mock("../distill-helpers.js", (o) => distillHelpersMockFactory(o));
+vi.mock("../toolcall-args-truncator.js", () => truncatorMockFactory());
 
-vi.mock("@earendil-works/pi-coding-agent", () => ({
-	registerExtension: vi.fn(),
-	registerCommand: vi.fn(),
-	registerTool: vi.fn(),
-}));
-
-vi.mock("../shared.js", () => ({
-	getContextConfig: () => mockConfig,
-	distilledMap: new Map(),
-	readCachedMessages: () => [],
-	writeCachedMessages: vi.fn(),
-	saveManifest: vi.fn(),
-	loadManifest: vi.fn(),
-	hintsConfig: {
-		distillWarning: "📋 「{label}」~{tokens} tokens，下轮移除。",
-		distillWarningShort: "📋 「{label}」下轮移除",
-		distillOverCapWarning: "⚠️ 「{label}」~{tokens} > {cap}，已直接移除。",
-		distillOverCapWarningShort: "⚠️ 「{label}」已移除",
-		agingWarning: "[aging] {label} 轮数={count}",
-		agingWarningShort: "[aging] {label}",
-	},
-	fillTemplate: (t: string, v: Record<string, string>) =>
-		t.replace(/\{(\w+)\}/g, (_: string, k: string) => v[k] ?? `{${k}}`),
-}));
-
-vi.mock("../distill-helpers.js", async (orig) => ({
-	...(await orig<typeof import("../distill-helpers.js")>()),
-	estimateTokens: () => 500, // < distillThreshold → 走 aging 路径
-}));
-
-vi.mock("../toolcall-args-truncator.js", () => ({
-	truncateToolCallArgs: vi.fn(),
-}));
-
-// ── Helpers ──
 const AGENT_DIR =
 	process.env.PI_AGENT_DIR ||
 	require("node:path").join(process.env.HOME || "/root", ".pi", "agent");
-
-const mkState = (): ContextState => ({
-	agingTracker: new Map(),
-	agingSnapshot: new Map(),
-	manuallyDeletedIds: new Set(),
-	agingDeletedIds: new Set(),
-	seenArgs: new Set(),
-	truncatedToolCallIds: new Set(),
-	lastMessages: [],
-	sessionId: "",
-});
-const mkPi = () => ({ events: { emit: vi.fn() } });
 
 const mkReadMsg = (tcId: string, path: string, text: string) => [
 	{
@@ -86,10 +52,6 @@ const mkToolMsg = (tcId: string, toolName: string, args: any, text: string) => [
 		content: [{ type: "text", text }],
 	},
 ];
-const rem = (msgs: any[]) =>
-	msgs
-		.filter((m: any) => m.role === "toolResult")
-		.map((m: any) => m.toolCallId);
 
 async function trigger(s: ContextState, msgs: any[], pi: any) {
 	const { handleContextEvent } = await import("../handle-context.js");
@@ -99,47 +61,30 @@ async function trigger(s: ContextState, msgs: any[], pi: any) {
 // ── Tests ──
 describe("aging 技能文件豁免", () => {
 	beforeEach(() => {
-		mockConfig = {
+		agingMockState.config = {
 			distillThreshold: 1000,
 			agingThreshold: 3,
 			processorThreshold: 0,
 			firstSeenCap: 15000,
 		};
+		agingMockState.tokensFn = () => 500;
 	});
 
 	it("内联技能 SKILL.md 豁免 aging", async () => {
-		const _s = mkState(),
-			_pi = mkPi();
-		const _msgs = mkReadMsg(
-			"tc1",
-			`${AGENT_DIR}/skills/code-graph/SKILL.md`,
-			"x".repeat(200),
-		);
-		for (let i = 0; i < 5; i++)
-			await trigger(
-				mkState(),
-				[
-					...mkReadMsg(
-						"tc1",
-						`${AGENT_DIR}/skills/code-graph/SKILL.md`,
-						"x".repeat(200),
-					),
-				],
-				mkPi(),
-			);
-		// 单独验证：同一个 state 跑多轮
-		const s2 = mkState(),
-			pi2 = mkPi();
-		const msgs2 = mkReadMsg(
+		const s = mkState(),
+			pi = mkPi();
+		const msgs = mkReadMsg(
 			"s1",
 			`${AGENT_DIR}/skills/code-graph/SKILL.md`,
 			"x".repeat(200),
 		);
-		for (let i = 0; i < 5; i++) await trigger(s2, [...msgs2], pi2);
-		expect(rem(s2.lastMessages)).toContain("s1");
+		for (let i = 0; i < 5; i++) await trigger(s, [...msgs], pi);
+		expect(rem(s.lastMessages)).toContain("s1");
 	});
 
-	it("内联技能参考文件（references/*.md）豁免", async () => {
+	it("内联技能参考文件（references/*.md）不再豁免（收窄：仅 SKILL.md 入口）", async () => {
+		// unify-protected-doc-list 行为变化：技能目录下非 SKILL.md 文件（模板/references 等）
+		// 走普通 aging（SKILL.md 入口常在，需要时重读）；agingThreshold=3，5 轮后应被淘汰
 		const s = mkState(),
 			pi = mkPi();
 		const msgs = mkReadMsg(
@@ -148,7 +93,7 @@ describe("aging 技能文件豁免", () => {
 			"x".repeat(200),
 		);
 		for (let i = 0; i < 5; i++) await trigger(s, [...msgs], pi);
-		expect(rem(s.lastMessages)).toContain("s2");
+		expect(rem(s.lastMessages)).not.toContain("s2");
 	});
 
 	it("npm 技能文件豁免", async () => {
