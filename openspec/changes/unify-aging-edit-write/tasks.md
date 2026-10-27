@@ -14,5 +14,5 @@
 ## 3. 验证与文档
 
 - [x] 3.1 运行 `npm test` 全绿（67 文件/824 用例）+ `npm run typecheck` 通过
-- [ ] 3.2 更新全局记忆 `aging-exempt-semantics`：移除 "Infinity 阈值豁免（edit/write）" 层次，记录本变更的取代关系与统一阈值语义
-- [ ] 3.3 git commit（含 session 追踪注释）
+- [x] 3.2 更新项目记忆 `aging-exempt-semantics`：豁免三层降两层，记录取代关系与统一阈值语义
+- [x] 3.3 git commit + push（db0a1a5，含 session 追踪注释）
