@@ -1,9 +1,10 @@
 /**
- * edit/write firstSeenCap 兜底集成测试（从 edit-write-aging-exempt.test.ts 拆出）
+ * edit/write firstSeenCap 兜底集成测试（从 edit-write aging 套件拆出）
  *
- * edit/write 虽享 Infinity aging 阈值，但仍受 firstSeenCap 大结果兜底：
+ * edit/write 与所有工具一样受 firstSeenCap 大结果兜底：
  * - 超大结果（>cap）首次即删除 + overCap hint
  * - 大结果（∈ [distill, cap]）首次保留 + distill hint
+ * （unify-aging-edit-write 后 edit/write 无特殊阈值，但 firstSeenCap 语义不变）
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";

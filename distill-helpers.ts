@@ -209,8 +209,8 @@ export interface AgingContext {
 /** 判断是否完全跳过 aging（不累加计数、不进 firstSeenCap）。
  *  现有规则：read 命中 skill / openspec changes design.md / 架构宪法文档
  *  （ADR、INVARIANTS、Design Note）路径。
- *  注意：edit/write 不在此豁免——它们走 selectAgingThreshold 的 Infinity 阈值，
- *  以便仍能经过 firstSeenCap 检查。 */
+ *  注意：edit/write 不在此豁免——与所有工具一样走 selectAgingThreshold 的
+ *  统一阈值（unify-aging-edit-write 后无永生路径）。 */
 export function isAgingExempt(ctx: AgingContext): boolean {
 	if (
 		ctx.toolName === "read" &&
@@ -222,7 +222,7 @@ export function isAgingExempt(ctx: AgingContext): boolean {
 	return false;
 }
 
-/** aging 策略所需配置字段的精简接口（selectAgingThreshold 只读这 4 个字段） */
+/** aging 策略所需配置字段的精简接口（selectAgingThreshold 只读这个字段集合） */
 export interface AgingConfig {
 	distillThreshold: number;
 	agingThreshold: number;
@@ -230,28 +230,20 @@ export interface AgingConfig {
 	largeResultAging: number;
 }
 
-/** 选择有效 aging 阈值（轮数）。返回 Infinity 表示永不达龄。
- *  优先级：edit/write 非错误（豁免 A+C）> 大文件（A，保持原有 A>B 优先）> 错误结果（B）> 普通轮数（C）。
- *  返回 ≤0 表示该策略被禁用（配置关闭）。
- *  注意：edit/write 的错误结果不给予豁免——如果是大文件走 A，否则走 B，与原行为一致。 */
+/** 选择有效 aging 阈值（轮数）。
+ *  优先级：大文件（A）> 错误结果（B）> 普通轮数（C），对所有工具一致（含 edit/write，
+ *  unify-aging-edit-write 取代了旧的 edit/write 永生豁免）。
+ *  返回 ≤0 表示该策略被禁用（配置关闭）。 */
 export function selectAgingThreshold(
 	ctx: AgingContext,
 	cfg: AgingConfig,
 ): number {
-	// edit/write 非错误：豁免 A（大文件）和 C（轮数），用 Infinity 表示永不达龄，
-	// 但仍会经过主循环的 firstSeenCap 检查（见 handle-context.ts）。
-	// 必须在 A 之前拦截，否则会被大文件优先级抢走。
-	if (
-		(ctx.toolName === "edit" || ctx.toolName === "write") &&
-		!ctx.isError
-	)
-		return Number.POSITIVE_INFINITY;
-	// A（大文件）：对所有工具（含 edit/write 错误的大文件）生效，保持原有 A>B 优先级
+	// A（大文件）：对所有工具（含 edit/write）生效，保持原有 A>B 优先级
 	if (ctx.tokens >= cfg.distillThreshold && cfg.largeResultAging > 0)
 		return cfg.largeResultAging;
 	// B（出错）：非大文件的错误结果走加速淘汰
 	if (ctx.isError && cfg.errorAgingThreshold > 0)
 		return cfg.errorAgingThreshold;
-	// C（轮数）
+	// C（轮数）：所有工具的成功结果（含 edit/write）共享统一阈值
 	return cfg.agingThreshold;
 }

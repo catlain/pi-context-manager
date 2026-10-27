@@ -1,7 +1,7 @@
 /**
  * aging 豁免路径回归测试（端到端：trigger → aging 淘汰判定）
  * 覆盖 retune-aging-exemptions 后的清单：skill 豁免、plans/openspec tasks 不再豁免、
- * design.md / ADR / INVARIANTS / Design Note 豁免。mock 模式参照 edit-write-aging-exempt.test.ts。
+ * design.md / ADR / INVARIANTS / Design Note 豁免。mock 模式参照 edit-write-aging-unified.test.ts。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextState } from "../handle-context.js";

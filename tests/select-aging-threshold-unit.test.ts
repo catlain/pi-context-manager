@@ -30,16 +30,16 @@ const ctx = (o: Partial<AgingContext> = {}): AgingContext => ({
 });
 
 describe("selectAgingThreshold", () => {
-	it("edit 非错误 → Infinity（豁免 A 和 C）", () => {
+	it("edit 非错误 → agingThreshold（统一阈值，无豁免）", () => {
 		expect(
 			selectAgingThreshold(ctx({ toolName: "edit", isError: false }), cfg()),
-		).toBe(Number.POSITIVE_INFINITY);
+		).toBe(10);
 	});
 
-	it("write 非错误 → Infinity（豁免 A 和 C）", () => {
+	it("write 非错误 → agingThreshold（统一阈值，无豁免）", () => {
 		expect(
 			selectAgingThreshold(ctx({ toolName: "write", isError: false }), cfg()),
-		).toBe(Number.POSITIVE_INFINITY);
+		).toBe(10);
 	});
 
 	it("edit 错误 → errorAgingThreshold（B 不豁免）", () => {
@@ -79,7 +79,7 @@ describe("selectAgingThreshold", () => {
 	});
 
 	it("edit 错误大文件 → largeResultAging（A 优先于 B）", () => {
-		// edit 错误 + 大文件：不走 Infinity（因为是 isError），走 A（大文件优先于 B）
+		// edit 错误 + 大文件：走 A（大文件优先于 B）
 		expect(
 			selectAgingThreshold(
 				ctx({ toolName: "edit", isError: true, tokens: 1500 }),
@@ -107,14 +107,14 @@ describe("selectAgingThreshold", () => {
 		).toBe(2);
 	});
 
-	it("edit 非错误优先级高于大文件（tokens 大但走 Infinity）", () => {
-		// edit 非错误，即使 tokens 很大，也是 Infinity，不走 A
+	it("edit 非错误大文件 → largeResultAging（A 对成功 edit 也生效）", () => {
+		// edit 非错误且 tokens 大 → 走 A（unify-aging-edit-write 后无 Infinity 拦截）
 		expect(
 			selectAgingThreshold(
 				ctx({ toolName: "edit", isError: false, tokens: 99999 }),
 				cfg({ largeResultAging: 2 }),
 			),
-		).toBe(Number.POSITIVE_INFINITY);
+		).toBe(2);
 	});
 
 	it("largeResultAging=0 时，大文件不走 A，走 C", () => {
