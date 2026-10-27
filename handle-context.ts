@@ -127,7 +127,7 @@ export function handleContextEvent(
 		// 完全豁免：skill 文件 / openspec changes design.md / 架构宪法文档（ADR/INVARIANTS/Design Note）——连计数都不累加
 		if (isAgingExempt(agingCtx)) continue;
 
-		// 选择有效阈值（优先级：edit/write 非错误=Infinity > 大文件 > 错误 > 普通轮数）
+		// 选择有效阈值（优先级 A>B>C 见 selectAgingThreshold：大文件 > 错误 > 普通轮数，对所有工具一致）
 		const effectiveThreshold = selectAgingThreshold(agingCtx, {
 			distillThreshold,
 			agingThreshold,
