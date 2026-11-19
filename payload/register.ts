@@ -6,17 +6,14 @@
  *   action: list/single/overview/chain/chain-tcid/stats/diff/budget/expensive/growth/messages
  */
 
-import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { DISTILL_DIR } from "../shared.js";
+import { getCachePath } from "../shared.js";
 import { doChain, doDiff, doList, doOverview, doSingle } from "./analyze.js";
 import { getRecordingFiles } from "./files.js";
 import { doMessages } from "./messages.js";
 import { doBudget, doExpensive, doGrowth } from "./metrics.js";
 import { doChainTcId, doStats } from "./stats.js";
-
-const LAST_PAYLOAD = join(DISTILL_DIR, "last-payload.json");
 
 /** payload_analyze 工具参数类型（与 parameters schema 对齐） */
 type PayloadAction =
@@ -134,13 +131,22 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 
 		async execute(
 			_id: string,
-		params: PayloadAnalyzeParams,
+			params: PayloadAnalyzeParams,
+			_onUpdate: unknown,
+			ctx: { sessionManager?: { getSessionId?: () => string } },
 		): Promise<{
 			content: Array<{ type: string; text: string }>;
 			details: Record<string, unknown>;
 		}> {
 			try {
 				const sid = params.sessionId || undefined;
+				// 无 payloadPath 时回退本会话缓存（显式 sessionId > ctx.sessionManager > PI_SESSION_ID）
+				const execSid =
+					sid ||
+					ctx?.sessionManager?.getSessionId?.() ||
+					process.env.PI_SESSION_ID ||
+					"";
+				const lastPayload = getCachePath(execSid, "last-payload.json");
 				switch (params.action) {
 					case "list":
 						return {
@@ -152,7 +158,7 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 							content: [
 								{
 									type: "text",
-									text: doSingle(params.payloadPath ?? LAST_PAYLOAD),
+									text: doSingle(params.payloadPath ?? lastPayload),
 								},
 							],
 							details: {},
@@ -163,7 +169,7 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 								{
 									type: "text",
 									text: doOverview(
-										params.payloadPath ?? LAST_PAYLOAD,
+										params.payloadPath ?? lastPayload,
 										params.verbose ?? false,
 									),
 								},
@@ -232,7 +238,7 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 							details: {},
 						};
 					case "messages": {
-						const payloadPath = params.payloadPath ?? LAST_PAYLOAD;
+						const payloadPath = params.payloadPath ?? lastPayload;
 						return {
 							content: [
 								{

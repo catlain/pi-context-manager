@@ -26,6 +26,8 @@ vi.mock("../recording.js", () => ({
 vi.mock("../shared.js", () => ({
 	DISTILL_DIR: join(os.tmpdir(), "test-pi-distill"),
 	PAYLOAD_CACHE: join(os.tmpdir(), "test-pi-distill", "last-payload.json"),
+	getCachePath: (sid: string, name: string) =>
+		join(join(os.tmpdir(), "test-pi-distill"), sid || "anon", name),
 	getContextConfig: vi.fn(() => ({
 		distillThreshold: 1500,
 		processorThreshold: 2000,
@@ -50,7 +52,7 @@ vi.mock("../clean.js", () => ({
 
 import indexModule from "../index.js";
 import { RECORDINGS_DIR } from "../recording.js";
-import { DISTILL_DIR, PAYLOAD_CACHE } from "../shared.js";
+import { DISTILL_DIR } from "../shared.js";
 
 function createMockPi() {
 	const events: Record<string, Function> = {};
@@ -123,12 +125,30 @@ describe("before_provider_request 录制", () => {
 		expect(files[1]).toMatch(/^req-0002-/);
 	});
 
-	it("总是写 last-payload.json（不受录制开关影响）", async () => {
+	it("总是写 last-payload.json（不受录制开关影响，per-session 路径）", async () => {
 		mockIsRecording.mockReturnValue(false);
 		indexModule(mockPi as any);
 		const handler = mockPi.events.before_provider_request;
-		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
-		expect(existsSync(PAYLOAD_CACHE)).toBe(true);
+		const ctx = { sessionManager: { getSessionId: () => "pay-session-123" } };
+		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } }, ctx);
+		expect(
+			existsSync(join(DISTILL_DIR, "pay-session-123", "last-payload.json")),
+		).toBe(true);
+	});
+
+	it("无 ctx 且无 PI_SESSION_ID 时写入 anon/（空 sid 语义，ADR-010）", async () => {
+		const saved = process.env.PI_SESSION_ID;
+		delete process.env.PI_SESSION_ID;
+		try {
+			indexModule(mockPi as any);
+			const handler = mockPi.events.before_provider_request;
+			await handler({ payload: { messages: [] } });
+			expect(
+				existsSync(join(DISTILL_DIR, "anon", "last-payload.json")),
+			).toBe(true);
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+		}
 	});
 
 	it("无 payload 时不崩溃", async () => {

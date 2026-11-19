@@ -7,8 +7,8 @@ import { DISTILL_DIR } from "./shared.js";
 const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");
 const PROCESSOR_DIR = join(DISTILL_DIR, "processor");
 
-/** 已知的非会话目录名（会话清理/列举时排除） */
-const NON_SESSION_DIRS = new Set(["processor", "recordings"]);
+/** 已知的非会话目录名（会话清理/列举时排除；anon 为空 sid 会话的共享目录，仅全量清理覆盖） */
+const NON_SESSION_DIRS = new Set(["processor", "recordings", "anon"]);
 
 /** 计算目录大小（字节） */
 function dirSizeBytes(dir: string): number {
@@ -149,7 +149,7 @@ export function cleanContextData(sessionIdInput?: string): CleanResult {
 		totalBytes += dirSizeBytes(dir);
 		rmSync(dir, { recursive: true, force: true });
 	}
-	for (const funcDir of [RECORDINGS_DIR, PROCESSOR_DIR]) {
+	for (const funcDir of [RECORDINGS_DIR, PROCESSOR_DIR, join(DISTILL_DIR, "anon")]) {
 		if (existsSync(funcDir)) {
 			totalBytes += dirSizeBytes(funcDir);
 			rmSync(funcDir, { recursive: true, force: true });

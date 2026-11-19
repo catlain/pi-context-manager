@@ -60,7 +60,7 @@ describe("writeCachedMessages 写入失败时 console.warn", () => {
 		writeFileSync(DISTILL_DIR, "blocker");
 
 		// 调用，不应抛异常
-		expect(() => writeCachedMessages([{ role: "user" }])).not.toThrow();
+		expect(() => writeCachedMessages("sid-12345678", [{ role: "user" }])).not.toThrow();
 
 		// 应该 console.warn
 		expect(warnSpy).toHaveBeenCalled();

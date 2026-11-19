@@ -61,8 +61,6 @@ export interface ContextStateRef {
 	readonly manuallyDeletedIds: Set<string>;
 	/** 获取最后一次发给 LLM 的 messages */
 	getLastContextMessages(): PayloadMessage[];
-	/** 获取最后一次 provider payload（从文件缓存读取） */
-	getLastProviderPayload(): ProviderPayload | null;
 	/** 标记工具结果为手动删除 */
 	markManuallyDeleted(tcId: string): void;
 }

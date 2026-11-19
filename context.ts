@@ -28,9 +28,13 @@ export default function registerContextCommand(
 	pi.registerCommand("context", {
 		description: "Show context usage visualization.",
 		handler: async (_args, ctx) => {
+			const sid =
+				ctx?.sessionManager?.getSessionId?.() ||
+				process.env.PI_SESSION_ID ||
+				"";
 			const data = collectData(pi, ctx, {
 				messages: stateRef.getLastContextMessages(),
-				payload: readCachedPayload(),
+				payload: readCachedPayload(sid),
 				agingSnapshot: stateRef.agingSnapshot,
 				manuallyDeletedIds: stateRef.manuallyDeletedIds,
 			});

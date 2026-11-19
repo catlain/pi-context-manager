@@ -13,7 +13,7 @@ import registerContextCommand from "./context.js";
 import { type ContextState, handleContextEvent } from "./handle-context.js";
 import { registerPayloadAnalyzer } from "./payload/register.js";
 import { isRecording, RECORDINGS_DIR } from "./recording.js";
-import { DISTILL_DIR, PAYLOAD_CACHE } from "./shared.js";
+import { DISTILL_DIR, getCachePath } from "./shared.js";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 export default function (pi: ExtensionAPI) {
@@ -53,22 +53,6 @@ export default function (pi: ExtensionAPI) {
 		agingSnapshot,
 		manuallyDeletedIds,
 		getLastContextMessages: () => lastMessages,
-		getLastProviderPayload: () => {
-			try {
-				const fs = require("node:fs");
-				const path = require("node:path");
-				const cachePath = path.join(
-					require("node:os").homedir(),
-					".pi/agent/distill",
-					"last-payload.json",
-				);
-				if (fs.existsSync(cachePath))
-					return JSON.parse(fs.readFileSync(cachePath, "utf-8"));
-			} catch {
-				/* ignore */
-			}
-			return null;
-		},
 		markManuallyDeleted: (tcId: string) => {
 			manuallyDeletedIds.add(tcId);
 			const { saveManifest } = require("./shared.js");
@@ -107,17 +91,23 @@ export default function (pi: ExtensionAPI) {
 
 		try {
 			const { mkdirSync, writeFileSync, readdirSync } = require("node:fs");
-			const { join } = require("node:path");
+			const { dirname, join } = require("node:path");
 
-			mkdirSync(DISTILL_DIR, { recursive: true });
-			writeFileSync(PAYLOAD_CACHE, JSON.stringify(payload));
+			// 三段式 sid（SDK 无 ctx.session；PI_SESSION_ID 兜底；早于首 context 事件时为空 → 落 anon/）
+			const sid =
+				ctx?.sessionManager?.getSessionId?.() ||
+				process.env.PI_SESSION_ID ||
+				"";
+			const cachePath = getCachePath(sid, "last-payload.json");
+			mkdirSync(dirname(cachePath), { recursive: true });
+			writeFileSync(cachePath, JSON.stringify(payload));
 
 			// recordings（按 /record on 启用）
 			if (isRecording()) {
 				// 优先从 ctx.sessionManager 获取 sessionId（闭包变量可能在 context 事件前为空）
-				const sid =
+				const sid2 =
 					ctx?.sessionManager?.getSessionId?.() || sessionId || "unknown";
-				const sessionDir = join(RECORDINGS_DIR, sid);
+				const sessionDir = join(RECORDINGS_DIR, sid2);
 				mkdirSync(sessionDir, { recursive: true });
 				const files = readdirSync(sessionDir).filter((f: string) =>
 					f.endsWith(".json"),

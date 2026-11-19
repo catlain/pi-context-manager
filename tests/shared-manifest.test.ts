@@ -92,9 +92,9 @@ describe("saveManifest", () => {
 		expect(c.agingCounts).toEqual([]);
 	});
 
-	it("空 sessionId 时写入全局路径", () => {
+	it("空 sessionId 时写入 anon/（ADR-010，不污染根目录）", () => {
 		saveManifest("", { manuallyDeleted: [], agingDeleted: [] });
-		const gp = join(DISTILL_DIR, "manifest.json");
+		const gp = join(DISTILL_DIR, "anon", "manifest.json");
 		expect(existsSync(gp)).toBe(true);
 		rmSync(gp);
 	});

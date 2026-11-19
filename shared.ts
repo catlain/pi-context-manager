@@ -1,6 +1,12 @@
 /** shared.ts — 配置、常量、持久化工具函数。不持有运行时可变状态。 */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	writeFileSync,
+} from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import type { PayloadMessage } from "./types-payload.js";
@@ -62,6 +68,11 @@ export function fillTemplate(
 export const MSG_CACHE = join(DISTILL_DIR, "last-messages.json");
 export const PAYLOAD_CACHE = join(DISTILL_DIR, "last-payload.json");
 
+/** 缓存文件按会话定位：非空 sid → distill/<sid>/<name>；空 sid → distill/anon/<name>（沿 ADR-010，不落根目录） */
+export function getCachePath(sessionId: string, name: string) {
+	return join(DISTILL_DIR, sessionId || "anon", name);
+}
+
 export interface DistillEntry {
 	toolName: string;
 	meta: string;
@@ -115,11 +126,12 @@ function safeReadFileSync(p: string) {
 	}
 }
 
-/** 读取最后一次 context messages（文件缓存） */
-export function readCachedMessages(): PayloadMessage[] {
+/** 读取最后一次 context messages（文件缓存，按会话隔离） */
+export function readCachedMessages(sessionId: string): PayloadMessage[] {
 	try {
-		if (existsSync(MSG_CACHE)) {
-			const data = JSON.parse(safeReadFileSync(MSG_CACHE));
+		const p = getCachePath(sessionId, "last-messages.json");
+		if (existsSync(p)) {
+			const data = JSON.parse(safeReadFileSync(p));
 			if (Array.isArray(data)) return data;
 		}
 	} catch {
@@ -128,21 +140,27 @@ export function readCachedMessages(): PayloadMessage[] {
 	return [];
 }
 
-/** 写入 context messages 到文件缓存 */
-export function writeCachedMessages(msgs: PayloadMessage[]) {
+/** 写入 context messages 到文件缓存（按会话隔离） */
+export function writeCachedMessages(
+	sessionId: string,
+	msgs: PayloadMessage[],
+) {
 	try {
-		mkdirSync(DISTILL_DIR, { recursive: true });
-		writeFileSync(MSG_CACHE, JSON.stringify(msgs));
+		const p = getCachePath(sessionId, "last-messages.json");
+		mkdirSync(join(p, ".."), { recursive: true });
+		writeFileSync(p, JSON.stringify(msgs));
 	} catch (err) {
 		console.warn("[context] writeCachedMessages failed:", err);
 	}
 }
 
-/** 读取最后一次 provider payload（文件缓存） */
-export function readCachedPayload(): Record<string, unknown> | null {
+/** 读取最后一次 provider payload（文件缓存，按会话隔离） */
+export function readCachedPayload(
+	sessionId: string,
+): Record<string, unknown> | null {
 	try {
-		if (existsSync(PAYLOAD_CACHE))
-			return JSON.parse(safeReadFileSync(PAYLOAD_CACHE));
+		const p = getCachePath(sessionId, "last-payload.json");
+		if (existsSync(p)) return JSON.parse(safeReadFileSync(p));
 	} catch {
 		/* ignore */
 	}
@@ -151,12 +169,9 @@ export function readCachedPayload(): Record<string, unknown> | null {
 
 // ── Manifest 持久化（按会话隔离） ──
 function getManifestPath(sessionId: string) {
-	if (sessionId) {
-		const dir = join(DISTILL_DIR, sessionId);
-		mkdirSync(dir, { recursive: true });
-		return join(dir, "manifest.json");
-	}
-	return join(DISTILL_DIR, "manifest.json");
+	const dir = join(DISTILL_DIR, sessionId || "anon");
+	mkdirSync(dir, { recursive: true });
+	return join(dir, "manifest.json");
 }
 
 interface ManifestData {
@@ -214,11 +229,16 @@ export function loadManifest(
 	}
 }
 
-// 启动时恢复 distilledMap（无 sessionId，用全局路径）
+// 启动时恢复 distilledMap（无 sessionId，用 anon/ 路径）；根目录孤儿 manifest 先迁移至 anon/（仿 migrateLegacyProcessorFiles）
 try {
-	const globalManifest = join(DISTILL_DIR, "manifest.json");
-	if (existsSync(globalManifest)) {
-		const data: ManifestData = JSON.parse(safeReadFileSync(globalManifest));
+	const legacyGlobalManifest = join(DISTILL_DIR, "manifest.json");
+	const anonManifest = join(DISTILL_DIR, "anon", "manifest.json");
+	if (existsSync(legacyGlobalManifest) && !existsSync(anonManifest)) {
+		mkdirSync(join(DISTILL_DIR, "anon"), { recursive: true });
+		renameSync(legacyGlobalManifest, anonManifest);
+	}
+	if (existsSync(anonManifest)) {
+		const data: ManifestData = JSON.parse(safeReadFileSync(anonManifest));
 		for (const [k, v] of data.distilled || []) distilledMap.set(k, v);
 	}
 } catch {

@@ -244,5 +244,5 @@ export function handleContextEvent(
 
 	// 保存最终 messages
 	state.lastMessages = messages;
-	writeCachedMessages(messages);
+	writeCachedMessages(state.sessionId, messages);
 }
