@@ -9,9 +9,9 @@
  * - sessionId 从 ctx.sessionManager 获取
  */
 
-import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock recording 模块
@@ -25,9 +25,23 @@ vi.mock("../recording.js", () => ({
 // Mock shared 模块
 vi.mock("../shared.js", () => ({
 	DISTILL_DIR: join(os.tmpdir(), "test-pi-distill"),
-	PAYLOAD_CACHE: join(os.tmpdir(), "test-pi-distill", "last-payload.json"),
+	ANON_DIR_NAME: "anon",
+	LAST_PAYLOAD_NAME: "last-payload.json",
+	LAST_MESSAGES_NAME: "last-messages.json",
 	getCachePath: (sid: string, name: string) =>
 		join(join(os.tmpdir(), "test-pi-distill"), sid || "anon", name),
+	resolveSessionId: (ctx?: any, explicit?: string) =>
+		explicit ||
+		ctx?.sessionManager?.getSessionId?.() ||
+		process.env.PI_SESSION_ID ||
+		"",
+	writeCacheFile: (sid: string, name: string, data: unknown) => {
+		const p = join(join(os.tmpdir(), "test-pi-distill"), sid || "anon", name);
+		mkdirSync(dirname(p), { recursive: true });
+		writeFileSync(p, JSON.stringify(data));
+	},
+	readCachedPayload: () => null,
+	initLegacyManifest: vi.fn(),
 	getContextConfig: vi.fn(() => ({
 		distillThreshold: 1500,
 		processorThreshold: 2000,
@@ -100,29 +114,41 @@ describe("before_provider_request 录制", () => {
 	});
 
 	it("录制开启时写 payload 到会话目录", async () => {
-		mockIsRecording.mockReturnValue(true);
-		indexModule(mockPi as any);
-		const handler = mockPi.events.before_provider_request;
-		await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
-		const unknownDir = join(RECORDINGS_DIR, "unknown");
-		expect(existsSync(unknownDir)).toBe(true);
-		const files = readdirSync(unknownDir).filter((f) => f.endsWith(".json"));
-		expect(files.length).toBe(1);
-		expect(files[0]).toMatch(/^req-0001-/);
+		const saved = process.env.PI_SESSION_ID;
+		delete process.env.PI_SESSION_ID;
+		try {
+			mockIsRecording.mockReturnValue(true);
+			indexModule(mockPi as any);
+			const handler = mockPi.events.before_provider_request;
+			await handler({ payload: { messages: [{ role: "user", content: "hi" }] } });
+			const anonDir = join(RECORDINGS_DIR, "anon");
+			expect(existsSync(anonDir)).toBe(true);
+			const files = readdirSync(anonDir).filter((f) => f.endsWith(".json"));
+			expect(files.length).toBe(1);
+			expect(files[0]).toMatch(/^req-0001-/);
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+		}
 	});
 
 	it("连续录制时序号递增", async () => {
-		mockIsRecording.mockReturnValue(true);
-		indexModule(mockPi as any);
-		const handler = mockPi.events.before_provider_request;
-		const payload = { messages: [{ role: "user", content: "hi" }] };
-		await handler({ payload });
-		await handler({ payload });
-		const unknownDir = join(RECORDINGS_DIR, "unknown");
-		const files = readdirSync(unknownDir).filter((f) => f.endsWith(".json"));
-		expect(files.length).toBe(2);
-		expect(files[0]).toMatch(/^req-0001-/);
-		expect(files[1]).toMatch(/^req-0002-/);
+		const saved = process.env.PI_SESSION_ID;
+		delete process.env.PI_SESSION_ID;
+		try {
+			mockIsRecording.mockReturnValue(true);
+			indexModule(mockPi as any);
+			const handler = mockPi.events.before_provider_request;
+			const payload = { messages: [{ role: "user", content: "hi" }] };
+			await handler({ payload });
+			await handler({ payload });
+			const anonDir = join(RECORDINGS_DIR, "anon");
+			const files = readdirSync(anonDir).filter((f) => f.endsWith(".json"));
+			expect(files.length).toBe(2);
+			expect(files[0]).toMatch(/^req-0001-/);
+			expect(files[1]).toMatch(/^req-0002-/);
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+		}
 	});
 
 	it("总是写 last-payload.json（不受录制开关影响，per-session 路径）", async () => {
@@ -192,13 +218,19 @@ describe("before_provider_request 录制", () => {
 	});
 
 	it("ctx 无 sessionManager 时 fallback 到闭包 sessionId", async () => {
-		mockIsRecording.mockReturnValue(true);
-		indexModule(mockPi as any);
-		const handler = mockPi.events.before_provider_request;
-		await handler({
-			payload: { messages: [{ role: "user", content: "hi" }] },
-		});
-		const unknownDir = join(RECORDINGS_DIR, "unknown");
-		expect(existsSync(unknownDir)).toBe(true);
+		const saved = process.env.PI_SESSION_ID;
+		delete process.env.PI_SESSION_ID;
+		try {
+			mockIsRecording.mockReturnValue(true);
+			indexModule(mockPi as any);
+			const handler = mockPi.events.before_provider_request;
+			await handler({
+				payload: { messages: [{ role: "user", content: "hi" }] },
+			});
+			const anonDir = join(RECORDINGS_DIR, "anon");
+			expect(existsSync(anonDir)).toBe(true);
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+		}
 	});
 });

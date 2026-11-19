@@ -9,7 +9,7 @@ import {
 	renderOverview,
 	renderRecords,
 } from "./render.js";
-import { readCachedPayload } from "./shared.js";
+import { readCachedPayload, resolveSessionId } from "./shared.js";
 import type {
 	CategoryItem,
 	ContextStateRef,
@@ -28,13 +28,9 @@ export default function registerContextCommand(
 	pi.registerCommand("context", {
 		description: "Show context usage visualization.",
 		handler: async (_args, ctx) => {
-			const sid =
-				ctx?.sessionManager?.getSessionId?.() ||
-				process.env.PI_SESSION_ID ||
-				"";
 			const data = collectData(pi, ctx, {
 				messages: stateRef.getLastContextMessages(),
-				payload: readCachedPayload(sid),
+				payload: readCachedPayload(resolveSessionId(ctx)),
 				agingSnapshot: stateRef.agingSnapshot,
 				manuallyDeletedIds: stateRef.manuallyDeletedIds,
 			});

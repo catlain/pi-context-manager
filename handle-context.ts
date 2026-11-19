@@ -18,6 +18,7 @@ import {
 	getContextConfig,
 	hintsConfig,
 	loadManifest,
+	resolveSessionId,
 	saveManifest,
 	writeCachedMessages,
 } from "./shared.js";
@@ -36,7 +37,7 @@ export interface ContextState {
 
 export function handleContextEvent(
 	event: { messages: PayloadMessage[] },
-	_ctx: { sessionManager: { getSessionId?: () => string | undefined } },
+	ctx: { sessionManager: { getSessionId?: () => string | undefined } },
 	state: ContextState,
 	pi: ExtensionAPI,
 ) {
@@ -54,7 +55,7 @@ export function handleContextEvent(
 	// 第一次 context 事件时 getSessionId() 可能返回 undefined（扩展加载早期），
 	// 此时用 PI_SESSION_ID 环境变量作为 fallback，确保 manifest 正确恢复。
 	// 否则 agingDeletedIds 为空 → 被删除的大结果全部恢复进上下文 → 爆炸。
-	const sid = _ctx?.sessionManager?.getSessionId?.() || process.env.PI_SESSION_ID || "";
+	const sid = resolveSessionId(ctx);
 	if (sid && sid !== state.sessionId) {
 		state.sessionId = sid;
 		loadManifest(sid, {

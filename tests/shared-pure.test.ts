@@ -48,12 +48,15 @@ vi.mock("@pi-atelier/shared-utils", () => ({
 }));
 
 import {
+	ANON_DIR_NAME,
 	DISTILL_DIR,
 	fillTemplate,
 	getContextConfig,
+	getCachePath,
 	hintsConfig,
-	MSG_CACHE,
-	PAYLOAD_CACHE,
+	LAST_MESSAGES_NAME,
+	LAST_PAYLOAD_NAME,
+	resolveSessionId,
 	setContextConfig,
 } from "../shared.js";
 
@@ -64,11 +67,62 @@ describe("常量", () => {
 		expect(DISTILL_DIR).toMatch(/[\\/]\.pi[\\/]agent[\\/]distill/);
 	});
 
-	it("MSG_CACHE 和 PAYLOAD_CACHE 基于 DISTILL_DIR", () => {
-		expect(MSG_CACHE).toContain(DISTILL_DIR);
-		expect(MSG_CACHE).toContain("last-messages.json");
-		expect(PAYLOAD_CACHE).toContain(DISTILL_DIR);
-		expect(PAYLOAD_CACHE).toContain("last-payload.json");
+	it("缓存路径常量与 getCachePath 基于 DISTILL_DIR 且空 sid 折 anon", () => {
+		expect(LAST_MESSAGES_NAME).toBe("last-messages.json");
+		expect(LAST_PAYLOAD_NAME).toBe("last-payload.json");
+		expect(ANON_DIR_NAME).toBe("anon");
+		expect(getCachePath("sess-123", LAST_PAYLOAD_NAME)).toContain(
+			DISTILL_DIR,
+		);
+		expect(getCachePath("sess-123", LAST_PAYLOAD_NAME)).toContain("sess-123");
+		expect(getCachePath("", LAST_MESSAGES_NAME)).toContain(ANON_DIR_NAME);
+	});
+});
+
+// ===== sid 单源解析 =====
+
+describe("resolveSessionId", () => {
+	it("显式指定优先于 ctx 与环境变量", () => {
+		const saved = process.env.PI_SESSION_ID;
+		process.env.PI_SESSION_ID = "env-sid";
+		const ctx = {
+			sessionManager: { getSessionId: () => "ctx-sid" },
+		};
+		try {
+			expect(resolveSessionId(ctx, "explicit-sid")).toBe("explicit-sid");
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+			else delete process.env.PI_SESSION_ID;
+		}
+	});
+
+	it("无显式时：ctx.sessionManager > PI_SESSION_ID > 空", () => {
+		const saved = process.env.PI_SESSION_ID;
+		const ctx = {
+			sessionManager: { getSessionId: () => "ctx-sid" },
+		};
+		delete process.env.PI_SESSION_ID;
+		try {
+			expect(resolveSessionId(ctx)).toBe("ctx-sid");
+			expect(resolveSessionId(undefined)).toBe("");
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+			else delete process.env.PI_SESSION_ID;
+		}
+	});
+
+	it("getSessionId 返回 undefined 时回退环境变量（加载早期场景）", () => {
+		const saved = process.env.PI_SESSION_ID;
+		process.env.PI_SESSION_ID = "env-sid";
+		const ctx = {
+			sessionManager: { getSessionId: () => undefined },
+		};
+		try {
+			expect(resolveSessionId(ctx)).toBe("env-sid");
+		} finally {
+			if (saved) process.env.PI_SESSION_ID = saved;
+			else delete process.env.PI_SESSION_ID;
+		}
 	});
 });
 

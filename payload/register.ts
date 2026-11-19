@@ -8,7 +8,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { getCachePath } from "../shared.js";
+import { getCachePath, LAST_PAYLOAD_NAME, resolveSessionId } from "../shared.js";
 import { doChain, doDiff, doList, doOverview, doSingle } from "./analyze.js";
 import { getRecordingFiles } from "./files.js";
 import { doMessages } from "./messages.js";
@@ -140,13 +140,11 @@ export function registerPayloadAnalyzer(pi: ExtensionAPI) {
 		}> {
 			try {
 				const sid = params.sessionId || undefined;
-				// 无 payloadPath 时回退本会话缓存（显式 sessionId > ctx.sessionManager > PI_SESSION_ID）
-				const execSid =
-					sid ||
-					ctx?.sessionManager?.getSessionId?.() ||
-					process.env.PI_SESSION_ID ||
-					"";
-				const lastPayload = getCachePath(execSid, "last-payload.json");
+				// 无 payloadPath 时回退本会话缓存（sid 单源：显式 > ctx.sessionManager > PI_SESSION_ID > anon）
+				const lastPayload = getCachePath(
+					resolveSessionId(ctx, sid),
+					LAST_PAYLOAD_NAME,
+				);
 				switch (params.action) {
 					case "list":
 						return {

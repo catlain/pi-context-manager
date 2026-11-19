@@ -43,7 +43,7 @@ export const agingMockState = {
 
 // ── Mock 工厂（测试文件 vi.mock(path, factory) 直接引用） ──
 
-/** shared.js 统一 mock：config/hints 惰性读 agingMockState */
+/** shared.js 统一 mock：config/hints 惰性读 agingMockState；含 0.3.2 sid 单源与 per-session 缓存导出（与真实模块导出面同构，新增导出 SHALL 在此同步） */
 export const sharedMockFactory = () => ({
 	getContextConfig: () => agingMockState.config,
 	distilledMap: new Map(),
@@ -54,6 +54,20 @@ export const sharedMockFactory = () => ({
 	hintsConfig: agingMockState.hints,
 	fillTemplate: (t: string, v: Record<string, string>) =>
 		t.replace(/\{(\w+)\}/g, (_: string, k: string) => v[k] ?? `{${k}}`),
+	DISTILL_DIR: "/tmp/test-distill",
+	LAST_PAYLOAD_NAME: "last-payload.json",
+	LAST_MESSAGES_NAME: "last-messages.json",
+	ANON_DIR_NAME: "anon",
+	resolveSessionId: (ctx?: any, explicit?: string) =>
+		explicit ||
+		ctx?.sessionManager?.getSessionId?.() ||
+		process.env.PI_SESSION_ID ||
+		"",
+	getCachePath: (sid: string, name: string) =>
+		`/tmp/test-distill/${sid || "anon"}/${name}`,
+	writeCacheFile: vi.fn(),
+	readCachedPayload: () => null,
+	initLegacyManifest: vi.fn(),
 });
 
 /**

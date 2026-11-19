@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import os from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { PayloadMessage } from "./types-payload.js";
 
 /** 持久化根目录：重启不丢失，用于 manifest、录制、缓存 */
@@ -65,12 +65,38 @@ export function fillTemplate(
 ): string {
 	return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`);
 }
-export const MSG_CACHE = join(DISTILL_DIR, "last-messages.json");
-export const PAYLOAD_CACHE = join(DISTILL_DIR, "last-payload.json");
+// ── 缓存文件名常量（clean.ts 扫尾与各读写共用；旧全局导出 PAYLOAD_CACHE/MSG_CACHE 已删，生产零引用） ──
+export const LAST_PAYLOAD_NAME = "last-payload.json";
+export const LAST_MESSAGES_NAME = "last-messages.json";
+export const ANON_DIR_NAME = "anon";
+
+/** sessionId 统一解析（单源，修 C1）：explicit（调用方显式指定，如用户传参分析目标）→ ctx.sessionManager → PI_SESSION_ID → ""（空值由落点统一折 anon） */
+export function resolveSessionId(
+	ctx?: { sessionManager?: { getSessionId?: () => string | undefined } },
+	explicit?: string,
+): string {
+	return (
+		explicit ||
+		ctx?.sessionManager?.getSessionId?.() ||
+		process.env.PI_SESSION_ID ||
+		""
+	);
+}
 
 /** 缓存文件按会话定位：非空 sid → distill/<sid>/<name>；空 sid → distill/anon/<name>（沿 ADR-010，不落根目录） */
 export function getCachePath(sessionId: string, name: string) {
-	return join(DISTILL_DIR, sessionId || "anon", name);
+	return join(DISTILL_DIR, sessionId || ANON_DIR_NAME, name);
+}
+
+/** 写缓存文件（内含目录创建）—— mkdir 收敛单点，调用侧不再关心建目录 */
+export function writeCacheFile(
+	sessionId: string,
+	name: string,
+	data: unknown,
+) {
+	const p = getCachePath(sessionId, name);
+	mkdirSync(dirname(p), { recursive: true });
+	writeFileSync(p, JSON.stringify(data));
 }
 
 export interface DistillEntry {
@@ -129,7 +155,7 @@ function safeReadFileSync(p: string) {
 /** 读取最后一次 context messages（文件缓存，按会话隔离） */
 export function readCachedMessages(sessionId: string): PayloadMessage[] {
 	try {
-		const p = getCachePath(sessionId, "last-messages.json");
+		const p = getCachePath(sessionId, LAST_MESSAGES_NAME);
 		if (existsSync(p)) {
 			const data = JSON.parse(safeReadFileSync(p));
 			if (Array.isArray(data)) return data;
@@ -140,15 +166,13 @@ export function readCachedMessages(sessionId: string): PayloadMessage[] {
 	return [];
 }
 
-/** 写入 context messages 到文件缓存（按会话隔离） */
+/** 写入 context messages 到文件缓存（按会话隔离；mkdir 收敛于 writeCacheFile） */
 export function writeCachedMessages(
 	sessionId: string,
 	msgs: PayloadMessage[],
 ) {
 	try {
-		const p = getCachePath(sessionId, "last-messages.json");
-		mkdirSync(join(p, ".."), { recursive: true });
-		writeFileSync(p, JSON.stringify(msgs));
+		writeCacheFile(sessionId, LAST_MESSAGES_NAME, msgs);
 	} catch (err) {
 		console.warn("[context] writeCachedMessages failed:", err);
 	}
@@ -159,7 +183,7 @@ export function readCachedPayload(
 	sessionId: string,
 ): Record<string, unknown> | null {
 	try {
-		const p = getCachePath(sessionId, "last-payload.json");
+		const p = getCachePath(sessionId, LAST_PAYLOAD_NAME);
 		if (existsSync(p)) return JSON.parse(safeReadFileSync(p));
 	} catch {
 		/* ignore */
@@ -169,7 +193,7 @@ export function readCachedPayload(
 
 // ── Manifest 持久化（按会话隔离） ──
 function getManifestPath(sessionId: string) {
-	const dir = join(DISTILL_DIR, sessionId || "anon");
+	const dir = join(DISTILL_DIR, sessionId || ANON_DIR_NAME);
 	mkdirSync(dir, { recursive: true });
 	return join(dir, "manifest.json");
 }
@@ -229,18 +253,32 @@ export function loadManifest(
 	}
 }
 
-// 启动时恢复 distilledMap（无 sessionId，用 anon/ 路径）；根目录孤儿 manifest 先迁移至 anon/（仿 migrateLegacyProcessorFiles）
-try {
-	const legacyGlobalManifest = join(DISTILL_DIR, "manifest.json");
-	const anonManifest = join(DISTILL_DIR, "anon", "manifest.json");
-	if (existsSync(legacyGlobalManifest) && !existsSync(anonManifest)) {
-		mkdirSync(join(DISTILL_DIR, "anon"), { recursive: true });
-		renameSync(legacyGlobalManifest, anonManifest);
+/**
+ * 启动期遗留数据迁移与恢复（幂等，失败静默）—— 由 index.ts 扩展初始化时显式调用（与 migrateLegacyProcessorFiles 同等待遇）：
+ * - 根目录孤儿 manifest.json → anon/manifest.json
+ * - recordings/unknown/（v0.3.2 前空会话哨兵目录，<8 字符清理盲区）→ recordings/anon/
+ * - anon manifest 的 distilled 灌入 distilledMap
+ */
+export function initLegacyManifest(baseDir: string = DISTILL_DIR) {
+	try {
+		const anonDir = join(baseDir, ANON_DIR_NAME);
+		const legacyGlobalManifest = join(baseDir, "manifest.json");
+		const anonManifest = join(anonDir, "manifest.json");
+		if (existsSync(legacyGlobalManifest) && !existsSync(anonManifest)) {
+			mkdirSync(anonDir, { recursive: true });
+			renameSync(legacyGlobalManifest, anonManifest);
+		}
+		if (existsSync(anonManifest)) {
+			const data: ManifestData = JSON.parse(safeReadFileSync(anonManifest));
+			for (const [k, v] of data.distilled || []) distilledMap.set(k, v);
+		}
+		const recordingsRoot = join(baseDir, "recordings");
+		const legacyUnknown = join(recordingsRoot, "unknown");
+		const anonRecordings = join(recordingsRoot, ANON_DIR_NAME);
+		if (existsSync(legacyUnknown) && !existsSync(anonRecordings)) {
+			renameSync(legacyUnknown, anonRecordings);
+		}
+	} catch {
+		/* ignore */
 	}
-	if (existsSync(anonManifest)) {
-		const data: ManifestData = JSON.parse(safeReadFileSync(anonManifest));
-		for (const [k, v] of data.distilled || []) distilledMap.set(k, v);
-	}
-} catch {
-	/* ignore */
 }

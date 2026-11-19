@@ -24,7 +24,13 @@ vi.mock("../render.js", () => ({
 	renderRecords: vi.fn(),
 	renderContent: vi.fn(),
 }));
-vi.mock("../shared.js", () => ({ readCachedPayload: vi.fn(() => null) }));
+vi.mock(
+	"../shared.js",
+	() => ({
+		readCachedPayload: vi.fn(() => null),
+		resolveSessionId: () => "",
+	}),
+);
 
 import { collectData } from "../collect.js";
 // Re-import after mocks

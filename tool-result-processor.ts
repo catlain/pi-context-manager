@@ -9,7 +9,7 @@ import type {
 	ExtensionContext,
 	ToolResultEvent,
 } from "@earendil-works/pi-coding-agent";
-import { getContextConfig } from "./shared.js";
+import { getContextConfig, resolveSessionId } from "./shared.js";
 import {
 	type ProcessorOptions,
 	processToolResult,
@@ -37,7 +37,8 @@ export function registerToolResultProcessor(
 				const threshold =
 					options?.distillThreshold ?? getContextConfig().processorThreshold;
 				if (threshold <= 0) return undefined; // 0 = 禁用
-				const sessionId = ctx?.sessionManager?.getSessionId?.();
+				// sid 单源解析（含 PI_SESSION_ID 兜底，修：空 ctx 时原文误落 anon 致定向清理遗漏）
+				const sessionId = resolveSessionId(ctx);
 				const result = processToolResult(
 					event,
 					threshold,

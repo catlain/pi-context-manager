@@ -1,5 +1,7 @@
 /** index.ts — context 扩展入口：闭包持有运行时状态，创建 stateRef 传给子模块 */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { PayloadMessage } from "./types-payload.js";
 import { migrateLegacyProcessorFiles } from "./clean.js";
 import {
@@ -13,7 +15,15 @@ import registerContextCommand from "./context.js";
 import { type ContextState, handleContextEvent } from "./handle-context.js";
 import { registerPayloadAnalyzer } from "./payload/register.js";
 import { isRecording, RECORDINGS_DIR } from "./recording.js";
-import { DISTILL_DIR, getCachePath } from "./shared.js";
+import {
+	ANON_DIR_NAME,
+	DISTILL_DIR,
+	initLegacyManifest,
+	LAST_PAYLOAD_NAME,
+	resolveSessionId,
+	saveManifest,
+	writeCacheFile,
+} from "./shared.js";
 import { registerToolResultProcessor } from "./tool-result-processor.js";
 
 export default function (pi: ExtensionAPI) {
@@ -55,7 +65,6 @@ export default function (pi: ExtensionAPI) {
 		getLastContextMessages: () => lastMessages,
 		markManuallyDeleted: (tcId: string) => {
 			manuallyDeletedIds.add(tcId);
-			const { saveManifest } = require("./shared.js");
 			saveManifest(sessionId, {
 				manuallyDeleted: manuallyDeletedIds,
 				agingDeleted: agingDeletedIds,
@@ -63,11 +72,12 @@ export default function (pi: ExtensionAPI) {
 		},
 	};
 
-	// ── 迁移旧格式 processor 文件（根目录散落 → 新结构子目录已就位）──
+	// ── 迁移旧格式 processor 文件（根目录散落 → 新结构子目录已就位）+ 遗留 manifest/recordings 归位 ──
 	try {
 		migrateLegacyProcessorFiles();
+		initLegacyManifest();
 	} catch (err) {
-		console.warn("[context] processor 旧格式迁移失败:", err);
+		console.warn("[context] 遗留数据迁移失败:", err);
 	}
 
 	// ── 注册事件 ──
@@ -90,24 +100,14 @@ export default function (pi: ExtensionAPI) {
 		if (!payload) return;
 
 		try {
-			const { mkdirSync, writeFileSync, readdirSync } = require("node:fs");
-			const { dirname, join } = require("node:path");
+			// sid 单源解析（含 PI_SESSION_ID 兜底；早于首 context 事件时为空 → 落 anon/）
+			const sid = resolveSessionId(ctx);
+			writeCacheFile(sid, LAST_PAYLOAD_NAME, payload);
 
-			// 三段式 sid（SDK 无 ctx.session；PI_SESSION_ID 兜底；早于首 context 事件时为空 → 落 anon/）
-			const sid =
-				ctx?.sessionManager?.getSessionId?.() ||
-				process.env.PI_SESSION_ID ||
-				"";
-			const cachePath = getCachePath(sid, "last-payload.json");
-			mkdirSync(dirname(cachePath), { recursive: true });
-			writeFileSync(cachePath, JSON.stringify(payload));
-
-			// recordings（按 /record on 启用）
+			// recordings（按 /record on 启用；闭包 sessionId 作 explicit 兜底）
 			if (isRecording()) {
-				// 优先从 ctx.sessionManager 获取 sessionId（闭包变量可能在 context 事件前为空）
-				const sid2 =
-					ctx?.sessionManager?.getSessionId?.() || sessionId || "unknown";
-				const sessionDir = join(RECORDINGS_DIR, sid2);
+				const sid2 = resolveSessionId(ctx, sessionId);
+				const sessionDir = join(RECORDINGS_DIR, sid2 || ANON_DIR_NAME);
 				mkdirSync(sessionDir, { recursive: true });
 				const files = readdirSync(sessionDir).filter((f: string) =>
 					f.endsWith(".json"),

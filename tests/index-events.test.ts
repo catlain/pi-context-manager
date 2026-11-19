@@ -10,7 +10,16 @@ vi.mock("../recording.js", () => ({
 }));
 vi.mock("../shared.js", () => ({
 	DISTILL_DIR: "/tmp/test-pi-distill",
-	PAYLOAD_CACHE: "/tmp/test-pi-distill/last-payload.json",
+	ANON_DIR_NAME: "anon",
+	LAST_PAYLOAD_NAME: "last-payload.json",
+	LAST_MESSAGES_NAME: "last-messages.json",
+	getCachePath: (sid: string, name: string) =>
+		`/tmp/test-pi-distill/${sid || "anon"}/${name}`,
+	resolveSessionId: (ctx?: any, explicit?: string) =>
+		explicit || ctx?.sessionManager?.getSessionId?.() || "",
+	writeCacheFile: vi.fn(),
+	readCachedPayload: () => null,
+	initLegacyManifest: vi.fn(),
 	getContextConfig: vi.fn(() => ({
 		distillThreshold: 1500,
 		processorThreshold: 2000,

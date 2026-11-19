@@ -11,7 +11,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { DISTILL_DIR } from "./shared.js";
+import { ANON_DIR_NAME, DISTILL_DIR } from "./shared.js";
 
 /** processor 原文存入持久化目录，重启后路径仍有效 */
 export const PROCESSOR_DIR = join(DISTILL_DIR, "processor");
@@ -63,7 +63,7 @@ export function writeRawToFile(
 	sessionId?: string,
 ): string | null {
 	const timestamp = Date.now();
-	const sidDir = join(PROCESSOR_DIR, sessionId || "anon");
+	const sidDir = join(PROCESSOR_DIR, sessionId || ANON_DIR_NAME);
 	const tmpPath = join(sidDir, `${toolName}-${timestamp}.txt`);
 	try {
 		mkdirSync(sidDir, { recursive: true });

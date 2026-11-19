@@ -18,7 +18,13 @@ vi.mock("@earendil-works/pi-tui", () => ({
 	Text: vi.fn(() => ({})),
 }));
 vi.mock("../collect.js", () => ({ collectData: vi.fn() }));
-vi.mock("../shared.js", () => ({ readCachedPayload: vi.fn(() => null) }));
+vi.mock(
+	"../shared.js",
+	() => ({
+		readCachedPayload: vi.fn(() => null),
+		resolveSessionId: () => "",
+	}),
+);
 vi.mock("../render.js", () => ({
 	renderOverview: vi.fn() as any,
 	renderCategory: vi.fn() as any,

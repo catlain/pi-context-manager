@@ -2,7 +2,12 @@
 
 import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { DISTILL_DIR } from "./shared.js";
+import {
+	ANON_DIR_NAME,
+	DISTILL_DIR,
+	LAST_MESSAGES_NAME,
+	LAST_PAYLOAD_NAME,
+} from "./shared.js";
 
 const RECORDINGS_DIR = join(DISTILL_DIR, "recordings");
 const PROCESSOR_DIR = join(DISTILL_DIR, "processor");
@@ -149,13 +154,18 @@ export function cleanContextData(sessionIdInput?: string): CleanResult {
 		totalBytes += dirSizeBytes(dir);
 		rmSync(dir, { recursive: true, force: true });
 	}
-	for (const funcDir of [RECORDINGS_DIR, PROCESSOR_DIR, join(DISTILL_DIR, "anon")]) {
+	for (const funcDir of [
+		RECORDINGS_DIR,
+		PROCESSOR_DIR,
+		join(DISTILL_DIR, ANON_DIR_NAME),
+		join(RECORDINGS_DIR, ANON_DIR_NAME),
+	]) {
 		if (existsSync(funcDir)) {
 			totalBytes += dirSizeBytes(funcDir);
 			rmSync(funcDir, { recursive: true, force: true });
 		}
 	}
-	for (const f of ["last-messages.json", "last-payload.json"]) {
+	for (const f of [LAST_MESSAGES_NAME, LAST_PAYLOAD_NAME]) {
 		const p = join(DISTILL_DIR, f);
 		if (existsSync(p)) {
 			totalBytes += statSync(p).size;
